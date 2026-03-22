@@ -1,0 +1,466 @@
+/* ═══════════════════════════════════════════════════════════════════
+   CADENCE DESIGN SYSTEM — Design Tokens
+   cadence-tokens.css
+   
+   Usage: import this file once at the root of your project.
+   All values are set as CSS custom properties on :root so they
+   cascade globally. Override per-component as needed.
+   ═══════════════════════════════════════════════════════════════════ */
+
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+
+:root {
+
+  /* ────────────────────────────────────────────────────────────────
+     COLOUR — Action
+     Green = internal approval / ideation
+     Blue  = sending / external dispatch
+  ──────────────────────────────────────────────────────────────── */
+
+  --c-blue:           #3B7FF5;
+  --c-blue-deep:      #2563EB;
+  --c-blue-light:     #DBEAFE;
+  --c-blue-ghost:     rgba(59, 127, 245, 0.08);
+  --c-blue-border:    rgba(59, 127, 245, 0.25);
+  --c-blue-ring:      rgba(59, 127, 245, 0.12);   /* focus ring */
+
+  --c-green:          #1DC77A;
+  --c-green-deep:     #059669;
+  --c-green-light:    #D1FAE5;
+  --c-green-ghost:    rgba(29, 199, 122, 0.08);
+  --c-green-border:   rgba(29, 199, 122, 0.25);
+  --c-green-ring:     rgba(29, 199, 122, 0.10);   /* focus ring */
+
+
+  /* ────────────────────────────────────────────────────────────────
+     COLOUR — Neutrals & Surfaces
+  ──────────────────────────────────────────────────────────────── */
+
+  --c-white:          #FFFFFF;
+  --c-bg:             #FFFFFF;                     /* page background */
+
+  /* Surface opacity scale (white at increasing opacity) */
+  --c-surface-rest:   rgba(255, 255, 255, 0.45);   /* resting components */
+  --c-surface:        rgba(255, 255, 255, 0.72);   /* default components */
+  --c-surface-hover:  rgba(255, 255, 255, 0.88);   /* hover state */
+  --c-surface-active: rgba(255, 255, 255, 1.00);   /* active / needs action */
+
+  /* Borders */
+  --c-border:         rgba(0, 0, 0, 0.07);
+  --c-border-strong:  rgba(0, 0, 0, 0.12);
+
+  /* Text hierarchy */
+  --c-text:           #0F172A;                     /* primary */
+  --c-text-2:         #475569;                     /* secondary */
+  --c-text-3:         #94A3B8;                     /* tertiary / placeholder */
+
+
+  /* ────────────────────────────────────────────────────────────────
+     OPACITY SCALE
+     Used to set opacity on elements directly, or to compose
+     rgba() surface values above.
+  ──────────────────────────────────────────────────────────────── */
+
+  --op-ghost:         0.04;
+  --op-subtle:        0.08;
+  --op-translucent:   0.45;
+  --op-semi:          0.72;
+  --op-muted:         0.88;
+  --op-opaque:        1.00;
+
+
+  /* ────────────────────────────────────────────────────────────────
+     TYPOGRAPHY
+     Font: Outfit (all weights loaded via Google Fonts import above)
+  ──────────────────────────────────────────────────────────────── */
+
+  --font:             'Outfit', sans-serif;
+
+  /* Size scale */
+  --text-xs:          11px;
+  --text-sm:          13px;
+  --text-base:        16px;   /* body default */
+  --text-md:          18px;
+  --text-lg:          21px;   /* 16pt */
+  --text-xl:          26px;
+  --text-2xl:         32px;
+  --text-hero:        48px;
+
+  /* Font weights */
+  --w-light:          300;
+  --w-reg:            400;
+  --w-med:            500;
+  --w-semi:           600;
+  --w-bold:           700;
+
+  /* Line heights */
+  --lh-tight:         1.15;
+  --lh-snug:          1.40;
+  --lh-normal:        1.65;
+
+  /* Letter spacing */
+  --ls-tight:         -0.025em;
+  --ls-normal:         0em;
+  --ls-label:          0.06em;   /* uppercase labels */
+
+
+  /* ────────────────────────────────────────────────────────────────
+     BUTTON SYSTEM
+     Three tiers: micro (internal ideation) → mid (semi-internal)
+                  → send (external dispatch)
+     
+     Notation: py = block (vertical), px = inline (horizontal)
+     Corner smoothing: 60% (Figma squircle). CSS values are the
+     closest standard border-radius equivalent.
+  ──────────────────────────────────────────────────────────────── */
+
+  /* Micro — internal ideation · Green */
+  --btn-micro-py:     4px;
+  --btn-micro-px:     8px;
+  --btn-micro-fs:     16px;   /* 12pt */
+  --btn-micro-r:      16px;   /* Figma: 60% corner smooth */
+
+  /* Mid — semi-internal · Green */
+  --btn-mid-py:       26px;
+  --btn-mid-px:       24px;
+  --btn-mid-fs:       16px;   /* 12pt */
+  --btn-mid-r:        20px;   /* Figma: 60% corner smooth */
+
+  /* Send — external / dispatch · Blue */
+  --btn-send-py:      24px;
+  --btn-send-px:      32px;
+  --btn-send-fs:      21px;   /* 16pt */
+  --btn-send-r:       20px;   /* Figma: 60% corner smooth */
+
+
+  /* ────────────────────────────────────────────────────────────────
+     SPACING — base 4px
+  ──────────────────────────────────────────────────────────────── */
+
+  --sp-1:             4px;
+  --sp-2:             8px;
+  --sp-3:             12px;
+  --sp-4:             16px;
+  --sp-5:             20px;
+  --sp-6:             24px;
+  --sp-8:             32px;
+  --sp-10:            40px;
+  --sp-12:            48px;
+  --sp-16:            64px;
+
+
+  /* ────────────────────────────────────────────────────────────────
+     BORDER RADIUS
+  ──────────────────────────────────────────────────────────────── */
+
+  --r-xs:             6px;
+  --r-sm:             8px;
+  --r-md:             12px;
+  --r-lg:             16px;   /* btn-micro */
+  --r-xl:             20px;   /* btn-mid, btn-send, cards */
+  --r-2xl:            28px;
+  --r-pill:           999px;
+
+
+  /* ────────────────────────────────────────────────────────────────
+     BACKDROP BLUR
+     Applied via backdrop-filter on translucent surfaces.
+     Requires the element to have a semi-transparent background.
+  ──────────────────────────────────────────────────────────────── */
+
+  --blur-sm:          blur(8px);
+  --blur-md:          blur(16px);
+  --blur-lg:          blur(24px);
+
+
+  /* ────────────────────────────────────────────────────────────────
+     SHADOWS
+  ──────────────────────────────────────────────────────────────── */
+
+  --sh-glass:
+    0 2px 16px rgba(0, 0, 0, 0.05),
+    0 1px  3px rgba(0, 0, 0, 0.04);
+
+  --sh-raised:
+    0  6px 28px rgba(0, 0, 0, 0.08),
+    0  2px  8px rgba(0, 0, 0, 0.05);
+
+  --sh-float:
+    0 16px 48px rgba(0, 0, 0, 0.10),
+    0  4px 12px rgba(0, 0, 0, 0.06);
+
+
+  /* ────────────────────────────────────────────────────────────────
+     TRANSITION
+     Standard easing + duration for interactive elements.
+  ──────────────────────────────────────────────────────────────── */
+
+  --ease:             cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in:          cubic-bezier(0.4, 0, 1, 1);
+  --ease-out:         cubic-bezier(0, 0, 0.2, 1);
+  --duration-fast:    0.12s;
+  --duration-base:    0.18s;
+  --duration-slow:    0.28s;
+  --duration-glow:    2.0s;   /* time-based horizon transition */
+
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   WEB CANVAS
+   Apply class="web-canvas" to <body> or a full-bleed wrapper.
+   The ::after pseudo-element renders the time-shifting horizon glow.
+   Update --glow-color via JavaScript based on time of day.
+═══════════════════════════════════════════════════════════════════ */
+
+.web-canvas {
+  background-color:   var(--c-bg);
+  background-image:   radial-gradient(circle, rgba(0, 0, 0, 0.055) 1px, transparent 1px);
+  background-size:    22px 22px;
+  position:           relative;
+  min-height:         100vh;
+}
+
+.web-canvas::after {
+  content:            '';
+  position:           fixed;
+  bottom:             0;
+  left:               0;
+  right:              0;
+  height:             35vh;
+  background:         radial-gradient(ellipse at 50% 100%, var(--glow-color, rgba(251, 191, 36, 0.18)), transparent 72%);
+  pointer-events:     none;
+  z-index:            0;
+  transition:         background var(--duration-glow) ease;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   MOBILE CANVAS
+   Apply as inline style or utility class on the root view.
+   Components sit above this with translucent backgrounds.
+═══════════════════════════════════════════════════════════════════ */
+
+.mobile-canvas {
+  background: linear-gradient(
+    155deg,
+    rgba(59, 127, 245, 0.18)  0%,
+    rgba(255, 255, 255, 1.00) 45%,
+    rgba(29, 199, 122, 0.12)  100%
+  );
+  min-height: 100%;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   BUTTON BASE UTILITY CLASSES
+   Apply .btn + .btn-micro / .btn-mid / .btn-send
+   Add .filled for the solid action state.
+═══════════════════════════════════════════════════════════════════ */
+
+.btn {
+  font-family:      var(--font);
+  font-weight:      var(--w-med);
+  border:           1px solid transparent;
+  cursor:           pointer;
+  display:          inline-flex;
+  align-items:      center;
+  justify-content:  center;
+  gap:              6px;
+  white-space:      nowrap;
+  line-height:      1;
+  transition:
+    background    var(--duration-base) var(--ease-out),
+    border-color  var(--duration-base) var(--ease-out),
+    box-shadow    var(--duration-base) var(--ease-out),
+    transform     var(--duration-fast) var(--ease-out),
+    opacity       var(--duration-base) var(--ease-out);
+}
+
+/* ── Micro ── */
+.btn-micro {
+  padding:          var(--btn-micro-py) var(--btn-micro-px);
+  font-size:        var(--btn-micro-fs);
+  border-radius:    var(--btn-micro-r);
+  background:       var(--c-surface);
+  border-color:     var(--c-green-border);
+  color:            var(--c-green-deep);
+  backdrop-filter:  var(--blur-sm);
+}
+.btn-micro:hover:not(:disabled) {
+  background:       var(--c-surface-hover);
+  border-color:     rgba(29, 199, 122, 0.50);
+  box-shadow:       0 2px 14px rgba(29, 199, 122, 0.18);
+  transform:        translateY(-1px);
+}
+.btn-micro:active:not(:disabled) {
+  background:       var(--c-white);
+  border-color:     var(--c-green);
+  transform:        translateY(0);
+  box-shadow:       none;
+}
+.btn-micro:disabled {
+  opacity:          var(--op-translucent);
+  cursor:           not-allowed;
+}
+.btn-micro.filled {
+  background:       var(--c-green);
+  border-color:     var(--c-green);
+  color:            white;
+}
+.btn-micro.filled:hover:not(:disabled) {
+  background:       var(--c-green-deep);
+  border-color:     var(--c-green-deep);
+  box-shadow:       0 3px 16px rgba(29, 199, 122, 0.30);
+}
+
+/* ── Mid ── */
+.btn-mid {
+  padding:          var(--btn-mid-py) var(--btn-mid-px);
+  font-size:        var(--btn-mid-fs);
+  border-radius:    var(--btn-mid-r);
+  background:       var(--c-surface);
+  border-color:     var(--c-green-border);
+  color:            var(--c-green-deep);
+  backdrop-filter:  var(--blur-sm);
+}
+.btn-mid:hover:not(:disabled) {
+  background:       var(--c-surface-hover);
+  border-color:     rgba(29, 199, 122, 0.50);
+  box-shadow:       0 4px 22px rgba(29, 199, 122, 0.20);
+  transform:        translateY(-1px);
+}
+.btn-mid:active:not(:disabled) {
+  background:       var(--c-white);
+  border-color:     var(--c-green);
+  transform:        translateY(0);
+  box-shadow:       none;
+}
+.btn-mid:disabled {
+  opacity:          var(--op-translucent);
+  cursor:           not-allowed;
+}
+.btn-mid.filled {
+  background:       var(--c-green);
+  border-color:     var(--c-green);
+  color:            white;
+}
+.btn-mid.filled:hover:not(:disabled) {
+  background:       var(--c-green-deep);
+  border-color:     var(--c-green-deep);
+  box-shadow:       0 6px 28px rgba(29, 199, 122, 0.30);
+}
+
+/* ── Send ── */
+.btn-send {
+  padding:          var(--btn-send-py) var(--btn-send-px);
+  font-size:        var(--btn-send-fs);
+  border-radius:    var(--btn-send-r);
+  background:       var(--c-surface);
+  border-color:     var(--c-blue-border);
+  color:            var(--c-blue-deep);
+  backdrop-filter:  var(--blur-sm);
+}
+.btn-send:hover:not(:disabled) {
+  background:       var(--c-surface-hover);
+  border-color:     rgba(59, 127, 245, 0.50);
+  box-shadow:       0 4px 24px rgba(59, 127, 245, 0.22);
+  transform:        translateY(-1px);
+}
+.btn-send:active:not(:disabled) {
+  background:       var(--c-white);
+  border-color:     var(--c-blue);
+  transform:        translateY(0);
+  box-shadow:       none;
+}
+.btn-send:disabled {
+  opacity:          var(--op-translucent);
+  cursor:           not-allowed;
+}
+.btn-send.filled {
+  background:       var(--c-blue);
+  border-color:     var(--c-blue);
+  color:            white;
+}
+.btn-send.filled:hover:not(:disabled) {
+  background:       var(--c-blue-deep);
+  border-color:     var(--c-blue-deep);
+  box-shadow:       0 6px 30px rgba(59, 127, 245, 0.35);
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   GLASS SURFACE UTILITIES
+═══════════════════════════════════════════════════════════════════ */
+
+/* Default / resting — translucent */
+.glass {
+  background:       var(--c-surface);
+  backdrop-filter:  var(--blur-md);
+  border:           1px solid var(--c-border);
+  border-radius:    var(--r-xl);
+  box-shadow:       var(--sh-glass);
+}
+
+/* Active / needs action — fully opaque */
+.glass-active {
+  background:       var(--c-surface-active);
+  border:           1px solid var(--c-border-strong);
+  border-radius:    var(--r-xl);
+  box-shadow:       var(--sh-raised);
+}
+
+/* ─── Input ─── */
+.input-glass {
+  font-family:      var(--font);
+  font-size:        var(--text-base);
+  background:       var(--c-surface);
+  border:           1px solid var(--c-border);
+  border-radius:    var(--r-lg);
+  padding:          12px 16px;
+  color:            var(--c-text);
+  backdrop-filter:  var(--blur-sm);
+  outline:          none;
+  transition:
+    background    var(--duration-base) var(--ease-out),
+    border-color  var(--duration-base) var(--ease-out),
+    box-shadow    var(--duration-base) var(--ease-out);
+}
+.input-glass::placeholder { color: var(--c-text-3); }
+.input-glass:focus {
+  background:       var(--c-white);
+  border-color:     var(--c-blue);
+  box-shadow:       0 0 0 3px var(--c-blue-ring);
+}
+.input-glass.approved:focus {
+  border-color:     var(--c-green);
+  box-shadow:       0 0 0 3px var(--c-green-ring);
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   TIME-BASED GLOW — JavaScript helper
+
+   Add this script to set the glow colour on the root element.
+   Call applyGlow() on page load and every minute.
+
+   const GLOW_SCHEDULE = [
+     { start:  5, end:  8, color: 'rgba(251,191,36,0.22)'  },  // dawn
+     { start:  8, end: 12, color: 'rgba(147,197,253,0.18)' },  // morning
+     { start: 12, end: 15, color: 'rgba(255,255,255,0)'    },  // midday
+     { start: 15, end: 18, color: 'rgba(253,186,116,0.22)' },  // afternoon
+     { start: 18, end: 20, color: 'rgba(196,181,253,0.28)' },  // evening
+     { start: 20, end: 23, color: 'rgba(96,165,250,0.22)'  },  // night
+     { start: 23, end: 29, color: 'rgba(30,58,138,0.16)'   },  // late night
+   ];
+
+   function applyGlow() {
+     const h = new Date().getHours() + new Date().getMinutes() / 60;
+     const ha = h < 5 ? h + 24 : h;
+     const entry = GLOW_SCHEDULE.find(s => ha >= s.start && ha < s.end)
+                   || GLOW_SCHEDULE[GLOW_SCHEDULE.length - 1];
+     document.documentElement.style.setProperty('--glow-color', entry.color);
+   }
+   applyGlow();
+   setInterval(applyGlow, 60_000);
+═══════════════════════════════════════════════════════════════════ */

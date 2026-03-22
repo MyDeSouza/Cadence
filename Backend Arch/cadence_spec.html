@@ -1,0 +1,1068 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cadence — System Specification</title>
+<style>
+  :root {
+    --black: #0a0a0a;
+    --white: #f5f5f0;
+    --grey-1: #1a1a1a;
+    --grey-2: #2a2a2a;
+    --grey-3: #444;
+    --grey-4: #888;
+    --accent: #c8f060;
+    --accent-dim: #8aaa30;
+    --blue: #5b8cf7;
+    --red: #f75b5b;
+    --amber: #f7c05b;
+    --font: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--black);
+    color: var(--white);
+    font-family: var(--font);
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  /* NAV */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 52px;
+    background: rgba(10,10,10,0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--grey-2);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 32px;
+    z-index: 100;
+  }
+
+  .nav-logo {
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  .nav-links {
+    display: flex;
+    gap: 28px;
+    list-style: none;
+  }
+
+  .nav-links a {
+    color: var(--grey-4);
+    text-decoration: none;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    transition: color 0.2s;
+  }
+
+  .nav-links a:hover { color: var(--white); }
+
+  /* LAYOUT */
+  .page { padding-top: 52px; }
+
+  section {
+    padding: 80px 48px;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  /* HERO */
+  .hero {
+    min-height: calc(100vh - 52px);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 80px 48px;
+    max-width: 1100px;
+    margin: 0 auto;
+    border-bottom: 1px solid var(--grey-2);
+  }
+
+  .hero-tag {
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 24px;
+  }
+
+  .hero h1 {
+    font-size: clamp(42px, 6vw, 80px);
+    font-weight: 700;
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    margin-bottom: 28px;
+  }
+
+  .hero h1 em {
+    color: var(--accent);
+    font-style: normal;
+  }
+
+  .hero-sub {
+    font-size: 18px;
+    color: var(--grey-4);
+    max-width: 560px;
+    line-height: 1.7;
+    margin-bottom: 48px;
+  }
+
+  .hero-mission {
+    border-left: 2px solid var(--accent);
+    padding-left: 20px;
+    font-size: 15px;
+    color: var(--grey-4);
+    font-style: italic;
+    max-width: 600px;
+  }
+
+  /* SECTION HEADERS */
+  .section-label {
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 12px;
+  }
+
+  .section-title {
+    font-size: clamp(26px, 3.5vw, 40px);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 16px;
+  }
+
+  .section-desc {
+    color: var(--grey-4);
+    max-width: 560px;
+    margin-bottom: 52px;
+    font-size: 15px;
+    line-height: 1.7;
+  }
+
+  hr.divider {
+    border: none;
+    border-top: 1px solid var(--grey-2);
+    margin: 0;
+  }
+
+  /* FORMULA BOX */
+  .formula-box {
+    background: var(--grey-1);
+    border: 1px solid var(--grey-2);
+    border-radius: 12px;
+    padding: 32px 36px;
+    margin-bottom: 48px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .formula-label {
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--grey-4);
+    margin-bottom: 10px;
+  }
+
+  .formula-text {
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+  }
+
+  .formula-text span { color: var(--accent); }
+
+  /* CARDS GRID */
+  .cards-grid {
+    display: grid;
+    gap: 16px;
+  }
+
+  .cards-grid.cols-2 { grid-template-columns: repeat(2, 1fr); }
+  .cards-grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+  .cards-grid.cols-4 { grid-template-columns: repeat(4, 1fr); }
+
+  .card {
+    background: var(--grey-1);
+    border: 1px solid var(--grey-2);
+    border-radius: 12px;
+    padding: 24px;
+    transition: border-color 0.2s;
+  }
+
+  .card:hover { border-color: var(--grey-3); }
+
+  .card-icon {
+    font-size: 20px;
+    margin-bottom: 14px;
+  }
+
+  .card-title {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    color: var(--white);
+  }
+
+  .card-body {
+    font-size: 13px;
+    color: var(--grey-4);
+    line-height: 1.6;
+  }
+
+  .card-tag {
+    display: inline-block;
+    margin-top: 12px;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 4px;
+    background: var(--grey-2);
+    color: var(--grey-4);
+  }
+
+  /* PIPELINE */
+  .pipeline {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin-bottom: 52px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+  }
+
+  .pipeline-step {
+    background: var(--grey-1);
+    border: 1px solid var(--grey-2);
+    border-radius: 10px;
+    padding: 18px 22px;
+    min-width: 150px;
+    flex: 1;
+  }
+
+  .pipeline-step-num {
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 6px;
+  }
+
+  .pipeline-step-name {
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .pipeline-step-desc {
+    font-size: 12px;
+    color: var(--grey-4);
+    margin-top: 4px;
+  }
+
+  .pipeline-arrow {
+    color: var(--grey-3);
+    font-size: 20px;
+    padding: 0 10px;
+    flex-shrink: 0;
+  }
+
+  /* DATA OBJECT */
+  .code-block {
+    background: var(--grey-1);
+    border: 1px solid var(--grey-2);
+    border-radius: 12px;
+    padding: 28px 32px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 12px;
+    line-height: 1.8;
+    overflow-x: auto;
+    margin-bottom: 48px;
+  }
+
+  .code-key { color: var(--blue); }
+  .code-val { color: var(--accent); }
+  .code-comment { color: var(--grey-3); }
+  .code-string { color: var(--amber); }
+  .code-null { color: var(--grey-4); }
+
+  /* SCORE TABLE */
+  .score-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 48px;
+  }
+
+  .score-table th {
+    text-align: left;
+    padding: 10px 16px;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--grey-4);
+    border-bottom: 1px solid var(--grey-2);
+  }
+
+  .score-table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--grey-2);
+    font-size: 13px;
+    vertical-align: middle;
+  }
+
+  .score-table tr:last-child td { border-bottom: none; }
+
+  .score-bar-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .score-bar {
+    height: 6px;
+    border-radius: 3px;
+    background: var(--grey-2);
+    flex: 1;
+    max-width: 100px;
+  }
+
+  .score-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    background: var(--accent);
+  }
+
+  .score-num { font-size: 12px; color: var(--grey-4); min-width: 28px; }
+
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+
+  .badge-high { background: rgba(247,91,91,0.15); color: var(--red); }
+  .badge-med { background: rgba(247,192,91,0.15); color: var(--amber); }
+  .badge-low { background: rgba(200,240,96,0.12); color: var(--accent-dim); }
+
+  /* INTERFACES */
+  .interface-split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 48px;
+  }
+
+  .interface-card {
+    background: var(--grey-1);
+    border: 1px solid var(--grey-2);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+
+  .interface-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--grey-2);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .interface-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+  }
+
+  .interface-header-title {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .interface-body { padding: 24px; }
+
+  .interface-body p {
+    font-size: 13px;
+    color: var(--grey-4);
+    margin-bottom: 16px;
+    line-height: 1.7;
+  }
+
+  .interface-spec-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--grey-2);
+    font-size: 12px;
+  }
+
+  .interface-spec-row:last-child { border-bottom: none; }
+  .spec-key { color: var(--grey-4); }
+  .spec-val { color: var(--white); font-weight: 500; }
+
+  /* BOH DASHBOARD */
+  .boh-grid {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    gap: 16px;
+    margin-bottom: 48px;
+  }
+
+  .boh-sidebar {
+    background: var(--grey-1);
+    border: 1px solid var(--grey-2);
+    border-radius: 12px;
+    padding: 20px;
+  }
+
+  .boh-nav-item {
+    padding: 9px 12px;
+    border-radius: 7px;
+    font-size: 12px;
+    color: var(--grey-4);
+    cursor: default;
+    margin-bottom: 2px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: background 0.15s;
+  }
+
+  .boh-nav-item.active {
+    background: var(--grey-2);
+    color: var(--white);
+  }
+
+  .boh-main {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .boh-row { display: grid; gap: 16px; }
+  .boh-row.cols-3 { grid-template-columns: repeat(3, 1fr); }
+
+  .boh-stat {
+    background: var(--grey-1);
+    border: 1px solid var(--grey-2);
+    border-radius: 12px;
+    padding: 20px;
+  }
+
+  .boh-stat-label {
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--grey-4);
+    margin-bottom: 8px;
+  }
+
+  .boh-stat-val {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  .boh-stat-val.green { color: var(--accent); }
+  .boh-stat-val.amber { color: var(--amber); }
+  .boh-stat-val.red { color: var(--red); }
+
+  .boh-stat-sub {
+    font-size: 11px;
+    color: var(--grey-4);
+    margin-top: 4px;
+  }
+
+  /* BUILD ORDER */
+  .build-steps {
+    display: grid;
+    gap: 0;
+    margin-bottom: 48px;
+  }
+
+  .build-step {
+    display: flex;
+    gap: 20px;
+    padding: 20px 0;
+    border-bottom: 1px solid var(--grey-2);
+    align-items: flex-start;
+  }
+
+  .build-step:last-child { border-bottom: none; }
+
+  .build-num {
+    font-size: 11px;
+    color: var(--accent);
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    width: 28px;
+    flex-shrink: 0;
+    padding-top: 2px;
+  }
+
+  .build-content { flex: 1; }
+
+  .build-title {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+
+  .build-desc {
+    font-size: 12px;
+    color: var(--grey-4);
+    line-height: 1.6;
+  }
+
+  .build-tags {
+    display: flex;
+    gap: 6px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+  }
+
+  .build-tag {
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 4px;
+    background: var(--grey-2);
+    color: var(--grey-4);
+    letter-spacing: 0.06em;
+  }
+
+  /* SIGNAL TYPES */
+  .signal-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    margin-bottom: 48px;
+  }
+
+  .signal-card {
+    background: var(--grey-1);
+    border: 1px solid var(--grey-2);
+    border-radius: 12px;
+    padding: 24px;
+  }
+
+  .signal-type {
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--grey-4);
+    margin-bottom: 8px;
+  }
+
+  .signal-name {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 10px;
+  }
+
+  .signal-example {
+    font-size: 12px;
+    color: var(--grey-4);
+    font-style: italic;
+    padding: 10px 12px;
+    background: var(--grey-2);
+    border-radius: 6px;
+    margin-bottom: 12px;
+  }
+
+  .signal-treatment {
+    font-size: 12px;
+    color: var(--grey-4);
+    line-height: 1.6;
+  }
+
+  .signal-indicator {
+    display: inline-block;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    margin-right: 6px;
+  }
+
+  /* FOOTER */
+  footer {
+    border-top: 1px solid var(--grey-2);
+    padding: 32px 48px;
+    max-width: 1100px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: var(--grey-4);
+    font-size: 12px;
+  }
+
+  /* RESPONSIVE */
+  @media (max-width: 768px) {
+    section { padding: 60px 24px; }
+    .cards-grid.cols-3, .cards-grid.cols-4 { grid-template-columns: 1fr 1fr; }
+    .cards-grid.cols-2 { grid-template-columns: 1fr; }
+    .interface-split { grid-template-columns: 1fr; }
+    .boh-grid { grid-template-columns: 1fr; }
+    .signal-grid { grid-template-columns: 1fr; }
+    .pipeline { flex-direction: column; }
+    .pipeline-arrow { transform: rotate(90deg); }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">Cadence</div>
+  <ul class="nav-links">
+    <li><a href="#engine">Engine</a></li>
+    <li><a href="#signals">Signals</a></li>
+    <li><a href="#boh">BOH</a></li>
+    <li><a href="#interfaces">Interfaces</a></li>
+    <li><a href="#build">Build</a></li>
+  </ul>
+</nav>
+
+<div class="page">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-tag">System Specification v1.0 — Triage Engine</div>
+    <h1>The <em>beating heart</em><br>of Cadence.</h1>
+    <p class="hero-sub">A sovereign, foveal interface that triages the noise — protecting cognitive bandwidth so users train cleanly, not accidentally.</p>
+    <div class="hero-mission">
+      "To mitigate cognitive fragmentation through a sovereign, foveal interface. The system uses agentic triage to protect the foveal space and ensure every span of effort is anatomically optimized for the human brain."
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- TRIAGE ENGINE -->
+  <section id="engine">
+    <div class="section-label">01 — Triage Engine</div>
+    <h2 class="section-title">The Priority Formula</h2>
+    <p class="section-desc">Every signal that enters the system — regardless of source — passes through the same scoring logic before it ever reaches the user.</p>
+
+    <div class="formula-box">
+      <div>
+        <div class="formula-label">Core Scoring Formula</div>
+        <div class="formula-text">
+          Priority Score = <span>Category Weight</span> × <span>Severity Score</span> × <span>Context Multiplier</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="pipeline">
+      <div class="pipeline-step">
+        <div class="pipeline-step-num">Step 01</div>
+        <div class="pipeline-step-name">Ingest</div>
+        <div class="pipeline-step-desc">Signal enters from any source</div>
+      </div>
+      <div class="pipeline-arrow">→</div>
+      <div class="pipeline-step">
+        <div class="pipeline-step-num">Step 02</div>
+        <div class="pipeline-step-name">Normalize</div>
+        <div class="pipeline-step-desc">Flattened to standard object</div>
+      </div>
+      <div class="pipeline-arrow">→</div>
+      <div class="pipeline-step">
+        <div class="pipeline-step-num">Step 03</div>
+        <div class="pipeline-step-name">Score</div>
+        <div class="pipeline-step-desc">Priority formula applied</div>
+      </div>
+      <div class="pipeline-arrow">→</div>
+      <div class="pipeline-step">
+        <div class="pipeline-step-num">Step 04</div>
+        <div class="pipeline-step-name">Queue</div>
+        <div class="pipeline-step-desc">Ranked in priority buffer</div>
+      </div>
+      <div class="pipeline-arrow">→</div>
+      <div class="pipeline-step">
+        <div class="pipeline-step-num">Step 05</div>
+        <div class="pipeline-step-name">Surface</div>
+        <div class="pipeline-step-desc">Correct interface, correct time</div>
+      </div>
+    </div>
+
+    <div class="section-label">Normalized Event Object</div>
+    <p class="section-desc" style="margin-bottom:24px;">Every signal — calendar, email, notification, manual — becomes this before anything else happens.</p>
+    <div class="code-block">
+      {<br>
+      &nbsp;&nbsp;<span class="code-key">"id"</span>: <span class="code-string">"evt_a1b2c3"</span>,<br>
+      &nbsp;&nbsp;<span class="code-key">"title"</span>: <span class="code-string">"Client review — Q3 deck"</span>,<br>
+      &nbsp;&nbsp;<span class="code-key">"source"</span>: <span class="code-string">"google_calendar"</span>, <span class="code-comment">// google_calendar | gmail | manual | webhook</span><br>
+      &nbsp;&nbsp;<span class="code-key">"type"</span>: <span class="code-string">"event"</span>, <span class="code-comment">// event | task | notification | email</span><br>
+      &nbsp;&nbsp;<span class="code-key">"timestamp"</span>: <span class="code-string">"2026-03-22T09:00:00Z"</span>,<br>
+      &nbsp;&nbsp;<span class="code-key">"deadline"</span>: <span class="code-string">"2026-03-22T14:00:00Z"</span>,<br>
+      &nbsp;&nbsp;<span class="code-key">"raw_content"</span>: <span class="code-string">"Original text or description..."</span>,<br>
+      &nbsp;&nbsp;<span class="code-key">"tags"</span>: [<span class="code-string">"work"</span>, <span class="code-string">"client"</span>, <span class="code-string">"deadline"</span>],<br>
+      &nbsp;&nbsp;<span class="code-key">"score"</span>: <span class="code-val">87</span>, <span class="code-comment">// 0–100, set by triage engine</span><br>
+      &nbsp;&nbsp;<span class="code-key">"cognitive_type"</span>: <span class="code-string">"authorizational"</span>, <span class="code-comment">// informational | authorizational | action_bound | conflict</span><br>
+      &nbsp;&nbsp;<span class="code-key">"user_actioned"</span>: <span class="code-null">null</span> <span class="code-comment">// actioned | dismissed | ignored — feeds learning loop</span><br>
+      }
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- SIGNAL TYPES -->
+  <section id="signals">
+    <div class="section-label">02 — Signal Classification</div>
+    <h2 class="section-title">Four cognitive obligations</h2>
+    <p class="section-desc">Signals are not sorted by urgency alone. They are sorted by what they demand from the user's working memory. Anything that cannot answer one of three questions clearly does not belong in the foreground.</p>
+
+    <div class="signal-grid">
+      <div class="signal-card">
+        <div class="signal-type">Type A</div>
+        <div class="signal-name"><span class="signal-indicator" style="background:#5b8cf7;"></span>Informational</div>
+        <div class="signal-example">"You have a meeting in 15 minutes."</div>
+        <div class="signal-treatment">Peripheral, low contrast, auto-dismissible. No user interaction required. Orientation only — updates situational awareness without entering the decision space.</div>
+      </div>
+      <div class="signal-card">
+        <div class="signal-type">Type B</div>
+        <div class="signal-name"><span class="signal-indicator" style="background:#c8f060;"></span>Authorizational</div>
+        <div class="signal-example">"Meeting conflict detected. Proposed: reschedule to Friday 10am."</div>
+        <div class="signal-treatment">Central focus, high clarity. System has already resolved the complexity — user only confirms or declines. Single tap, single decision. This is the sweet spot of the triage engine.</div>
+      </div>
+      <div class="signal-card">
+        <div class="signal-type">Type C</div>
+        <div class="signal-name"><span class="signal-indicator" style="background:#f7c05b;"></span>Action-Bound</div>
+        <div class="signal-example">"Prepare slides for 2pm review."</div>
+        <div class="signal-treatment">Stable, persistent within a time window. Cannot be automated — user must act externally. Acknowledge or defer. Must not masquerade as a system-resolvable task.</div>
+      </div>
+      <div class="signal-card">
+        <div class="signal-type">Type D</div>
+        <div class="signal-name"><span class="signal-indicator" style="background:#f75b5b;"></span>Conflict Resolution</div>
+        <div class="signal-example">"Two meetings overlap at 1pm. Option A: Client review. Option B: Internal planning."</div>
+        <div class="signal-treatment">Highest cognitive load. Must be rare. Singular focus, no competing elements. Deliberate selection + confirmation. Justified by preventing future fragmentation.</div>
+      </div>
+    </div>
+
+    <div class="section-label">Source Weights (Phase 1 — User-Defined)</div>
+    <table class="score-table">
+      <thead>
+        <tr>
+          <th>Source</th>
+          <th>Default Weight</th>
+          <th>Score Bar</th>
+          <th>Priority Level</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Manual Input</td>
+          <td>90</td>
+          <td><div class="score-bar-wrap"><div class="score-bar"><div class="score-bar-fill" style="width:90%"></div></div><span class="score-num">90</span></div></td>
+          <td><span class="badge badge-high">High</span></td>
+        </tr>
+        <tr>
+          <td>Google Calendar</td>
+          <td>70</td>
+          <td><div class="score-bar-wrap"><div class="score-bar"><div class="score-bar-fill" style="width:70%"></div></div><span class="score-num">70</span></div></td>
+          <td><span class="badge badge-high">High</span></td>
+        </tr>
+        <tr>
+          <td>Gmail / Email</td>
+          <td>60</td>
+          <td><div class="score-bar-wrap"><div class="score-bar"><div class="score-bar-fill" style="width:60%"></div></div><span class="score-num">60</span></div></td>
+          <td><span class="badge badge-med">Medium</span></td>
+        </tr>
+        <tr>
+          <td>App Webhooks (Slack etc.)</td>
+          <td>30</td>
+          <td><div class="score-bar-wrap"><div class="score-bar"><div class="score-bar-fill" style="width:30%"></div></div><span class="score-num">30</span></div></td>
+          <td><span class="badge badge-med">Medium</span></td>
+        </tr>
+        <tr>
+          <td>Strava / Fitness / Social</td>
+          <td>10</td>
+          <td><div class="score-bar-wrap"><div class="score-bar"><div class="score-bar-fill" style="width:10%"></div></div><span class="score-num">10</span></div></td>
+          <td><span class="badge badge-low">Low</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <hr class="divider">
+
+  <!-- BOH DASHBOARD -->
+  <section id="boh">
+    <div class="section-label">03 — Back of House</div>
+    <h2 class="section-title">The control room</h2>
+    <p class="section-desc">The BOH is where the user sets the rules the engine runs on. Preferences, weights, integrations, and feedback data — all in one place. Never surfaced to the user during active work.</p>
+
+    <div class="boh-grid">
+      <div class="boh-sidebar">
+        <div style="font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--grey-4);margin-bottom:16px;">Navigation</div>
+        <div class="boh-nav-item active">📊 &nbsp;Dashboard</div>
+        <div class="boh-nav-item">📅 &nbsp;Calendar View</div>
+        <div class="boh-nav-item">⚖️ &nbsp;Source Weights</div>
+        <div class="boh-nav-item">🏷️ &nbsp;Tag Rules</div>
+        <div class="boh-nav-item">🔗 &nbsp;Integrations</div>
+        <div class="boh-nav-item">📈 &nbsp;Signal History</div>
+        <div class="boh-nav-item">🧠 &nbsp;Learning Data</div>
+        <div class="boh-nav-item">⚙️ &nbsp;Preferences</div>
+
+        <div style="margin-top:24px;padding-top:20px;border-top:1px solid var(--grey-2);">
+          <div style="font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--grey-4);margin-bottom:12px;">Connected Sources</div>
+          <div style="font-size:12px;color:var(--grey-4);margin-bottom:6px;">✅ Google Calendar</div>
+          <div style="font-size:12px;color:var(--grey-4);margin-bottom:6px;">✅ Gmail</div>
+          <div style="font-size:12px;color:var(--grey-3);margin-bottom:6px;">○ Apple Calendar</div>
+          <div style="font-size:12px;color:var(--grey-3);margin-bottom:6px;">○ Slack</div>
+        </div>
+      </div>
+
+      <div class="boh-main">
+        <div class="boh-row cols-3">
+          <div class="boh-stat">
+            <div class="boh-stat-label">Signals Today</div>
+            <div class="boh-stat-val green">24</div>
+            <div class="boh-stat-sub">7 surfaced · 17 suppressed</div>
+          </div>
+          <div class="boh-stat">
+            <div class="boh-stat-label">Action Rate</div>
+            <div class="boh-stat-val amber">71%</div>
+            <div class="boh-stat-sub">vs 58% last week</div>
+          </div>
+          <div class="boh-stat">
+            <div class="boh-stat-label">Noise Reduction</div>
+            <div class="boh-stat-val green">68%</div>
+            <div class="boh-stat-sub">Extraneous load cut</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Preferences Config — Live</div>
+          <div class="code-block" style="margin-bottom:0;font-size:11px;">
+            {<br>
+            &nbsp;&nbsp;<span class="code-key">"source_weights"</span>: { <span class="code-string">"google_calendar"</span>: <span class="code-val">70</span>, <span class="code-string">"gmail"</span>: <span class="code-val">60</span>, <span class="code-string">"strava"</span>: <span class="code-val">10</span>, <span class="code-string">"manual"</span>: <span class="code-val">90</span> },<br>
+            &nbsp;&nbsp;<span class="code-key">"keyword_boosts"</span>: [<span class="code-string">"urgent"</span>, <span class="code-string">"deadline"</span>, <span class="code-string">"RSVP"</span>, <span class="code-string">"invoice"</span>],<br>
+            &nbsp;&nbsp;<span class="code-key">"tag_weights"</span>: { <span class="code-string">"work"</span>: <span class="code-val">20</span>, <span class="code-string">"health"</span>: <span class="code-val">15</span>, <span class="code-string">"personal"</span>: <span class="code-val">10</span> },<br>
+            &nbsp;&nbsp;<span class="code-key">"surface_threshold"</span>: <span class="code-val">65</span>, <span class="code-comment">// score must exceed this to reach foreground</span><br>
+            &nbsp;&nbsp;<span class="code-key">"quiet_hours"</span>: <span class="code-string">"22:00–07:00"</span>,<br>
+            &nbsp;&nbsp;<span class="code-key">"digest_time"</span>: <span class="code-string">"08:00"</span>,<br>
+            &nbsp;&nbsp;<span class="code-key">"max_foreground_signals"</span>: <span class="code-val">4</span> <span class="code-comment">// Cowan's limit — never exceed 4</span><br>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- TWO INTERFACES -->
+  <section id="interfaces">
+    <div class="section-label">04 — Interface Modes</div>
+    <h2 class="section-title">Two surfaces, one engine</h2>
+    <p class="section-desc">The same priority queue powers both interfaces. Mobile is reactive and foveal — what matters right now. Desktop is deliberate and spatial — the tools to do deep work.</p>
+
+    <div class="interface-split">
+      <!-- MOBILE -->
+      <div class="interface-card">
+        <div class="interface-header">
+          <div class="interface-dot" style="background: var(--blue);"></div>
+          <div class="interface-header-title">Mobile — Signal View</div>
+        </div>
+        <div class="interface-body">
+          <p>The reactive surface. Foveal by design — surfaces only what requires a response right now. No calendar grid, no noise. One signal at a time, maximum 4 in the foreground.</p>
+          <p>Gesture-native: swipe to defer, tap to authorize, long-press to inspect the reasoning. Gestures terminate states — no dopamine loops, no infinite feeds.</p>
+          <div class="interface-spec-row"><span class="spec-key">Primary goal</span><span class="spec-val">What is my current priority?</span></div>
+          <div class="interface-spec-row"><span class="spec-key">Max foreground signals</span><span class="spec-val">4 (Cowan's Limit)</span></div>
+          <div class="interface-spec-row"><span class="spec-key">Core interaction</span><span class="spec-val">Tap / Swipe / Long-press</span></div>
+          <div class="interface-spec-row"><span class="spec-key">Signal types shown</span><span class="spec-val">B + C + D only</span></div>
+          <div class="interface-spec-row"><span class="spec-key">Layout logic</span><span class="spec-val">Foveal — centered, low periphery</span></div>
+          <div class="interface-spec-row"><span class="spec-key">Notifications</span><span class="spec-val">Threshold-triggered (score &gt; 75)</span></div>
+          <div class="interface-spec-row"><span class="spec-key">Empty state</span><span class="spec-val">Clean disengagement — no fill content</span></div>
+        </div>
+      </div>
+
+      <!-- DESKTOP -->
+      <div class="interface-card">
+        <div class="interface-header">
+          <div class="interface-dot" style="background: var(--accent);"></div>
+          <div class="interface-header-title">Desktop — Tools View</div>
+        </div>
+        <div class="interface-body">
+          <p>The deliberate surface. Calendar-native with urgency layered in — colour and opacity encode priority, not just time. This is where deep work is orchestrated, not just scheduled.</p>
+          <p>The Departure Board concept: a curated buffer that manages what moves from peripheral awareness into active working memory. Context before action.</p>
+          <div class="interface-spec-row"><span class="spec-key">Primary goal</span><span class="spec-val">Orchestrate the day ahead</span></div>
+          <div class="interface-spec-row"><span class="spec-key">Calendar layer</span><span class="spec-val">Events colour-coded by score</span></div>
+          <div class="interface-spec-row"><span class="spec-key">Core interaction</span><span class="spec-val">Click, drag, keyboard-first</span></div>
+          <div class="interface-spec-row"><span class="spec-key">Signal types shown</span><span class="spec-val">All types, visually tiered</span></div>
+          <div class="interface-spec-row"><span class="spec-key">Digest panel</span><span class="spec-val">Daily prioritized list, 08:00</span></div>
+          <div class="interface-spec-row"><span class="spec-key">BOH access</span><span class="spec-val">Settings panel — not in active flow</span></div>
+          <div class="interface-spec-row"><span class="spec-key">Peripheral info</span><span class="spec-val">Low opacity — visible but not demanding</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GESTURE TAXONOMY -->
+    <div class="section-label">Gesture Taxonomy — Mobile</div>
+    <div class="cards-grid cols-4" style="margin-bottom:0;">
+      <div class="card">
+        <div class="card-icon">👆</div>
+        <div class="card-title">Tap / Press</div>
+        <div class="card-body">Authorization. "I approve this system-proposed action." Only available when system has already resolved complexity.</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">→</div>
+        <div class="card-title">Swipe Right</div>
+        <div class="card-body">Accept / Proceed. Confirms proposed outcome. Must end in completion — never loops or extends.</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">←</div>
+        <div class="card-title">Swipe Left</div>
+        <div class="card-body">Defer / Revisit. "Not now." Results in time-based resurfacing, not disappearance.</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">⏸</div>
+        <div class="card-title">Long Press</div>
+        <div class="card-body">Inspect. "Show me how you decided." Builds trust without cluttering the primary flow.</div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- BUILD ORDER -->
+  <section id="build">
+    <div class="section-label">05 — Build Order</div>
+    <h2 class="section-title">What to tackle first</h2>
+    <p class="section-desc">The sequence is designed so the engine works at every stage — even before any API integration is live.</p>
+
+    <div class="build-steps">
+      <div class="build-step">
+        <div class="build-num">01</div>
+        <div class="build-content">
+          <div class="build-title">Data model — normalized event object</div>
+          <div class="build-desc">Get the schema right before anything else. Every source feeds this object. This is the foundation everything else builds on.</div>
+          <div class="build-tags"><span class="build-tag">Database</span><span class="build-tag">Schema</span></div>
+        </div>
+      </div>
+      <div class="build-step">
+        <div class="build-num">02</div>
+        <div class="build-content">
+          <div class="build-title">Manual input + scoring engine</div>
+          <div class="build-desc">The engine runs entirely on manually entered signals. No API dependency. Proves the core loop — ingest, score, surface.</div>
+          <div class="build-tags"><span class="build-tag">Core Logic</span><span class="build-tag">No APIs needed</span></div>
+        </div>
+      </div>
+      <div class="build-step">
+        <div class="build-num">03</div>
+        <div class="build-content">
+          <div class="build-title">User preferences config</div>
+          <div class="build-desc">Source weights, keyword boosts, tag rules, quiet hours. The BOH layer. Lets the user tune the engine before any AI is involved.</div>
+          <div class="build-tags"><span class="build-tag">BOH</span><span class="build-tag">Phase 1 Rules</span></div>
+        </div>
+      </div>
+      <div class="build-step">
+        <div class="build-num">04</div>
+        <div class="build-content">
+          <div class="build-title">Google Calendar integration</div>
+          <div class="build-desc">First real external source. OAuth 2.0 flow, event normalization, real-time sync. Immediately proves the pipeline end-to-end.</div>
+          <div class="build-tags"><span class="build-tag">Google API</span><span class="build-tag">OAuth 2.0</span></div>
+        </div>
+      </div>
+      <div class="build-step">
+        <div class="build-num">05</div>
+        <div class="build-content">
+          <div class="build-title">Output: daily digest</div>
+          <div class="build-desc">Simplest surface. Runs at user's set time, outputs top N items by score. Validates the scoring engine against real data.</div>
+          <div class="build-tags"><span class="build-tag">Output Layer</span><span class="build-tag">Cron Job</span></div>
+        </div>
+      </div>
+      <div class="build-step">
+        <div class="build-num">06</div>
+        <div class="build-content">
+          <div class="build-title">Feedback logging — plant the seed early</div>
+          <div class="build-desc">Log every actioned / dismissed / ignored outcome. This is the training data for Phase 2. The AI layer needs this — build it now, use it later.</div>
+          <div class="build-tags"><span class="build-tag">Learning Loop</span><span class="build-tag">Phase 2 Prep</span></div>
+        </div>
+      </div>
+      <div class="build-step">
+        <div class="build-num">07</div>
+        <div class="build-content">
+          <div class="build-title">Email + app notification sources</div>
+          <div class="build-desc">Gmail API, Microsoft Graph for email. Webhooks for app notifications (Slack, etc.). Each new source normalizes into the same object.</div>
+          <div class="build-tags"><span class="build-tag">Gmail API</span><span class="build-tag">Webhooks</span></div>
+        </div>
+      </div>
+      <div class="build-step">
+        <div class="build-num">08</div>
+        <div class="build-content">
+          <div class="build-title">AI scoring layer — Phase 2</div>
+          <div class="build-desc">Once feedback data exists, Claude API reads patterns — what gets actioned vs ignored, time-of-day behaviour, source reliability — and re-weights the rules dynamically. User always retains override.</div>
+          <div class="build-tags"><span class="build-tag">Claude API</span><span class="build-tag">Requires Feedback Data</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TECH STACK -->
+    <div class="section-label">Recommended Stack</div>
+    <div class="cards-grid cols-3">
+      <div class="card">
+        <div class="card-title">Backend</div>
+        <div class="card-body">Node.js + Express or Python + FastAPI. Both have strong API client libraries for Google, Microsoft, and Anthropic.</div>
+        <span class="card-tag">Server</span>
+      </div>
+      <div class="card">
+        <div class="card-title">Database</div>
+        <div class="card-body">PostgreSQL. Relational structure fits events, rules, and feedback logs cleanly. Add Redis later for priority queue caching.</div>
+        <span class="card-tag">Storage</span>
+      </div>
+      <div class="card">
+        <div class="card-title">Auth</div>
+        <div class="card-body">OAuth 2.0 — required for Google and Microsoft API access. Handle this early; it unlocks most of the source integrations.</div>
+        <span class="card-tag">Security</span>
+      </div>
+      <div class="card">
+        <div class="card-title">AI Layer</div>
+        <div class="card-body">Anthropic Claude API. Used for pattern reading, dynamic re-weighting, and natural language signal parsing in Phase 2.</div>
+        <span class="card-tag">Intelligence</span>
+      </div>
+      <div class="card">
+        <div class="card-title">Scheduling</div>
+        <div class="card-body">Simple cron job to start — digest timing and score recalculation. Graduate to a proper queue (Bull/Redis) as volume grows.</div>
+        <span class="card-tag">Async</span>
+      </div>
+      <div class="card">
+        <div class="card-title">Mobile</div>
+        <div class="card-body">React Native or Expo — single codebase, shared scoring logic with the web app. Gesture library for swipe/long-press interactions.</div>
+        <span class="card-tag">Frontend</span>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <footer>
+    <div>Cadence — Triage Engine Spec v1.0</div>
+    <div style="color:var(--grey-3)">Max DeSouza · Cognitive Sovereignty Framework</div>
+  </footer>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,113 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum EventSource {
+  google_calendar
+  gmail
+  manual
+  webhook
+  apple_calendar
+}
+
+enum EventType {
+  event
+  task
+  notification
+  email
+}
+
+enum CognitiveType {
+  informational
+  authorizational
+  action_bound
+  conflict
+}
+
+enum UserActionedState {
+  actioned
+  dismissed
+  ignored
+}
+
+enum FeedbackOutcome {
+  actioned
+  dismissed
+  ignored
+}
+
+// ─── Tables ───────────────────────────────────────────────────────────────────
+
+/// Every signal, regardless of source, normalized to this shape before scoring.
+model CadenceEvent {
+  id             String             @id @default(uuid())
+  title          String
+  source         EventSource
+  type           EventType
+  timestamp      DateTime
+  deadline       DateTime?
+  raw_content    String?
+  tags           String[]           @default([])
+  score          Float?
+  cognitive_type CognitiveType?
+  user_actioned  UserActionedState?
+  created_at     DateTime           @default(now())
+
+  feedback FeedbackLog[]
+
+  @@map("cadence_events")
+}
+
+/// Scoring configuration per user. One row per user (user_id = 'default' for single-user MVP).
+model UserPreferences {
+  id                     String   @id @default(uuid())
+  user_id                String   @unique @default("default")
+  source_weights         Json     @default("{\"google_calendar\":70,\"gmail\":60,\"manual\":90,\"webhook\":30,\"apple_calendar\":70}")
+  keyword_boosts         String[] @default(["urgent", "deadline", "RSVP", "invoice", "asap", "critical"])
+  tag_weights            Json     @default("{\"work\":20,\"health\":15,\"personal\":10,\"client\":25,\"finance\":20}")
+  surface_threshold      Float    @default(65)
+  quiet_hours_start      String   @default("22:00")
+  quiet_hours_end        String   @default("07:00")
+  digest_time            String   @default("08:00")
+  max_foreground_signals Int      @default(4)
+  updated_at             DateTime @updatedAt
+
+  @@map("user_preferences")
+}
+
+/// Outcome of every user interaction with a surfaced signal. Training data for Phase 2.
+model FeedbackLog {
+  id                  String          @id @default(uuid())
+  cadence_event_id    String
+  outcome             FeedbackOutcome
+  time_to_action_ms   Int?
+  timestamp           DateTime        @default(now())
+
+  event CadenceEvent @relation(fields: [cadence_event_id], references: [id])
+
+  @@map("feedback_log")
+}
+
+/// Connected integrations per user — OAuth tokens and webhook config.
+model Source {
+  id            String      @id @default(uuid())
+  user_id       String      @default("default")
+  source_type   EventSource
+  access_token  String?
+  refresh_token String?
+  token_expiry  DateTime?
+  webhook_url   String?
+  last_synced   DateTime?
+  is_active     Boolean     @default(true)
+  created_at    DateTime    @default(now())
+
+  @@unique([user_id, source_type])
+  @@map("sources")
+}
