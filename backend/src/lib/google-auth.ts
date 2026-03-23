@@ -4,7 +4,7 @@ import prisma from '../db';
 
 // ─── Google OAuth2 helpers ────────────────────────────────────────────────────
 
-const SCOPES = ['https://www.googleapis.com/auth/calendar.readonly'];
+const SCOPES = ['https://www.googleapis.com/auth/calendar'];
 
 function createClient(): OAuth2Client {
   return new google.auth.OAuth2(

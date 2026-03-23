@@ -10,6 +10,7 @@ export interface CadenceEvent {
   title: string;
   description?: string;
   timestamp: string; // ISO 8601
+  deadline?: string | null; // ISO 8601, optional end time
   score: number; // 0–100
   cognitive_type: CognitiveType;
   source: string;

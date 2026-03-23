@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
-import type { CadenceEvent, DigestResponse } from '../types';
+import type { CadenceEvent } from '../types';
 
 const API_BASE = 'http://localhost:3001';
 const REFRESH_INTERVAL = 5 * 60 * 1000; // 5 minutes
 const SCORE_THRESHOLD = 65;
-const MAX_VISIBLE = 4;
+const FOURTEEN_DAYS_MS = 14 * 24 * 60 * 60 * 1000;
 
 export function useDigest() {
   const [events, setEvents] = useState<CadenceEvent[]>([]);
@@ -13,36 +13,33 @@ export function useDigest() {
 
   const fetchDigest = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE}/digest`);
-      if (!res.ok) throw new Error('digest fetch failed');
-      const data: DigestResponse = await res.json();
+      // Lower bound = today midnight (excludes stale seed data from previous days).
+      // Upper bound = now + 14 days. ?from= is passed for future backend support.
+      const now = new Date();
+      const fromDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const cutoff   = new Date(now.getTime() + FOURTEEN_DAYS_MS);
 
-      let combined: CadenceEvent[] = data.events ?? [];
+      const res = await fetch(
+        `${API_BASE}/events/surfaced?from=${fromDate.toISOString()}`
+      );
+      if (!res.ok) throw new Error('surfaced fetch failed');
+      const all: CadenceEvent[] = await res.json();
 
-      // Fallback: if digest returned nothing, pull from /events/surfaced
-      if (combined.length === 0) {
-        const fallbackRes = await fetch(`${API_BASE}/events/surfaced`);
-        if (fallbackRes.ok) {
-          const fallback: CadenceEvent[] = await fallbackRes.json();
-          combined = fallback;
-        }
-      }
-
-      // Deduplicate by id, filter by threshold, sort, slice
       const seen = new Set<string>();
-      const filtered = combined
+
+      const filtered = all
         .filter((e) => {
           if (seen.has(e.id)) return false;
           seen.add(e.id);
-          return e.score >= SCORE_THRESHOLD;
+          const ts = new Date(e.timestamp);
+          return e.score >= SCORE_THRESHOLD && ts >= fromDate && ts <= cutoff;
         })
-        .sort((a, b) => b.score - a.score)
-        .slice(0, MAX_VISIBLE);
+        // Chronological order — CalendarWidget and pill both work with this
+        .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
       setEvents(filtered);
       setError(null);
     } catch {
-      // Graceful silent failure — show empty state
       setError('unavailable');
     } finally {
       setLoading(false);

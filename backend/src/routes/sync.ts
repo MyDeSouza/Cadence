@@ -112,4 +112,81 @@ router.get('/google', async (_req: Request, res: Response): Promise<void> => {
   res.json({ synced: upsertedIds.length, event_ids: upsertedIds });
 });
 
+// ─── POST /sync/google/events — create an event in Google Calendar ────────────
+
+router.post('/google/events', async (req: Request, res: Response): Promise<void> => {
+  const { title, start, end, description } = req.body as {
+    title: string;
+    start: string;
+    end?: string;
+    description?: string;
+  };
+
+  if (!title || !start) {
+    res.status(400).json({ error: 'title and start are required' });
+    return;
+  }
+
+  const auth     = await getAuthorizedClient();
+  const calendar = google.calendar({ version: 'v3', auth });
+
+  const endTime = end ?? new Date(new Date(start).getTime() + 3_600_000).toISOString();
+
+  const event = await calendar.events.insert({
+    calendarId:   'primary',
+    requestBody:  {
+      summary:     title,
+      description: description,
+      start:       { dateTime: start },
+      end:         { dateTime: endTime },
+    },
+  });
+
+  res.status(201).json({ google_event_id: event.data.id, html_link: event.data.htmlLink });
+});
+
+// ─── PATCH /sync/google/events/:googleEventId — update an event ──────────────
+
+router.patch('/google/events/:googleEventId', async (req: Request, res: Response): Promise<void> => {
+  const { googleEventId } = req.params;
+  const { title, start, end, description } = req.body as {
+    title?: string;
+    start?: string;
+    end?: string;
+    description?: string;
+  };
+
+  const auth     = await getAuthorizedClient();
+  const calendar = google.calendar({ version: 'v3', auth });
+
+  const patch: Record<string, unknown> = {};
+  if (title)       patch.summary     = title;
+  if (description) patch.description = description;
+  if (start)       patch.start       = { dateTime: start };
+  if (end)         patch.end         = { dateTime: end };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const event = await (calendar.events.patch({
+    calendarId:  'primary',
+    eventId:     String(googleEventId),
+    requestBody: patch,
+  }) as any);
+
+  res.json({ google_event_id: event?.data?.id, updated: true });
+});
+
+// ─── DELETE /sync/google/events/:googleEventId — delete an event ─────────────
+
+router.delete('/google/events/:googleEventId', async (req: Request, res: Response): Promise<void> => {
+  const { googleEventId } = req.params;
+
+  const auth     = await getAuthorizedClient();
+  const calendar = google.calendar({ version: 'v3', auth });
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (calendar.events.delete({ calendarId: 'primary', eventId: String(googleEventId) }) as any);
+
+  res.status(204).send();
+});
+
 export default router;

@@ -1,3 +1,4 @@
+/* ── Wrapper — positioning only ─────────────────────────── */
 .wrapper {
   position: fixed;
   top: 24px;
@@ -5,54 +6,93 @@
   z-index: 100;
 }
 
-/* ── Collapsed pill ─────────────────────────────────────── */
+/* ══════════════════════════════════════════════════════════
+   COLLAPSED PILL
+   ══════════════════════════════════════════════════════════ */
 .pill {
   display: flex;
   align-items: center;
   gap: 8px;
-  height: 52px;
-  padding: 0 20px;
+  height: 56px;
+  padding: 0 22px;
   border-radius: var(--radius-pill);
-  background: var(--ui-secondary);
-  color: #ffffff;
+  max-width: 480px;
+  background: rgba(184, 190, 198, 0.32);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  color: var(--text-secondary);
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 400;
+  font-family: 'Outfit', sans-serif;
   letter-spacing: 0.01em;
-  transition: background 0.15s ease, transform 0.1s ease;
   white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
 }
 
 .pill:hover {
-  background: #a8aeb6;
+  background: rgba(184, 190, 198, 0.5);
+  color: var(--text-primary);
 }
 
-.pill:active {
-  transform: scale(0.98);
+/* Active event — solid dot, colour from cognitive type */
+.pillDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
 }
 
-/* ── Expanded panel ─────────────────────────────────────── */
-.panel {
-  position: absolute;
-  top: calc(100% + 8px);
-  left: 0;
-  width: 320px;
-  background: rgba(255, 255, 255, 0.96);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-radius: var(--radius-card);
-  border: 1px solid rgba(184, 190, 198, 0.3);
-  box-shadow:
-    0 4px 24px rgba(0, 0, 0, 0.06),
-    0 1px 4px rgba(0, 0, 0, 0.04);
+/* Upcoming / no events — white semi-transparent + pulse */
+.pillDotPulse {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.4);
+  flex-shrink: 0;
+  animation: dotPulse 2.2s ease-in-out infinite;
+}
+
+@keyframes dotPulse {
+  0%, 100% { opacity: 0.4; transform: scale(1);   }
+  50%       { opacity: 0.9; transform: scale(1.35); }
+}
+
+.pillTitle {
+  font-size: 13px;
+  font-weight: 400;
+  color: inherit;
+  white-space: nowrap;
   overflow: hidden;
-  animation: expandPanel 0.22s var(--ease-expand) both;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+}
+
+/* ══════════════════════════════════════════════════════════
+   EXPANDED PANEL
+   ══════════════════════════════════════════════════════════ */
+.panel {
+  width: 380px;
+  max-height: calc(100vh - 48px);
+  background: rgba(15, 15, 15, 0.82);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 24px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  font-family: 'Outfit', sans-serif;
+  animation: panelExpand 320ms cubic-bezier(0.16, 1, 0.3, 1) both;
   transform-origin: top left;
 }
 
-@keyframes expandPanel {
+@keyframes panelExpand {
   from {
     opacity: 0;
-    transform: scale(0.96) translateY(-4px);
+    transform: scale(0.94) translateY(-6px);
   }
   to {
     opacity: 1;
@@ -60,152 +100,350 @@
   }
 }
 
-/* ── Week strip ─────────────────────────────────────────── */
-.weekStrip {
+/* ── Top row (close button) ─────────────────────────────── */
+.panelTopRow {
   display: flex;
-  padding: 16px 16px 12px;
-  gap: 4px;
-  border-bottom: 1px solid rgba(184, 190, 198, 0.2);
+  justify-content: flex-end;
+  padding: 14px 16px 0;
+  flex-shrink: 0;
 }
 
-.weekDay {
-  flex: 1;
+.closeBtn {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.07);
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 15px;
+  line-height: 1;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 4px;
-  padding: 6px 4px;
-  border-radius: var(--radius-inner);
-  cursor: default;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
 }
 
-.weekDayActive {
-  background: var(--text-primary);
-}
-
-.weekDayActive .weekDayName,
-.weekDayActive .weekDayNum {
+.closeBtn:hover {
+  background: rgba(255, 255, 255, 0.14);
   color: #ffffff;
 }
 
-.weekDayName {
-  font-size: 10px;
-  font-weight: 500;
-  color: var(--text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+/* ══════════════════════════════════════════════════════════
+   SECTION 1 — MONTH CALENDAR
+   ══════════════════════════════════════════════════════════ */
+.monthCal {
+  padding: 10px 20px 18px;
+  flex-shrink: 0;
 }
 
-.weekDayNum {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text-primary);
-}
-
-/* ── Event list ─────────────────────────────────────────── */
-.eventList {
-  display: flex;
-  flex-direction: column;
-  padding: 8px 0;
-  max-height: 280px;
-  overflow-y: auto;
-}
-
-.empty {
-  padding: 20px 16px;
-  font-size: 12px;
-  color: var(--text-secondary);
-  text-align: center;
-}
-
-.eventRow {
+/* Month + year header row */
+.monthHeader {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 16px;
-  transition: background 0.1s ease;
-  border-radius: 0;
-  position: relative;
+  justify-content: space-between;
+  margin-bottom: 14px;
 }
 
-.eventRow:hover {
-  background: rgba(184, 190, 198, 0.08);
+.monthTitle {
+  font-size: 13px;
+  font-weight: 500;
+  color: #ffffff;
+  letter-spacing: 0.01em;
 }
 
-.approaching {
-  animation: horizonPulse 3s ease-in-out infinite;
+.navBtn {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 17px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.1s ease, color 0.1s ease;
 }
 
-@keyframes horizonPulse {
-  0%, 100% {
-    box-shadow: inset 0 0 0 1px rgba(184, 190, 198, 0);
-  }
-  50% {
-    box-shadow: inset 0 0 0 1px rgba(184, 190, 198, 0.6);
-    transform: scaleY(1.015);
-  }
+.navBtn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
 }
 
-.eventMain {
+/* Day-of-week header row: M T W T F S S */
+.dayHeaders {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  margin-bottom: 6px;
+}
+
+.dayHeader {
+  font-size: 10px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.3);
+  text-align: center;
+  padding: 3px 0;
+  letter-spacing: 0.04em;
+}
+
+/* 7-column day grid */
+.dayGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.dayCell {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  flex: 1;
-  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  height: 36px;
+  border-radius: 10px;
+  gap: 2px;
+  cursor: pointer;
+  position: relative;
+  transition: background 0.1s ease;
 }
 
-.eventTitle {
-  font-size: 13px;
+.dayCell:hover {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.dayNum {
+  font-size: 12px;
   font-weight: 400;
-  color: var(--text-primary);
+  color: rgba(255, 255, 255, 0.8);
+  line-height: 1;
+}
+
+/* Today — bento box elevation */
+.dayCellToday {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+/* Selected — white pill, black text (overrides today bg) */
+.dayCellSelected {
+  background: #ffffff;
+  border-color: transparent;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.dayCellSelected .dayNum {
+  color: #000000;
+}
+
+/* Other-month days — dim text */
+.dayCellOther .dayNum {
+  color: rgba(255, 255, 255, 0.2);
+}
+
+/* Event indicator dot below day number */
+.dayDot {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.4);
+  flex-shrink: 0;
+}
+
+/* ── Section divider ────────────────────────────────────── */
+.divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.06);
+  margin: 0 20px;
+  flex-shrink: 0;
+}
+
+/* ══════════════════════════════════════════════════════════
+   SECTION 2 — 24-HOUR TIMELINE
+   ══════════════════════════════════════════════════════════ */
+.tlSectionHeader {
+  padding: 14px 20px 10px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.tlSectionLabel {
+  font-size: 12px;
+  font-weight: 400;
+  color: #ffffff;
+  letter-spacing: 0.01em;
+}
+
+/* "Today" / "Tomorrow" / "In N days" badge */
+.tlDayAhead {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.35);
+}
+
+/* Shown when selected day is beyond the 14-day sync window */
+.tlBeyondRange {
+  padding: 28px 20px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.25);
+  text-align: center;
+  font-style: italic;
+  flex-shrink: 0;
+}
+
+/* Scrollable timeline container — fills remaining panel height */
+.tlScroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-bottom: 20px;
+}
+
+.tlScroll::-webkit-scrollbar {
+  width: 3px;
+}
+
+.tlScroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.tlScroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 2px;
+}
+
+/* Relative container for absolute positioning of rows + events */
+.tlInner {
+  position: relative;
+  height: 1248px; /* 24 × 52 */
+}
+
+/* ── Hour row — label + grid line ───────────────────────── */
+.hourRow {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 52px;
+  display: flex;
+  align-items: flex-start;
+  pointer-events: none;
+}
+
+.hourLabel {
+  width: 48px;
+  padding-left: 20px;
+  padding-top: 5px;
+  font-size: 10px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.25);
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.hourLine {
+  flex: 1;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.05);
+  margin-top: 6px;
+  margin-right: 20px;
+}
+
+/* ── Current time indicator ─────────────────────────────── */
+.nowLine {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 0; /* children centred on this line via flex align-items:center */
+  display: flex;
+  align-items: center;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.nowLabel {
+  width: 48px;
+  padding-left: 20px;
+  font-size: 10px;
+  color: #ffffff;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.nowDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.55);
+  flex-shrink: 0;
+}
+
+.nowBar {
+  flex: 1;
+  height: 1.5px;
+  background: rgba(255, 255, 255, 0.55);
+  margin-right: 20px;
+}
+
+/* ── Event bento box ────────────────────────────────────── */
+.tlEvent {
+  position: absolute;
+  /* left + right set via inline styles (column layout) */
+  border-radius: 8px;
+  border-left: 3px solid transparent;
+  padding: 5px 9px;
+  overflow: hidden;
+  cursor: pointer;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-height: 28px;
+  max-height: var(--card-h, 28px);
+  transition: filter 0.1s ease, max-height 0.18s ease;
+}
+
+.tlEvent:hover {
+  filter: brightness(1.2);
+  max-height: 120px;
+  overflow: visible;
+  z-index: 10;
+}
+
+/* Completed event — greyed out */
+.tlEventDone {
+  opacity: 0.35;
+}
+
+/* Tiny cards (<48px) — no text, coloured left border only */
+.tlEventTiny .tlTitle,
+.tlEventTiny .tlTime {
+  display: none;
+}
+
+/* Tiny cards: no expansion on hover (tooltip via title attr) */
+.tlEventTiny:hover {
+  max-height: var(--card-h);
+  overflow: hidden;
+}
+
+.tlTitle {
+  font-size: 11px;
+  font-weight: 400;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.badge {
-  display: inline-flex;
-  align-self: flex-start;
+.tlTime {
   font-size: 10px;
-  font-weight: 500;
-  padding: 2px 7px;
-  border-radius: 20px;
-  letter-spacing: 0.04em;
-  text-transform: lowercase;
-  background: rgba(184, 190, 198, 0.25);
-  color: var(--text-secondary);
+  color: rgba(255, 255, 255, 0.4);
+  white-space: nowrap;
+  display: none;
 }
 
-.badge_conflict {
-  background: rgba(10, 10, 10, 0.06);
-  color: var(--text-primary);
-}
-
-.badge_authorizational {
-  background: rgba(132, 142, 156, 0.15);
-  color: var(--text-secondary);
-}
-
-.badge_action_bound {
-  background: rgba(10, 10, 10, 0.06);
-  color: var(--text-primary);
-}
-
-/* ── Ask row ────────────────────────────────────────────── */
-.askRow {
-  padding: 10px 16px 14px;
-  border-top: 1px solid rgba(184, 190, 198, 0.2);
-}
-
-.askInput {
-  width: 100%;
-  border: none;
-  background: transparent;
-  font-size: 12px;
-  color: var(--text-primary);
-  outline: none;
-}
-
-.askInput::placeholder {
-  color: var(--text-secondary);
+/* Show time on hover for non-tiny cards */
+.tlEvent:hover .tlTime {
+  display: block;
 }

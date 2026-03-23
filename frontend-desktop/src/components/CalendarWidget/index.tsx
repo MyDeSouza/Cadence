@@ -1,118 +1,443 @@
-import { useState } from 'react';
-import { format, startOfWeek, addDays, isToday } from 'date-fns';
+import { useState, useEffect, useRef } from 'react';
+import {
+  format, parseISO, addDays, addMonths, subMonths,
+  startOfWeek, startOfMonth, isToday, isSameDay, isSameMonth,
+} from 'date-fns';
 import type { CadenceEvent } from '../../types';
 import { useDigest } from '../../hooks/useDigest';
-import { useEventHorizon } from '../../hooks/useEventHorizon';
-import { EventHorizon } from '../EventHorizon';
 import styles from './CalendarWidget.module.css';
 
 interface Props {
   onBeginSession: (event: CadenceEvent) => void;
 }
 
-const COGNITIVE_LABELS: Record<string, string> = {
-  authorizational: 'auth',
-  action_bound: 'action',
-  conflict: 'conflict',
-  informational: 'info',
-  deadline: 'deadline',
+const COGNITIVE_META: Record<string, { color: string; label: string }> = {
+  authorizational: { color: '#5b8cf7', label: 'Auth' },
+  action_bound:    { color: '#f7c05b', label: 'Action' },
+  conflict:        { color: '#f75b5b', label: 'Conflict' },
+  informational:   { color: '#B8BEC6', label: 'Info' },
+  deadline:        { color: '#B8BEC6', label: 'Deadline' },
 };
 
-function EventRow({ event, onBegin }: { event: CadenceEvent; onBegin: (e: CadenceEvent) => void }) {
-  const { isApproaching } = useEventHorizon(event);
-  const opacity = event.score >= 90 ? 1 : 0.7;
+const HOUR_HEIGHT = 52; // px — 24 × 52 = 1248px total
+
+function fmt12(iso: string): string {
+  return format(parseISO(iso), 'h:mm a');
+}
+
+function isComplete(event: CadenceEvent): boolean {
+  const end = event.deadline ? new Date(event.deadline) : new Date(event.timestamp);
+  return end < new Date();
+}
+
+function isActive(event: CadenceEvent, now: Date): boolean {
+  const start = new Date(event.timestamp);
+  const end = event.deadline
+    ? new Date(event.deadline)
+    : new Date(start.getTime() + 3_600_000);
+  return start <= now && now <= end;
+}
+
+// Calendar-day difference (ignores time of day)
+function daysBetween(a: Date, b: Date): number {
+  const midnight = (d: Date) =>
+    new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  return Math.round((midnight(b) - midnight(a)) / 86_400_000);
+}
+
+// Short label shown next to the selected date in the timeline header
+function getDayLabel(selectedDay: Date, now: Date): string {
+  const diff = daysBetween(now, selectedDay);
+  if (diff === 0)  return 'Today';
+  if (diff === 1)  return 'Tomorrow';
+  if (diff === -1) return 'Yesterday';
+  if (diff > 1 && diff <= 14) return `In ${diff} days`;
+  return '';
+}
+
+// Returns the most relevant event for the collapsed pill
+function getPillEvent(
+  events: CadenceEvent[],
+  now: Date,
+): { event: CadenceEvent; active: boolean } | null {
+  if (events.length === 0) return null;
+
+  const activeEvent = events.find((e) => isActive(e, now));
+  if (activeEvent) return { event: activeEvent, active: true };
+
+  const next = events.find((e) => new Date(e.timestamp) > now);
+  if (next) return { event: next, active: false };
+
+  // All complete — show most recent
+  return { event: events[events.length - 1], active: false };
+}
+
+// ── Overlap column layout ──────────────────────────────────────
+// Returns the unix-ms end time for an event (defaulting to +1h if no deadline)
+function eventEndMs(e: CadenceEvent): number {
+  return e.deadline
+    ? new Date(e.deadline).getTime()
+    : new Date(e.timestamp).getTime() + 3_600_000;
+}
+
+interface EventLayout {
+  event:    CadenceEvent;
+  top:      number;
+  height:   number;
+  colIndex: number;
+  colCount: number;
+}
+
+function layoutDayEvents(events: CadenceEvent[]): EventLayout[] {
+  if (events.length === 0) return [];
+
+  // ── Step 1: union-find to cluster transitively-overlapping events ──
+  const parent = new Map<string, string>(events.map((e) => [e.id, e.id]));
+
+  function find(id: string): string {
+    if (parent.get(id) !== id) parent.set(id, find(parent.get(id)!));
+    return parent.get(id)!;
+  }
+
+  for (let i = 0; i < events.length; i++) {
+    for (let j = i + 1; j < events.length; j++) {
+      const aS = new Date(events[i].timestamp).getTime();
+      const aE = eventEndMs(events[i]);
+      const bS = new Date(events[j].timestamp).getTime();
+      const bE = eventEndMs(events[j]);
+      if (aS < bE && bS < aE) { // strict overlap
+        parent.set(find(events[i].id), find(events[j].id));
+      }
+    }
+  }
+
+  const clusters = new Map<string, CadenceEvent[]>();
+  for (const e of events) {
+    const root = find(e.id);
+    if (!clusters.has(root)) clusters.set(root, []);
+    clusters.get(root)!.push(e);
+  }
+
+  // ── Step 2: assign column indices within each cluster ─────────────
+  const result: EventLayout[] = [];
+
+  for (const cluster of clusters.values()) {
+    const sorted = [...cluster].sort(
+      (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+    );
+
+    // Greedy: assign each event to the first free column
+    const colEnds: number[] = [];
+    const colAssign = new Map<string, number>();
+
+    for (const e of sorted) {
+      const start = new Date(e.timestamp).getTime();
+      let col = colEnds.findIndex((t) => t <= start);
+      if (col === -1) { col = colEnds.length; colEnds.push(0); }
+      colAssign.set(e.id, col);
+      colEnds[col] = eventEndMs(e);
+    }
+
+    const colCount = colEnds.length;
+
+    for (const e of cluster) {
+      const start    = parseISO(e.timestamp);
+      const startH   = start.getHours() + start.getMinutes() / 60;
+      const durH     = (eventEndMs(e) - new Date(e.timestamp).getTime()) / 3_600_000;
+      result.push({
+        event:    e,
+        top:      startH * HOUR_HEIGHT,
+        height:   Math.max(durH * HOUR_HEIGHT, 28),
+        colIndex: colAssign.get(e.id)!,
+        colCount,
+      });
+    }
+  }
+
+  return result;
+}
+
+// ── Month calendar grid ────────────────────────────────────────
+function MonthCalendar({
+  viewMonth, selectedDay, events, onDaySelect, onPrev, onNext,
+}: {
+  viewMonth:  Date;
+  selectedDay: Date;
+  events:     CadenceEvent[];
+  onDaySelect: (d: Date) => void;
+  onPrev:     () => void;
+  onNext:     () => void;
+}) {
+  const monthStart = startOfMonth(viewMonth);
+  const gridStart  = startOfWeek(monthStart, { weekStartsOn: 1 });
+  const days       = Array.from({ length: 42 }, (_, i) => addDays(gridStart, i));
+
+  const eventDays = new Set(
+    events.map((e) => format(parseISO(e.timestamp), 'yyyy-MM-dd'))
+  );
+
+  return (
+    <div className={styles.monthCal}>
+      <div className={styles.monthHeader}>
+        <button className={styles.navBtn} onClick={onPrev} aria-label="Previous month">‹</button>
+        <span className={styles.monthTitle}>{format(viewMonth, 'MMMM yyyy')}</span>
+        <button className={styles.navBtn} onClick={onNext} aria-label="Next month">›</button>
+      </div>
+
+      <div className={styles.dayHeaders}>
+        {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => (
+          <span key={i} className={styles.dayHeader}>{d}</span>
+        ))}
+      </div>
+
+      <div className={styles.dayGrid}>
+        {days.map((day) => {
+          const inMonth = isSameMonth(day, viewMonth);
+          const today   = isToday(day);
+          const selected = isSameDay(day, selectedDay);
+          const hasEvent = eventDays.has(format(day, 'yyyy-MM-dd'));
+
+          return (
+            <button
+              key={day.toISOString()}
+              className={[
+                styles.dayCell,
+                today    ? styles.dayCellToday    : '',
+                selected ? styles.dayCellSelected : '',
+                !inMonth ? styles.dayCellOther    : '',
+              ].join(' ')}
+              onClick={() => onDaySelect(day)}
+            >
+              <span className={styles.dayNum}>{format(day, 'd')}</span>
+              {hasEvent && <span className={styles.dayDot} />}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ── Timeline event bento box ───────────────────────────────────
+// left/right are computed from column layout — NOT from CSS class defaults.
+function TimelineEvent({
+  event, top, height, colIndex, colCount,
+  complete: done, active: live, onBegin,
+}: {
+  event:    CadenceEvent;
+  top:      number;
+  height:   number;
+  colIndex: number;
+  colCount: number;
+  complete: boolean;
+  active:   boolean;
+  onBegin:  (e: CadenceEvent) => void;
+}) {
+  const meta   = COGNITIVE_META[event.cognitive_type] ?? COGNITIVE_META.informational;
+  const titleColor = done ? 'rgba(255,255,255,0.25)' : '#ffffff';
+  const bg     = done ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.07)';
+  const shadow = live ? `inset 3px 0 10px ${meta.color}50` : undefined;
+  const tiny   = height < 48;
+
+  // Available track = 100% - 52px (hour labels) - 20px (right pad) = calc(100% - 72px)
+  // 2px gap added between adjacent columns (not on outer edges)
+  const GAP = colCount > 1 ? 2 : 0;
+  const lFrac = (colIndex / colCount).toFixed(8);
+  const rFrac = ((colCount - colIndex - 1) / colCount).toFixed(8);
+  const left  = colCount === 1
+    ? '52px'
+    : `calc(52px + ${lFrac} * (100% - 72px) + ${colIndex > 0 ? GAP : 0}px)`;
+  const right = colCount === 1
+    ? '20px'
+    : `calc(20px + ${rFrac} * (100% - 72px) + ${colIndex < colCount - 1 ? GAP : 0}px)`;
+
+  const timeLabel = event.deadline
+    ? `${fmt12(event.timestamp)} – ${fmt12(event.deadline)}`
+    : fmt12(event.timestamp);
 
   return (
     <div
-      className={`${styles.eventRow} ${isApproaching ? styles.approaching : ''}`}
-      style={{ opacity }}
+      className={[
+        styles.tlEvent,
+        done ? styles.tlEventDone : '',
+        tiny ? styles.tlEventTiny : '',
+      ].join(' ')}
+      style={{
+        top, left, right,
+        background: bg, borderLeftColor: meta.color, boxShadow: shadow,
+        '--card-h': `${height}px`,
+      } as React.CSSProperties}
+      title={tiny ? event.title : undefined}
+      onClick={() => onBegin(event)}
     >
-      <div className={styles.eventMain}>
-        <span className={styles.eventTitle}>{event.title}</span>
-        <span className={`${styles.badge} ${styles[`badge_${event.cognitive_type}`]}`}>
-          {COGNITIVE_LABELS[event.cognitive_type] ?? event.cognitive_type}
-        </span>
-      </div>
-      <EventHorizon event={event} onBegin={onBegin} />
+      <span className={styles.tlTitle} style={{ color: titleColor }}>
+        {event.title}
+      </span>
+      <span className={styles.tlTime}>{timeLabel}</span>
     </div>
   );
 }
 
-export function CalendarWidget({ onBeginSession }: Props) {
-  const [expanded, setExpanded] = useState(false);
-  const [query, setQuery] = useState('');
-  const { events } = useDigest();
+// ── 24-hour timeline ───────────────────────────────────────────
+function DayTimeline({
+  events, selectedDay, now, onBegin,
+}: {
+  events:      CadenceEvent[];
+  selectedDay: Date;
+  now:         Date;
+  onBegin:     (e: CadenceEvent) => void;
+}) {
+  const scrollRef       = useRef<HTMLDivElement>(null);
+  const isSelectedToday = isToday(selectedDay);
+  const daysAhead       = daysBetween(now, selectedDay);
+  const isBeyondRange   = daysAhead > 14;
 
-  const today = new Date();
-  const weekStart = startOfWeek(today, { weekStartsOn: 1 });
-  const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+  const dayEvents = events.filter((e) => isSameDay(parseISO(e.timestamp), selectedDay));
+  const laid      = layoutDayEvents(dayEvents);
+  const dayLabel  = getDayLabel(selectedDay, now);
 
-  const pillLabel = `${format(today, 'EEE')} ${format(today, 'd')}`;
+  // Auto-scroll to centre current time when today's timeline is opened
+  useEffect(() => {
+    if (!isSelectedToday || !scrollRef.current) return;
+    const openedAt   = new Date();
+    const currentTop = (openedAt.getHours() + openedAt.getMinutes() / 60) * HOUR_HEIGHT;
+    scrollRef.current.scrollTop = currentTop - scrollRef.current.clientHeight / 2;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  const handleBegin = (event: CadenceEvent) => {
-    onBeginSession(event);
-    setExpanded(false);
-  };
+  const nowTop = isSelectedToday
+    ? (now.getHours() + now.getMinutes() / 60) * HOUR_HEIGHT
+    : null;
 
   return (
-    <div className={styles.wrapper}>
-      <button
-        className={styles.pill}
-        onClick={() => setExpanded((v) => !v)}
-        aria-expanded={expanded}
-      >
-        <CalendarIcon />
-        <span>{pillLabel}</span>
-      </button>
+    <>
+      {/* Section header — date + days-ahead badge */}
+      <div className={styles.tlSectionHeader}>
+        <span className={styles.tlSectionLabel}>
+          {format(selectedDay, 'EEEE, MMMM d')}
+        </span>
+        {dayLabel && <span className={styles.tlDayAhead}>{dayLabel}</span>}
+      </div>
 
-      {expanded && (
-        <div className={styles.panel}>
-          {/* Week strip */}
-          <div className={styles.weekStrip}>
-            {weekDays.map((day) => (
-              <div
-                key={day.toISOString()}
-                className={`${styles.weekDay} ${isToday(day) ? styles.weekDayActive : ''}`}
-              >
-                <span className={styles.weekDayName}>{format(day, 'EEEEE')}</span>
-                <span className={styles.weekDayNum}>{format(day, 'd')}</span>
+      {/* Beyond 14-day sync range */}
+      {isBeyondRange ? (
+        <div className={styles.tlBeyondRange}>
+          Sync extends 14 days ahead
+        </div>
+      ) : (
+        <div className={styles.tlScroll} ref={scrollRef}>
+          <div className={styles.tlInner}>
+
+            {/* Hour rows — labels + grid lines */}
+            {Array.from({ length: 24 }, (_, h) => (
+              <div key={h} className={styles.hourRow} style={{ top: h * HOUR_HEIGHT }}>
+                <span className={styles.hourLabel}>{String(h).padStart(2, '0')}:00</span>
+                <div className={styles.hourLine} />
               </div>
             ))}
-          </div>
 
-          {/* Event list */}
-          <div className={styles.eventList}>
-            {events.length === 0 ? (
-              <div className={styles.empty}>Nothing above threshold</div>
-            ) : (
-              events.map((event) => (
-                <EventRow key={event.id} event={event} onBegin={handleBegin} />
-              ))
+            {/* Current time indicator */}
+            {nowTop !== null && (
+              <div className={styles.nowLine} style={{ top: nowTop }}>
+                <span className={styles.nowLabel}>{format(now, 'HH:mm')}</span>
+                <span className={styles.nowDot} />
+                <div className={styles.nowBar} />
+              </div>
             )}
-          </div>
 
-          {/* Ask anything */}
-          <div className={styles.askRow}>
-            <input
-              className={styles.askInput}
-              placeholder="Ask anything..."
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-            />
+            {/* Event bento boxes with column layout */}
+            {laid.map(({ event, top, height, colIndex, colCount }) => (
+              <TimelineEvent
+                key={event.id}
+                event={event}
+                top={top}
+                height={height}
+                colIndex={colIndex}
+                colCount={colCount}
+                complete={isComplete(event)}
+                active={isActive(event, now)}
+                onBegin={onBegin}
+              />
+            ))}
+
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
 
-function CalendarIcon() {
+// ── CalendarWidget ─────────────────────────────────────────────
+export function CalendarWidget({ onBeginSession }: Props) {
+  const [expanded,    setExpanded]    = useState(false);
+  const [viewMonth,   setViewMonth]   = useState(() => new Date());
+  const [selectedDay, setSelectedDay] = useState(() => new Date());
+  const [now,         setNow]         = useState(() => new Date());
+  const { events } = useDigest();
+
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 60_000);
+    return () => clearInterval(t);
+  }, []);
+
+  const pillData = getPillEvent(events, now);
+  const pillMeta = pillData
+    ? (COGNITIVE_META[pillData.event.cognitive_type] ?? COGNITIVE_META.informational)
+    : null;
+
   return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect x="1" y="2.5" width="12" height="10" rx="2" stroke="currentColor" strokeWidth="1.2" />
-      <path d="M1 5.5H13" stroke="currentColor" strokeWidth="1.2" />
-      <path d="M4.5 1V3.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-      <path d="M9.5 1V3.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-    </svg>
+    <div className={styles.wrapper}>
+
+      {/* ── Collapsed pill ── */}
+      {!expanded && (
+        <button className={styles.pill} onClick={() => setExpanded(true)}>
+          {pillData?.active ? (
+            <span className={styles.pillDot} style={{ background: pillMeta!.color }} />
+          ) : (
+            <span className={styles.pillDotPulse} />
+          )}
+          <span className={styles.pillTitle}>
+            {format(now, 'EEEE, MMMM d, yyyy')}
+            {pillData ? `  |  ${pillData.event.title}` : ''}
+          </span>
+        </button>
+      )}
+
+      {/* ── Expanded panel ── */}
+      {expanded && (
+        <div className={styles.panel}>
+
+          <div className={styles.panelTopRow}>
+            <button
+              className={styles.closeBtn}
+              onClick={() => setExpanded(false)}
+              aria-label="Close calendar"
+            >
+              ×
+            </button>
+          </div>
+
+          <MonthCalendar
+            viewMonth={viewMonth}
+            selectedDay={selectedDay}
+            events={events}
+            onDaySelect={setSelectedDay}
+            onPrev={() => setViewMonth((m) => subMonths(m, 1))}
+            onNext={() => setViewMonth((m) => addMonths(m, 1))}
+          />
+
+          <div className={styles.divider} />
+
+          <DayTimeline
+            events={events}
+            selectedDay={selectedDay}
+            now={now}
+            onBegin={onBeginSession}
+          />
+
+        </div>
+      )}
+
+    </div>
   );
 }

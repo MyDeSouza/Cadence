@@ -29,7 +29,7 @@
 
 .timer {
   position: fixed;
-  bottom: 72px;
+  top: 24px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
