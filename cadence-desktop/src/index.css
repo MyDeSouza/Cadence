@@ -1,0 +1,59 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg: #ffffff;
+  --dot: #e9e9e9;
+  --dot-size: 4px;
+  --dot-spacing: 52px;
+
+  --text-primary: #0a0a0a;
+  --text-secondary: #848e9c;
+  --ui-secondary: #b8bec6;
+
+  --radius-pill: 24px;
+  --radius-card: 16px;
+  --radius-inner: 12px;
+
+  --ease-expand: cubic-bezier(0.16, 1, 0.3, 1);
+
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-primary);
+  background-color: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+}
+
+input, textarea {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--ui-secondary);
+  border-radius: 2px;
+}

@@ -1,0 +1,175 @@
+/* cadence-canvas / styles / presence.css
+   Collaborator cursors, avatars, presence indicators */
+
+/* ── Cursor overlay (fixed, over canvas) ──────────────────── */
+#presence-overlay {
+  position: fixed;
+  top: var(--topbar-h);
+  left: 0; right: 0; bottom: 0;
+  pointer-events: none;
+  z-index: 40;
+  overflow: hidden;
+}
+
+/* ── Presence cursor ───────────────────────────────────────── */
+.presence-cursor {
+  position: absolute;
+  pointer-events: none;
+  will-change: transform;
+  transition: transform 0.08s linear;
+  z-index: 41;
+}
+
+.presence-cursor-arrow {
+  position: relative;
+  width: 0; height: 0;
+}
+
+/* Custom CSS cursor shape */
+.cursor-svg {
+  width: 20px; height: 24px;
+  filter: drop-shadow(0 2px 4px rgba(0,3,14,0.5));
+}
+
+.presence-cursor-label {
+  position: absolute;
+  top: 20px; left: 12px;
+  padding: 3px 8px;
+  border-radius: var(--r-lg);
+  font-size: 11px;
+  font-weight: var(--weight-semibold);
+  font-family: var(--font);
+  color: #fff;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0,3,14,0.4);
+}
+
+/* ── Presence panel — who's here right now ─────────────────── */
+.presence-panel {
+  position: fixed;
+  top: calc(var(--topbar-h) + var(--sp-12));
+  right: var(--sp-16);
+  background: rgba(0,3,14,0.72);
+  border: 1px solid var(--w8);
+  border-radius: var(--r-sm);
+  backdrop-filter: blur(16px);
+  padding: var(--sp-12);
+  min-width: 180px;
+  z-index: 90;
+  display: none; /* toggled by JS */
+}
+
+.presence-panel-title {
+  font-size: var(--text-xs);
+  color: var(--w32);
+  margin-bottom: var(--sp-8);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  font-weight: var(--weight-semibold);
+}
+
+.presence-member-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-8);
+  padding: var(--sp-4) 0;
+}
+
+.presence-member-avatar {
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: var(--weight-semibold);
+  color: #fff;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.presence-member-dot {
+  position: absolute;
+  bottom: 0; right: 0;
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(0,3,14,0.8);
+}
+
+.presence-member-info { flex: 1; }
+
+.presence-member-name {
+  font-size: var(--text-xs);
+  color: var(--w80);
+  font-weight: var(--weight-medium);
+}
+
+.presence-member-role {
+  font-size: 10px;
+  color: var(--w32);
+}
+
+.presence-member-state {
+  font-size: 10px;
+  color: var(--w24);
+}
+
+/* Active state pulse ring */
+.presence-member-avatar.state-active::before {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  border: 1.5px solid currentColor;
+  opacity: 0;
+  animation: avatar-pulse 2.5s ease-in-out infinite;
+}
+
+@keyframes avatar-pulse {
+  0%   { opacity: 0.5; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.5); }
+}
+
+/* ── Activity feed chip ────────────────────────────────────── */
+.activity-chip {
+  position: fixed;
+  bottom: calc(var(--sp-24) + 80px);
+  left: var(--sp-24);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-8);
+  padding: var(--sp-6) var(--sp-12);
+  background: rgba(0,3,14,0.8);
+  border: 1px solid var(--w8);
+  border-radius: var(--r-lg);
+  backdrop-filter: blur(16px);
+  z-index: 80;
+  font-size: var(--text-xs);
+  color: var(--w60);
+  max-width: 240px;
+  pointer-events: none;
+  animation: slide-in-chip 0.3s var(--ease);
+}
+
+@keyframes slide-in-chip {
+  from { transform: translateY(8px); opacity: 0; }
+  to   { transform: translateY(0); opacity: 1; }
+}
+
+.activity-chip-avatar {
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 8px;
+  font-weight: var(--weight-semibold);
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.activity-chip-text {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}

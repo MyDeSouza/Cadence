@@ -1,0 +1,211 @@
+.wrapper {
+  position: fixed;
+  top: 24px;
+  left: 24px;
+  z-index: 100;
+}
+
+/* ── Collapsed pill ─────────────────────────────────────── */
+.pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 52px;
+  padding: 0 20px;
+  border-radius: var(--radius-pill);
+  background: var(--ui-secondary);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  transition: background 0.15s ease, transform 0.1s ease;
+  white-space: nowrap;
+}
+
+.pill:hover {
+  background: #a8aeb6;
+}
+
+.pill:active {
+  transform: scale(0.98);
+}
+
+/* ── Expanded panel ─────────────────────────────────────── */
+.panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  width: 320px;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-radius: var(--radius-card);
+  border: 1px solid rgba(184, 190, 198, 0.3);
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.06),
+    0 1px 4px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+  animation: expandPanel 0.22s var(--ease-expand) both;
+  transform-origin: top left;
+}
+
+@keyframes expandPanel {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* ── Week strip ─────────────────────────────────────────── */
+.weekStrip {
+  display: flex;
+  padding: 16px 16px 12px;
+  gap: 4px;
+  border-bottom: 1px solid rgba(184, 190, 198, 0.2);
+}
+
+.weekDay {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 4px;
+  border-radius: var(--radius-inner);
+  cursor: default;
+}
+
+.weekDayActive {
+  background: var(--text-primary);
+}
+
+.weekDayActive .weekDayName,
+.weekDayActive .weekDayNum {
+  color: #ffffff;
+}
+
+.weekDayName {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.weekDayNum {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+/* ── Event list ─────────────────────────────────────────── */
+.eventList {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 0;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.empty {
+  padding: 20px 16px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.eventRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  transition: background 0.1s ease;
+  border-radius: 0;
+  position: relative;
+}
+
+.eventRow:hover {
+  background: rgba(184, 190, 198, 0.08);
+}
+
+.approaching {
+  animation: horizonPulse 3s ease-in-out infinite;
+}
+
+@keyframes horizonPulse {
+  0%, 100% {
+    box-shadow: inset 0 0 0 1px rgba(184, 190, 198, 0);
+  }
+  50% {
+    box-shadow: inset 0 0 0 1px rgba(184, 190, 198, 0.6);
+    transform: scaleY(1.015);
+  }
+}
+
+.eventMain {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.eventTitle {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.badge {
+  display: inline-flex;
+  align-self: flex-start;
+  font-size: 10px;
+  font-weight: 500;
+  padding: 2px 7px;
+  border-radius: 20px;
+  letter-spacing: 0.04em;
+  text-transform: lowercase;
+  background: rgba(184, 190, 198, 0.25);
+  color: var(--text-secondary);
+}
+
+.badge_conflict {
+  background: rgba(10, 10, 10, 0.06);
+  color: var(--text-primary);
+}
+
+.badge_authorizational {
+  background: rgba(132, 142, 156, 0.15);
+  color: var(--text-secondary);
+}
+
+.badge_action_bound {
+  background: rgba(10, 10, 10, 0.06);
+  color: var(--text-primary);
+}
+
+/* ── Ask row ────────────────────────────────────────────── */
+.askRow {
+  padding: 10px 16px 14px;
+  border-top: 1px solid rgba(184, 190, 198, 0.2);
+}
+
+.askInput {
+  width: 100%;
+  border: none;
+  background: transparent;
+  font-size: 12px;
+  color: var(--text-primary);
+  outline: none;
+}
+
+.askInput::placeholder {
+  color: var(--text-secondary);
+}

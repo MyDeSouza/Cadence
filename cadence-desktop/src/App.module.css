@@ -1,0 +1,11 @@
+.workspace {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background-color: #ffffff;
+  /* Dot grid */
+  background-image: radial-gradient(circle, #e9e9e9 2px, transparent 2px);
+  background-size: 52px 52px;
+  background-position: 0 0;
+  overflow: hidden;
+}

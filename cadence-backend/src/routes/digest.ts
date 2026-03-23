@@ -1,44 +1,34 @@
 import { Router, Request, Response } from 'express';
 import prisma from '../db';
 import { getPreferences } from '../lib/preferences';
-import { CognitiveType } from '../types';
 
 const router = Router();
 
-// ─── GET /digest — top N scored events, grouped by cognitive_type ─────────────
-// This is the primary output the mobile and desktop interfaces consume.
+// ─── GET /digest — top N scored events within a rolling 48-hour window ────────
+// Uses a rolling window (12h ago → 36h from now) instead of UTC midnight
+// boundaries, making the digest timezone-safe without a tz parameter.
 
 router.get('/', async (_req: Request, res: Response): Promise<void> => {
   const prefs = await getPreferences();
+
+  const now = new Date();
+  const windowStart = new Date(now.getTime() - 12 * 60 * 60 * 1000);
+  const windowEnd = new Date(now.getTime() + 36 * 60 * 60 * 1000);
 
   const events = await prisma.cadenceEvent.findMany({
     where: {
       score: { gte: prefs.surface_threshold },
       user_actioned: null,
+      timestamp: { gte: windowStart, lte: windowEnd },
     },
     orderBy: { score: 'desc' },
     take: prefs.max_foreground_signals,
   });
 
-  // Group by cognitive_type
-  const grouped: Record<CognitiveType, typeof events> = {
-    conflict: [],
-    authorizational: [],
-    action_bound: [],
-    informational: [],
-  };
-
-  for (const event of events) {
-    const type = (event.cognitive_type as CognitiveType) ?? 'informational';
-    grouped[type].push(event);
-  }
-
   res.json({
-    total: events.length,
-    max_foreground_signals: prefs.max_foreground_signals,
-    surface_threshold: prefs.surface_threshold,
-    digest_time: prefs.digest_time,
-    signals: grouped,
+    date: now.toISOString().slice(0, 10),
+    events,
+    total_surfaced: events.length,
   });
 });
 
