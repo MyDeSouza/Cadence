@@ -91,7 +91,7 @@ router.get('/surfaced', async (_req: Request, res: Response): Promise<void> => {
 // ─── GET /events/:id — single event ──────────────────────────────────────────
 
 router.get('/:id', async (req: Request, res: Response): Promise<void> => {
-  const event = await prisma.cadenceEvent.findUnique({ where: { id: req.params.id } });
+  const event = await prisma.cadenceEvent.findUnique({ where: { id: req.params.id as string } });
   if (!event) {
     res.status(404).json({ error: 'Event not found' });
     return;
