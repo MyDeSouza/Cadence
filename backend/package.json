@@ -1,5 +1,5 @@
 {
-  "name": "cadence-backend",
+  "name": "backend",
   "version": "1.0.0",
   "description": "Cadence cognitive triage engine — backend API",
   "main": "dist/index.js",
