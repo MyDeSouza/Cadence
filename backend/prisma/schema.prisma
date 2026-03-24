@@ -55,10 +55,14 @@ model CadenceEvent {
   deadline       DateTime?
   raw_content    String?
   tags           String[]           @default([])
-  score          Float?
-  cognitive_type CognitiveType?
-  user_actioned  UserActionedState?
-  created_at     DateTime           @default(now())
+  score            Float?
+  cognitive_type   CognitiveType?
+  user_actioned    UserActionedState?
+  created_at       DateTime           @default(now())
+  location         String?
+  attendees        Json?
+  reminder_minutes Int?
+  organiser_email  String?
 
   feedback FeedbackLog[]
 

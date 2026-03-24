@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
-import type { TonePosition } from '../../types';
+import type { Attendee, CadenceEvent, TonePosition } from '../../types';
 import { ToneSelector } from '../ToneSelector';
+import { useDigest } from '../../hooks/useDigest';
 import styles from './AgentWidget.module.css';
 
 const API_BASE = 'http://localhost:3001';
@@ -15,6 +16,34 @@ interface Message {
 
 const DEFAULT_TONE: TonePosition = { label: 'Neutral', x: 0.5, y: 0.5 };
 
+function getInitials(attendee: Attendee): string {
+  if (attendee.name) {
+    const parts = attendee.name.trim().split(/\s+/);
+    return parts.length >= 2
+      ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+      : parts[0].slice(0, 2).toUpperCase();
+  }
+  return attendee.email.slice(0, 2).toUpperCase();
+}
+
+const STATUS_LABELS: Record<Attendee['status'], string> = {
+  accepted:    '✓ Going',
+  tentative:   '? Maybe',
+  needsAction: '— Pending',
+  declined:    '✗ Declined',
+};
+
+function getActiveFocusEvent(events: CadenceEvent[]): CadenceEvent | null {
+  const now = new Date();
+  const active = events.find((e) => {
+    const start = new Date(e.timestamp);
+    const end = e.deadline ? new Date(e.deadline) : new Date(start.getTime() + 3_600_000);
+    return start <= now && now <= end;
+  });
+  if (active) return active;
+  return events.find((e) => new Date(e.timestamp) > now) ?? null;
+}
+
 export function AgentWidget() {
   const [expanded, setExpanded] = useState(false);
   const [tab, setTab] = useState<Tab>('agent');
@@ -24,6 +53,7 @@ export function AgentWidget() {
   const [ideationDraft, setIdeationDraft] = useState('');
   const [tone, setTone] = useState<TonePosition>(DEFAULT_TONE);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { events } = useDigest();
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -129,11 +159,44 @@ export function AgentWidget() {
             </>
           )}
 
-          {tab === 'people' && (
-            <div className={styles.people}>
-              <div className={styles.emptyPeople}>No collaborators in active events</div>
-            </div>
-          )}
+          {tab === 'people' && (() => {
+            const focusEvent = getActiveFocusEvent(events);
+            const attendees = focusEvent?.attendees ?? [];
+            if (attendees.length === 0) {
+              return (
+                <div className={styles.people}>
+                  <div className={styles.emptyPeople}>No collaborators in active events</div>
+                </div>
+              );
+            }
+            return (
+              <div className={styles.people}>
+                <div className={styles.peopleEventLabel}>{focusEvent!.title}</div>
+                {attendees.map((a) => (
+                  <button
+                    key={a.email}
+                    className={styles.attendeeRow}
+                    onClick={() => {
+                      setIdeationDraft(`To: ${a.email}\n\n`);
+                      setShowIdeation(true);
+                      setTab('agent');
+                    }}
+                  >
+                    <span className={styles.attendeeAvatar}>{getInitials(a)}</span>
+                    <span className={styles.attendeeInfo}>
+                      <span className={styles.attendeeName}>
+                        {a.name ?? a.email}
+                        {a.organiser && <span className={styles.organiserTag}>org</span>}
+                      </span>
+                      <span className={`${styles.statusBadge} ${styles[`status_${a.status}`]}`}>
+                        {STATUS_LABELS[a.status]}
+                      </span>
+                    </span>
+                  </button>
+                ))}
+              </div>
+            );
+          })()}
         </div>
       )}
 

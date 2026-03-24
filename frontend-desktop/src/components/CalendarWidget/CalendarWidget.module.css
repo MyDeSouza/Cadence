@@ -447,3 +447,203 @@
 .tlEvent:hover .tlTime {
   display: block;
 }
+
+.tlLocation {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: none;
+}
+
+/* Show location on hover for non-tiny cards */
+.tlEvent:hover .tlLocation {
+  display: block;
+}
+
+.tlEventTiny .tlLocation {
+  display: none;
+}
+
+/* ══════════════════════════════════════════════════════════
+   TIMELINE CONTAINER + EVENT DETAIL PANEL
+   ══════════════════════════════════════════════════════════ */
+
+/* Wrapper that holds both DayTimeline and the detail overlay */
+.timelineContainer {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Detail panel — absolute, slides in from the right */
+.detailPanel {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 15, 15, 0.96);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: detailSlideIn 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
+  z-index: 5;
+}
+
+@keyframes detailSlideIn {
+  from { transform: translateX(100%); }
+  to   { transform: translateX(0); }
+}
+
+.detailHeader {
+  padding: 12px 16px 8px;
+  flex-shrink: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.detailBack {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.45);
+  font-weight: 400;
+  transition: color 0.15s;
+}
+
+.detailBack:hover {
+  color: #ffffff;
+}
+
+.detailScroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 20px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.detailScroll::-webkit-scrollbar { width: 3px; }
+.detailScroll::-webkit-scrollbar-track { background: transparent; }
+.detailScroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 2px; }
+
+.detailTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffffff;
+  line-height: 1.35;
+  margin: 0;
+}
+
+.detailTime {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+  margin: 0;
+}
+
+.detailRow {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Attendees block */
+.detailSection {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 2px;
+}
+
+.detailAttendee {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.detailAvatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 9px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  letter-spacing: 0.03em;
+}
+
+.detailAttendeeInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.detailAttendeeName {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.8);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.detailOrgTag {
+  font-size: 9px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.08);
+  padding: 1px 4px;
+  border-radius: 3px;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+}
+
+.detailStatus {
+  font-size: 10px;
+}
+
+.dStatus_accepted    { color: #4caf7d; }
+.dStatus_tentative   { color: #c8a84b; }
+.dStatus_needsAction { color: rgba(255, 255, 255, 0.3); }
+.dStatus_declined    { color: #e05c5c; }
+
+/* Notes / description */
+.detailNotes {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.45);
+  line-height: 1.55;
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Footer with Begin button */
+.detailFooter {
+  padding: 10px 20px 16px;
+  flex-shrink: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.detailBegin {
+  font-size: 12px;
+  font-weight: 500;
+  color: #ffffff;
+  padding: 6px 14px;
+  border-radius: var(--radius-inner);
+  background: rgba(255, 255, 255, 0.1);
+  transition: background 0.15s ease;
+}
+
+.detailBegin:hover {
+  background: rgba(255, 255, 255, 0.18);
+}

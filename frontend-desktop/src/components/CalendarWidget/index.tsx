@@ -3,7 +3,7 @@ import {
   format, parseISO, addDays, addMonths, subMonths,
   startOfWeek, startOfMonth, isToday, isSameDay, isSameMonth,
 } from 'date-fns';
-import type { CadenceEvent } from '../../types';
+import type { Attendee, CadenceEvent } from '../../types';
 import { useDigest } from '../../hooks/useDigest';
 import styles from './CalendarWidget.module.css';
 
@@ -218,11 +218,99 @@ function MonthCalendar({
   );
 }
 
+// ── Event detail helpers ───────────────────────────────────────
+function detailInitials(a: Attendee): string {
+  if (a.name) {
+    const parts = a.name.trim().split(/\s+/);
+    return parts.length >= 2
+      ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+      : parts[0].slice(0, 2).toUpperCase();
+  }
+  return a.email.slice(0, 2).toUpperCase();
+}
+
+const DETAIL_STATUS: Record<Attendee['status'], string> = {
+  accepted:    '✓ Going',
+  tentative:   '? Maybe',
+  needsAction: '— Pending',
+  declined:    '✗ Declined',
+};
+
+// ── Expanded event detail panel ────────────────────────────────
+function EventDetail({
+  event, onBack, onBegin,
+}: {
+  event:   CadenceEvent;
+  onBack:  () => void;
+  onBegin: (e: CadenceEvent) => void;
+}) {
+  const timeLabel = event.deadline
+    ? `${fmt12(event.timestamp)} – ${fmt12(event.deadline)}`
+    : fmt12(event.timestamp);
+  const dateLabel = format(parseISO(event.timestamp), 'EEEE, MMMM d');
+
+  const attendees = Array.isArray(event.attendees) && event.attendees.length > 0
+    ? event.attendees as Attendee[]
+    : null;
+
+  return (
+    <div className={styles.detailPanel}>
+      <div className={styles.detailHeader}>
+        <button className={styles.detailBack} onClick={onBack} aria-label="Back to timeline">
+          ← Back
+        </button>
+      </div>
+
+      <div className={styles.detailScroll}>
+        <h3 className={styles.detailTitle}>{event.title}</h3>
+        <p className={styles.detailTime}>{dateLabel} · {timeLabel}</p>
+
+        {event.location && (
+          <p className={styles.detailRow}>📍 {event.location}</p>
+        )}
+
+        {attendees && (
+          <div className={styles.detailSection}>
+            {attendees.map((a) => (
+              <div key={a.email} className={styles.detailAttendee}>
+                <span className={styles.detailAvatar}>{detailInitials(a)}</span>
+                <span className={styles.detailAttendeeInfo}>
+                  <span className={styles.detailAttendeeName}>
+                    {a.name ?? a.email}
+                    {a.organiser && <span className={styles.detailOrgTag}>org</span>}
+                  </span>
+                  <span className={`${styles.detailStatus} ${styles[`dStatus_${a.status}`]}`}>
+                    {DETAIL_STATUS[a.status]}
+                  </span>
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {event.raw_content && (
+          <p className={styles.detailNotes}>{event.raw_content}</p>
+        )}
+
+        {event.reminder_minutes != null && (
+          <p className={styles.detailRow}>🔔 {event.reminder_minutes} minutes before</p>
+        )}
+      </div>
+
+      <div className={styles.detailFooter}>
+        <button className={styles.detailBegin} onClick={() => onBegin(event)}>
+          → Begin session
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ── Timeline event bento box ───────────────────────────────────
 // left/right are computed from column layout — NOT from CSS class defaults.
 function TimelineEvent({
   event, top, height, colIndex, colCount,
-  complete: done, active: live, onBegin,
+  complete: done, active: live, onSelect,
 }: {
   event:    CadenceEvent;
   top:      number;
@@ -231,7 +319,7 @@ function TimelineEvent({
   colCount: number;
   complete: boolean;
   active:   boolean;
-  onBegin:  (e: CadenceEvent) => void;
+  onSelect: (e: CadenceEvent) => void;
 }) {
   const meta   = COGNITIVE_META[event.cognitive_type] ?? COGNITIVE_META.informational;
   const titleColor = done ? 'rgba(255,255,255,0.25)' : '#ffffff';
@@ -268,24 +356,27 @@ function TimelineEvent({
         '--card-h': `${height}px`,
       } as React.CSSProperties}
       title={tiny ? event.title : undefined}
-      onClick={() => onBegin(event)}
+      onClick={() => onSelect(event)}
     >
       <span className={styles.tlTitle} style={{ color: titleColor }}>
         {event.title}
       </span>
       <span className={styles.tlTime}>{timeLabel}</span>
+      {event.location && (
+        <span className={styles.tlLocation}>📍 {event.location}</span>
+      )}
     </div>
   );
 }
 
 // ── 24-hour timeline ───────────────────────────────────────────
 function DayTimeline({
-  events, selectedDay, now, onBegin,
+  events, selectedDay, now, onSelect,
 }: {
   events:      CadenceEvent[];
   selectedDay: Date;
   now:         Date;
-  onBegin:     (e: CadenceEvent) => void;
+  onSelect:    (e: CadenceEvent) => void;
 }) {
   const scrollRef       = useRef<HTMLDivElement>(null);
   const isSelectedToday = isToday(selectedDay);
@@ -356,7 +447,7 @@ function DayTimeline({
                 colCount={colCount}
                 complete={isComplete(event)}
                 active={isActive(event, now)}
-                onBegin={onBegin}
+                onSelect={onSelect}
               />
             ))}
 
@@ -369,10 +460,11 @@ function DayTimeline({
 
 // ── CalendarWidget ─────────────────────────────────────────────
 export function CalendarWidget({ onBeginSession }: Props) {
-  const [expanded,    setExpanded]    = useState(false);
-  const [viewMonth,   setViewMonth]   = useState(() => new Date());
-  const [selectedDay, setSelectedDay] = useState(() => new Date());
-  const [now,         setNow]         = useState(() => new Date());
+  const [expanded,       setExpanded]       = useState(false);
+  const [viewMonth,      setViewMonth]      = useState(() => new Date());
+  const [selectedDay,    setSelectedDay]    = useState(() => new Date());
+  const [now,            setNow]            = useState(() => new Date());
+  const [selectedEvent,  setSelectedEvent]  = useState<CadenceEvent | null>(null);
   const { events } = useDigest();
 
   useEffect(() => {
@@ -428,12 +520,22 @@ export function CalendarWidget({ onBeginSession }: Props) {
 
           <div className={styles.divider} />
 
-          <DayTimeline
-            events={events}
-            selectedDay={selectedDay}
-            now={now}
-            onBegin={onBeginSession}
-          />
+          <div className={styles.timelineContainer}>
+            <DayTimeline
+              events={events}
+              selectedDay={selectedDay}
+              now={now}
+              onSelect={setSelectedEvent}
+            />
+
+            {selectedEvent && (
+              <EventDetail
+                event={selectedEvent}
+                onBack={() => setSelectedEvent(null)}
+                onBegin={(e) => { setSelectedEvent(null); onBeginSession(e); }}
+              />
+            )}
+          </div>
 
         </div>
       )}

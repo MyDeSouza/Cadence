@@ -5,6 +5,13 @@ export type EventType = 'event' | 'task' | 'notification' | 'email';
 export type CognitiveType = 'informational' | 'authorizational' | 'action_bound' | 'conflict';
 export type UserActionedState = 'actioned' | 'dismissed' | 'ignored';
 
+export interface AttendeeRecord {
+  email: string;
+  name?: string;
+  organiser: boolean;
+  status: 'accepted' | 'declined' | 'tentative' | 'needsAction';
+}
+
 export interface CadenceEvent {
   id: string;
   title: string;
@@ -18,6 +25,10 @@ export interface CadenceEvent {
   cognitive_type: CognitiveType | null;
   user_actioned: UserActionedState | null;
   created_at: string;
+  location?: string | null;
+  attendees?: AttendeeRecord[] | null;
+  reminder_minutes?: number | null;
+  organiser_email?: string | null;
 }
 
 // ─── Scoring configuration ───────────────────────────────────────────────────

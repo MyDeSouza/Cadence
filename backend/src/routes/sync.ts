@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { google } from 'googleapis';
+import { Prisma } from '@prisma/client';
 import prisma from '../db';
 import { adaptGoogleCalendarEvent } from '../adapters/google-calendar.adapter';
 import { scoreEvent } from '../engine/scoring';
@@ -79,24 +80,32 @@ router.get('/google', async (_req: Request, res: Response): Promise<void> => {
     await prisma.cadenceEvent.upsert({
       where: { id: normalized.id },
       create: {
-        id:            normalized.id,
-        title:         normalized.title,
-        source:        normalized.source,
-        type:          normalized.type,
-        timestamp:     new Date(normalized.timestamp),
-        deadline:      normalized.deadline ? new Date(normalized.deadline) : undefined,
-        raw_content:   normalized.raw_content,
-        tags:          normalized.tags,
+        id:              normalized.id,
+        title:           normalized.title,
+        source:          normalized.source,
+        type:            normalized.type,
+        timestamp:       new Date(normalized.timestamp),
+        deadline:        normalized.deadline ? new Date(normalized.deadline) : undefined,
+        raw_content:     normalized.raw_content,
+        tags:            normalized.tags,
         score,
         cognitive_type,
+        location:        normalized.location ?? null,
+        attendees:       normalized.attendees ? (normalized.attendees as unknown as Prisma.InputJsonValue) : undefined,
+        reminder_minutes: normalized.reminder_minutes ?? null,
+        organiser_email: normalized.organiser_email ?? null,
       },
       update: {
-        title:         normalized.title,
-        timestamp:     new Date(normalized.timestamp),
-        deadline:      normalized.deadline ? new Date(normalized.deadline) : null,
-        raw_content:   normalized.raw_content,
+        title:           normalized.title,
+        timestamp:       new Date(normalized.timestamp),
+        deadline:        normalized.deadline ? new Date(normalized.deadline) : null,
+        raw_content:     normalized.raw_content,
         score,
         cognitive_type,
+        location:        normalized.location ?? null,
+        attendees:       normalized.attendees ? (normalized.attendees as unknown as Prisma.InputJsonValue) : undefined,
+        reminder_minutes: normalized.reminder_minutes ?? null,
+        organiser_email: normalized.organiser_email ?? null,
       },
     });
 
