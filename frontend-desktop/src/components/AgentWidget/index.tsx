@@ -3,8 +3,7 @@ import type { Attendee, CadenceEvent, TonePosition } from '../../types';
 import { ToneSelector } from '../ToneSelector';
 import { useDigest } from '../../hooks/useDigest';
 import styles from './AgentWidget.module.css';
-
-const API_BASE = 'http://localhost:3001';
+import { API_BASE } from '../../constants/api';
 
 type Tab = 'agent' | 'people';
 

@@ -6,8 +6,7 @@ import { StatusBar } from './components/StatusBar';
 import { useSession } from './hooks/useSession';
 import type { CadenceEvent } from './types';
 import styles from './App.module.css';
-
-const API_BASE = 'http://localhost:3001';
+import { API_BASE } from './constants/api';
 
 export default function App() {
   const { session, beginSession, endSession } = useSession();

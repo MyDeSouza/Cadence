@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { CadenceEvent } from '../types';
-
-const API_BASE = 'http://localhost:3001';
+import { API_BASE } from '../constants/api';
 const REFRESH_INTERVAL = 5 * 60 * 1000; // 5 minutes
 const SCORE_THRESHOLD = 65;
 const FOURTEEN_DAYS_MS = 14 * 24 * 60 * 60 * 1000;

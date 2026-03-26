@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-
-const API_BASE = 'http://localhost:3001';
+import { API_BASE } from '../constants/api';
 
 export function useSurfaced() {
   const [count, setCount] = useState<number>(0);
