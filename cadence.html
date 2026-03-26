@@ -795,7 +795,7 @@ function dPrevMonth() { dViewMonth.setMonth(dViewMonth.getMonth()-1); dRenderMon
 function dNextMonth() { dViewMonth.setMonth(dViewMonth.getMonth()+1); dRenderMonthCal(); }
 function dSelectDay(date) {
   dSelectedDay = new Date(date);
-  dDetailEvent = null;
+  dCloseDetail();
   dRenderMonthCal();
   dRenderTimeline();
 }
@@ -805,7 +805,11 @@ function dRenderTimeline() {
   const label = document.getElementById('d-tl-label');
   const sub   = document.getElementById('d-tl-sub');
   const inner = document.getElementById('d-tl-inner');
+  const tls   = document.getElementById('d-tl-scroll');
   if (!inner) return;
+  // Restore visibility in case dShowDetail() hid these
+  if (tls)   tls.style.display   = '';
+  if (label) label.style.display = '';
   inner.innerHTML = '';
 
   const today = new Date();
@@ -866,10 +870,9 @@ function dRenderTimeline() {
 
   // Auto-scroll to current time (today only)
   if (dSameDay(dSelectedDay, today)) {
-    const scroll = document.getElementById('d-tl-scroll');
-    if (scroll) {
+    if (tls) {
       const nowPx = dTimeToPx(today);
-      setTimeout(() => { scroll.scrollTop = Math.max(0, nowPx - 120); }, 60);
+      setTimeout(() => { tls.scrollTop = Math.max(0, nowPx - 120); }, 60);
     }
   }
 
