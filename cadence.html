@@ -8,1236 +8,2735 @@
   HOSTED: set API_BASE to your deployed backend URL
   GitHub Pages: deploy this single file, update API_BASE
 -->
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="theme-color" content="#000000" />
-  <title>Cadence</title>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <meta name="theme-color" content="#000000" />
+    <meta
+      http-equiv="Cache-Control"
+      content="no-cache, no-store, must-revalidate"
+    />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <title>Cadence</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap"
+      rel="stylesheet"
+    />
 
-  <style>
-    /* ── Reset ──────────────────────────────────────────────────────────────── */
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    button   { border: none; background: none; cursor: pointer; font: inherit; }
-    input, textarea { border: none; outline: none; background: none; font: inherit; }
-    html, body { height: 100%; overflow: hidden; font-family: 'Outfit', sans-serif; -webkit-tap-highlight-color: transparent; }
+    <style>
+      /* ── Reset ──────────────────────────────────────────────────────────────── */
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      button {
+        border: none;
+        background: none;
+        cursor: pointer;
+        font: inherit;
+      }
+      input,
+      textarea {
+        border: none;
+        outline: none;
+        background: none;
+        font: inherit;
+      }
+      html,
+      body {
+        height: 100%;
+        overflow: hidden;
+        font-family: "Outfit", sans-serif;
+        -webkit-tap-highlight-color: transparent;
+      }
 
-    /* ── CSS variables (desktop theme) ─────────────────────────────────────── */
-    :root {
-      --radius-pill:   100px;
-      --radius-card:   20px;
-      --radius-inner:  10px;
-      --text-primary:  #0a0a0a;
-      --text-secondary:#888888;
-      --ui-secondary:  rgba(184,190,198,0.6);
-      --ease-expand:   cubic-bezier(0.16,1,0.3,1);
-    }
+      /* ── CSS variables (desktop theme) ─────────────────────────────────────── */
+      :root {
+        --radius-pill: 100px;
+        --radius-card: 20px;
+        --radius-inner: 10px;
+        --text-primary: #0a0a0a;
+        --text-secondary: #888888;
+        --ui-secondary: rgba(184, 190, 198, 0.6);
+        --ease-expand: cubic-bezier(0.16, 1, 0.3, 1);
+      }
 
-    /* ── View shells ────────────────────────────────────────────────────────── */
-    #desktop-view, #mobile-view {
-      position: fixed;
-      inset: 0;
-      transition: opacity 0.2s ease;
-    }
-    .view-hidden { opacity: 0 !important; pointer-events: none !important; }
+      /* ── View shells ────────────────────────────────────────────────────────── */
+      #desktop-view,
+      #mobile-view {
+        position: fixed;
+        inset: 0;
+        transition: opacity 0.2s ease;
+      }
+      .view-hidden {
+        opacity: 0 !important;
+        pointer-events: none !important;
+      }
 
-    /* ═══════════════════════════════════════════════════════════════════════════
+      /* ═══════════════════════════════════════════════════════════════════════════
        DESKTOP STYLES
        ═══════════════════════════════════════════════════════════════════════════ */
 
-    /* ── Workspace ──────────────────────────────────────────────────────────── */
-    #d-workspace {
-      position: relative;
-      width: 100%;
-      height: 100%;
-      background-color: #ffffff;
-      background-image: radial-gradient(circle, #e9e9e9 2px, transparent 2px);
-      background-size: 52px 52px;
-      overflow: hidden;
-      cursor: grab;
-    }
-    #d-workspace.dragging { cursor: grabbing; }
+      /* ── Workspace ──────────────────────────────────────────────────────────── */
+      #d-workspace {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        background-color: #ffffff;
+        background-image: radial-gradient(circle, #e9e9e9 2px, transparent 2px);
+        background-size: 52px 52px;
+        overflow: hidden;
+        cursor: grab;
+      }
+      #d-workspace.dragging {
+        cursor: grabbing;
+      }
 
-    /* ── Status bar ─────────────────────────────────────────────────────────── */
-    #d-status-bar {
-      position: fixed;
-      top: 56px;
-      left: 50%;
-      transform: translateX(-50%);
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 16px;
-      border-radius: var(--radius-pill);
-      background: rgba(255,255,255,0.7);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      pointer-events: none;
-      z-index: 10;
-      font-size: 12px;
-      color: var(--text-secondary);
-      white-space: nowrap;
-    }
-    .d-sb-divider { width: 1px; height: 10px; background: var(--ui-secondary); opacity: 0.5; }
-    .d-sb-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--ui-secondary); flex-shrink: 0; }
+      /* ── Status bar ─────────────────────────────────────────────────────────── */
+      #d-status-bar {
+        position: fixed;
+        top: 56px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 16px;
+        border-radius: var(--radius-pill);
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        pointer-events: none;
+        z-index: 10;
+        font-size: 12px;
+        color: var(--text-secondary);
+        white-space: nowrap;
+      }
+      .d-sb-divider {
+        width: 1px;
+        height: 10px;
+        background: var(--ui-secondary);
+        opacity: 0.5;
+      }
+      .d-sb-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--ui-secondary);
+        flex-shrink: 0;
+      }
 
-    /* ── Foveal canvas ──────────────────────────────────────────────────────── */
-    #d-canvas {
-      position: fixed;
-      inset: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      pointer-events: none;
-      z-index: 5;
-    }
-    #d-watermark {
-      font-size: clamp(32px,5vw,64px);
-      font-weight: 300;
-      color: var(--text-primary);
-      opacity: 0.08;
-      letter-spacing: -0.02em;
-      user-select: none;
-    }
+      /* ── Foveal canvas ──────────────────────────────────────────────────────── */
+      #d-canvas {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        pointer-events: none;
+        z-index: 5;
+      }
+      #d-watermark {
+        font-size: clamp(32px, 5vw, 64px);
+        font-weight: 300;
+        color: var(--text-primary);
+        opacity: 0.08;
+        letter-spacing: -0.02em;
+        user-select: none;
+      }
 
-    /* ── Calendar widget wrapper ────────────────────────────────────────────── */
-    #d-cal-wrapper { position: fixed; top: 24px; left: 24px; z-index: 100; }
+      /* ── Calendar widget wrapper ────────────────────────────────────────────── */
+      #d-cal-wrapper {
+        position: fixed;
+        top: 24px;
+        left: 24px;
+        z-index: 100;
+      }
 
-    /* ── Shared pill style ──────────────────────────────────────────────────── */
-    .d-pill {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      height: 56px;
-      padding: 0 22px;
-      border-radius: var(--radius-pill);
-      background: rgba(184,190,198,0.32);
-      backdrop-filter: blur(6px);
-      -webkit-backdrop-filter: blur(6px);
-      color: var(--text-secondary);
-      font-size: 13px;
-      font-weight: 400;
-      letter-spacing: 0.01em;
-      white-space: nowrap;
-      transition: background 0.15s, color 0.15s;
-    }
-    .d-pill:hover { background: rgba(184,190,198,0.5); color: var(--text-primary); }
-    .d-pill-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-    .d-pill-dot-pulse {
-      width: 7px; height: 7px; border-radius: 50%;
-      background: rgba(100,100,100,0.3); flex-shrink: 0;
-      animation: dDotPulse 2.2s ease-in-out infinite;
-    }
-    @keyframes dDotPulse {
-      0%,100% { opacity:0.4; transform:scale(1); }
-      50%      { opacity:0.9; transform:scale(1.35); }
-    }
-    .d-pill-title { font-size:13px; overflow:hidden; text-overflow:ellipsis; flex:1; min-width:0; }
+      /* ── Shared pill style ──────────────────────────────────────────────────── */
+      .d-pill {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        height: 56px;
+        padding: 0 22px;
+        border-radius: var(--radius-pill);
+        background: rgba(184, 190, 198, 0.32);
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+        color: var(--text-secondary);
+        font-size: 13px;
+        font-weight: 400;
+        letter-spacing: 0.01em;
+        white-space: nowrap;
+        transition:
+          background 0.15s,
+          color 0.15s;
+      }
+      .d-pill:hover {
+        background: rgba(184, 190, 198, 0.5);
+        color: var(--text-primary);
+      }
+      .d-pill-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+      .d-pill-dot-pulse {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: rgba(100, 100, 100, 0.3);
+        flex-shrink: 0;
+        animation: dDotPulse 2.2s ease-in-out infinite;
+      }
+      @keyframes dDotPulse {
+        0%,
+        100% {
+          opacity: 0.4;
+          transform: scale(1);
+        }
+        50% {
+          opacity: 0.9;
+          transform: scale(1.35);
+        }
+      }
+      .d-pill-title {
+        font-size: 13px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        flex: 1;
+        min-width: 0;
+      }
 
-    /* ── Expanded panel ─────────────────────────────────────────────────────── */
-    .d-panel {
-      width: 380px;
-      max-height: calc(100vh - 48px);
-      background: rgba(15,15,15,0.82);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 24px;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      animation: dPanelExpand 0.32s var(--ease-expand) both;
-      transform-origin: top left;
-    }
-    @keyframes dPanelExpand {
-      from { opacity:0; transform:scale(0.94) translateY(-6px); }
-      to   { opacity:1; transform:scale(1) translateY(0); }
-    }
+      /* ── Expanded panel ─────────────────────────────────────────────────────── */
+      .d-panel {
+        width: 380px;
+        max-height: calc(100vh - 48px);
+        background: rgba(15, 15, 15, 0.82);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 24px;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        animation: dPanelExpand 0.32s var(--ease-expand) both;
+        transform-origin: top left;
+      }
+      @keyframes dPanelExpand {
+        from {
+          opacity: 0;
+          transform: scale(0.94) translateY(-6px);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1) translateY(0);
+        }
+      }
 
-    /* Agent panel expands from bottom right */
-    #d-agent-panel { transform-origin: bottom right; }
-    @keyframes dAgentExpand {
-      from { opacity:0; transform:scale(0.96) translateY(4px); }
-      to   { opacity:1; transform:scale(1) translateY(0); }
-    }
-    #d-agent-panel {
-      background: rgba(255,255,255,0.97);
-      border: 1px solid rgba(184,190,198,0.3);
-      box-shadow: 0 8px 32px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.04);
-      animation: dAgentExpand 0.22s var(--ease-expand) both;
-    }
+      /* Agent panel expands from bottom right */
+      #d-agent-panel {
+        transform-origin: bottom right;
+      }
+      @keyframes dAgentExpand {
+        from {
+          opacity: 0;
+          transform: scale(0.96) translateY(4px);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1) translateY(0);
+        }
+      }
+      #d-agent-panel {
+        background: rgba(255, 255, 255, 0.97);
+        border: 1px solid rgba(184, 190, 198, 0.3);
+        box-shadow:
+          0 8px 32px rgba(0, 0, 0, 0.08),
+          0 2px 8px rgba(0, 0, 0, 0.04);
+        animation: dAgentExpand 0.22s var(--ease-expand) both;
+      }
 
-    .d-panel-top { display:flex; justify-content:flex-end; padding:14px 16px 0; flex-shrink:0; }
-    .d-close-btn {
-      width:24px; height:24px; border-radius:50%;
-      background: rgba(255,255,255,0.07);
-      color: rgba(255,255,255,0.45); font-size:15px;
-      display:flex; align-items:center; justify-content:center;
-      transition: background 0.12s, color 0.12s;
-    }
-    .d-close-btn:hover { background:rgba(255,255,255,0.14); color:#fff; }
-    .d-close-btn-dark { background:rgba(0,0,0,0.06); color:rgba(0,0,0,0.4); }
-    .d-close-btn-dark:hover { background:rgba(0,0,0,0.12); color:#000; }
+      .d-panel-top {
+        display: flex;
+        justify-content: flex-end;
+        padding: 14px 16px 0;
+        flex-shrink: 0;
+      }
+      .d-close-btn {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.07);
+        color: rgba(255, 255, 255, 0.45);
+        font-size: 15px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition:
+          background 0.12s,
+          color 0.12s;
+      }
+      .d-close-btn:hover {
+        background: rgba(255, 255, 255, 0.14);
+        color: #fff;
+      }
+      .d-close-btn-dark {
+        background: rgba(0, 0, 0, 0.06);
+        color: rgba(0, 0, 0, 0.4);
+      }
+      .d-close-btn-dark:hover {
+        background: rgba(0, 0, 0, 0.12);
+        color: #000;
+      }
 
-    /* ── Month calendar ─────────────────────────────────────────────────────── */
-    .d-month-cal { padding:10px 20px 18px; flex-shrink:0; }
-    .d-month-header {
-      display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;
-    }
-    .d-month-title { font-size:13px; font-weight:500; color:#fff; letter-spacing:0.01em; }
-    .d-nav-btn {
-      width:28px; height:28px; border-radius:8px;
-      background:rgba(255,255,255,0.06); color:rgba(255,255,255,0.55);
-      font-size:17px; display:flex; align-items:center; justify-content:center;
-      transition: background 0.1s, color 0.1s;
-    }
-    .d-nav-btn:hover { background:rgba(255,255,255,0.12); color:#fff; }
-    .d-day-headers { display:grid; grid-template-columns:repeat(7,1fr); margin-bottom:6px; }
-    .d-day-hdr { font-size:10px; font-weight:500; color:rgba(255,255,255,0.3); text-align:center; padding:3px 0; letter-spacing:0.04em; }
-    .d-day-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:2px; }
-    .d-day-cell {
-      display:flex; flex-direction:column; align-items:center; justify-content:center;
-      height:36px; border-radius:10px; gap:2px; cursor:pointer;
-      transition: background 0.1s;
-    }
-    .d-day-cell:hover { background:rgba(255,255,255,0.07); }
-    .d-day-num { font-size:12px; font-weight:400; color:rgba(255,255,255,0.8); line-height:1; }
-    .d-day-today { background:rgba(255,255,255,0.12); border:1px solid rgba(255,255,255,0.2); box-shadow:0 4px 12px rgba(0,0,0,0.4); }
-    .d-day-selected { background:#ffffff !important; border-color:transparent !important; box-shadow:0 4px 12px rgba(0,0,0,0.4); }
-    .d-day-selected .d-day-num { color:#000 !important; }
-    .d-day-other .d-day-num { color:rgba(255,255,255,0.2); }
-    .d-day-dot { width:3px; height:3px; border-radius:50%; background:rgba(255,255,255,0.4); flex-shrink:0; }
-    .d-divider { height:1px; background:rgba(255,255,255,0.06); margin:0 20px; flex-shrink:0; }
+      /* ── Month calendar ─────────────────────────────────────────────────────── */
+      .d-month-cal {
+        padding: 10px 20px 18px;
+        flex-shrink: 0;
+      }
+      .d-month-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 14px;
+      }
+      .d-month-title {
+        font-size: 13px;
+        font-weight: 500;
+        color: #fff;
+        letter-spacing: 0.01em;
+      }
+      .d-nav-btn {
+        width: 28px;
+        height: 28px;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.06);
+        color: rgba(255, 255, 255, 0.55);
+        font-size: 17px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition:
+          background 0.1s,
+          color 0.1s;
+      }
+      .d-nav-btn:hover {
+        background: rgba(255, 255, 255, 0.12);
+        color: #fff;
+      }
+      .d-day-headers {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        margin-bottom: 6px;
+      }
+      .d-day-hdr {
+        font-size: 10px;
+        font-weight: 500;
+        color: rgba(255, 255, 255, 0.3);
+        text-align: center;
+        padding: 3px 0;
+        letter-spacing: 0.04em;
+      }
+      .d-day-grid {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 2px;
+      }
+      .d-day-cell {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 36px;
+        border-radius: 10px;
+        gap: 2px;
+        cursor: pointer;
+        transition: background 0.1s;
+      }
+      .d-day-cell:hover {
+        background: rgba(255, 255, 255, 0.07);
+      }
+      .d-day-num {
+        font-size: 12px;
+        font-weight: 400;
+        color: rgba(255, 255, 255, 0.8);
+        line-height: 1;
+      }
+      .d-day-today {
+        background: rgba(255, 255, 255, 0.12);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+      }
+      .d-day-selected {
+        background: #ffffff !important;
+        border-color: transparent !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+      }
+      .d-day-selected .d-day-num {
+        color: #000 !important;
+      }
+      .d-day-other .d-day-num {
+        color: rgba(255, 255, 255, 0.2);
+      }
+      .d-day-dot {
+        width: 3px;
+        height: 3px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.4);
+        flex-shrink: 0;
+      }
+      .d-divider {
+        height: 1px;
+        background: rgba(255, 255, 255, 0.06);
+        margin: 0 20px;
+        flex-shrink: 0;
+      }
 
-    /* ── Timeline ───────────────────────────────────────────────────────────── */
-    .d-tl-container { flex:1; min-height:0; position:relative; overflow:hidden; display:flex; flex-direction:column; }
-    .d-tl-header { padding:14px 20px 10px; flex-shrink:0; display:flex; align-items:baseline; gap:8px; }
-    .d-tl-label { font-size:12px; font-weight:400; color:#fff; }
-    .d-tl-sub { font-size:10px; color:rgba(255,255,255,0.35); }
-    .d-tl-scroll { flex:1; min-height:0; overflow-y:auto; padding-bottom:20px; }
-    .d-tl-scroll::-webkit-scrollbar { width:3px; }
-    .d-tl-scroll::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.15); border-radius:2px; }
-    .d-tl-inner { position:relative; height:1248px; }
-    .d-hour-row { position:absolute; left:0; right:0; height:52px; display:flex; align-items:flex-start; pointer-events:none; }
-    .d-hour-lbl { width:48px; padding-left:20px; padding-top:5px; font-size:10px; color:rgba(255,255,255,0.25); flex-shrink:0; font-variant-numeric:tabular-nums; }
-    .d-hour-line { flex:1; height:1px; background:rgba(255,255,255,0.05); margin-top:6px; margin-right:20px; }
-    .d-now-line { position:absolute; left:0; right:0; height:0; display:flex; align-items:center; pointer-events:none; z-index:2; }
-    .d-now-lbl { width:48px; padding-left:20px; font-size:10px; color:#fff; flex-shrink:0; white-space:nowrap; font-variant-numeric:tabular-nums; }
-    .d-now-dot { width:6px; height:6px; border-radius:50%; background:rgba(255,255,255,0.55); flex-shrink:0; }
-    .d-now-bar { flex:1; height:1.5px; background:rgba(255,255,255,0.55); margin-right:20px; }
-    .d-tl-event {
-      position:absolute;
-      border-radius:8px;
-      border-left:3px solid transparent;
-      padding:5px 9px;
-      overflow:hidden;
-      cursor:pointer;
-      z-index:1;
-      display:flex;
-      flex-direction:column;
-      gap:3px;
-      transition: filter 0.1s;
-    }
-    .d-tl-event:hover { filter:brightness(1.2); z-index:10; }
-    .d-tl-done { opacity:0.35; }
-    .d-tl-title { font-size:11px; font-weight:400; color:rgba(255,255,255,0.9); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .d-tl-time  { font-size:10px; color:rgba(255,255,255,0.4); white-space:nowrap; display:none; }
-    .d-tl-loc   { font-size:10px; color:rgba(255,255,255,0.3); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:none; }
-    .d-tl-event:hover .d-tl-time, .d-tl-event:hover .d-tl-loc { display:block; }
+      /* ── Timeline ───────────────────────────────────────────────────────────── */
+      .d-tl-container {
+        flex: 1;
+        min-height: 0;
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+      .d-tl-header {
+        padding: 14px 20px 10px;
+        flex-shrink: 0;
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+      }
+      .d-tl-label {
+        font-size: 12px;
+        font-weight: 400;
+        color: #fff;
+      }
+      .d-tl-sub {
+        font-size: 10px;
+        color: rgba(255, 255, 255, 0.35);
+      }
+      .d-tl-scroll {
+        flex: 1;
+        min-height: 0;
+        overflow-y: auto;
+        padding-bottom: 20px;
+      }
+      .d-tl-scroll::-webkit-scrollbar {
+        width: 3px;
+      }
+      .d-tl-scroll::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.15);
+        border-radius: 2px;
+      }
+      .d-tl-inner {
+        position: relative;
+        height: 1248px;
+      }
+      .d-hour-row {
+        position: absolute;
+        left: 0;
+        right: 0;
+        height: 52px;
+        display: flex;
+        align-items: flex-start;
+        pointer-events: none;
+      }
+      .d-hour-lbl {
+        width: 48px;
+        padding-left: 20px;
+        padding-top: 5px;
+        font-size: 10px;
+        color: rgba(255, 255, 255, 0.25);
+        flex-shrink: 0;
+        font-variant-numeric: tabular-nums;
+      }
+      .d-hour-line {
+        flex: 1;
+        height: 1px;
+        background: rgba(255, 255, 255, 0.05);
+        margin-top: 6px;
+        margin-right: 20px;
+      }
+      .d-now-line {
+        position: absolute;
+        left: 0;
+        right: 0;
+        height: 0;
+        display: flex;
+        align-items: center;
+        pointer-events: none;
+        z-index: 2;
+      }
+      .d-now-lbl {
+        width: 48px;
+        padding-left: 20px;
+        font-size: 10px;
+        color: #fff;
+        flex-shrink: 0;
+        white-space: nowrap;
+        font-variant-numeric: tabular-nums;
+      }
+      .d-now-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.55);
+        flex-shrink: 0;
+      }
+      .d-now-bar {
+        flex: 1;
+        height: 1.5px;
+        background: rgba(255, 255, 255, 0.55);
+        margin-right: 20px;
+      }
+      .d-tl-event {
+        position: absolute;
+        border-radius: 8px;
+        border-left: 3px solid transparent;
+        padding: 5px 9px;
+        overflow: hidden;
+        cursor: pointer;
+        z-index: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+        transition: filter 0.1s;
+      }
+      .d-tl-event:hover {
+        filter: brightness(1.2);
+        z-index: 10;
+      }
+      .d-tl-done {
+        opacity: 0.35;
+      }
+      .d-tl-title {
+        font-size: 11px;
+        font-weight: 400;
+        color: rgba(255, 255, 255, 0.9);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .d-tl-time {
+        font-size: 10px;
+        color: rgba(255, 255, 255, 0.4);
+        white-space: nowrap;
+        display: none;
+      }
+      .d-tl-loc {
+        font-size: 10px;
+        color: rgba(255, 255, 255, 0.3);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: none;
+      }
+      .d-tl-event:hover .d-tl-time,
+      .d-tl-event:hover .d-tl-loc {
+        display: block;
+      }
 
-    /* ── Event detail panel ─────────────────────────────────────────────────── */
-    .d-detail-panel {
-      position:absolute; inset:0;
-      background:rgba(15,15,15,0.96);
-      display:flex; flex-direction:column; overflow:hidden;
-      animation: dDetailIn 0.22s cubic-bezier(0.22,1,0.36,1) both;
-      z-index:5;
-    }
-    @keyframes dDetailIn { from { transform:translateX(100%); } to { transform:translateX(0); } }
-    .d-detail-hdr { padding:12px 16px 8px; flex-shrink:0; border-bottom:1px solid rgba(255,255,255,0.06); }
-    .d-back-btn { font-size:12px; color:rgba(255,255,255,0.45); transition:color 0.15s; }
-    .d-back-btn:hover { color:#fff; }
-    .d-detail-scroll { flex:1; overflow-y:auto; padding:16px 20px; display:flex; flex-direction:column; gap:10px; }
-    .d-detail-scroll::-webkit-scrollbar { width:3px; }
-    .d-detail-scroll::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.15); border-radius:2px; }
-    .d-d-title { font-size:14px; font-weight:600; color:#fff; line-height:1.35; }
-    .d-d-time  { font-size:12px; color:rgba(255,255,255,0.5); }
-    .d-d-row   { font-size:12px; color:rgba(255,255,255,0.5); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-    .d-d-notes { font-size:12px; color:rgba(255,255,255,0.45); line-height:1.55; white-space:pre-wrap; word-break:break-word; }
-    .d-d-section { display:flex; flex-direction:column; gap:6px; }
-    .d-d-attendee { display:flex; align-items:center; gap:9px; }
-    .d-d-avatar { width:26px; height:26px; border-radius:50%; background:rgba(255,255,255,0.1); color:rgba(255,255,255,0.7); font-size:9px; font-weight:500; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-    .d-d-ainfo { display:flex; flex-direction:column; gap:1px; min-width:0; }
-    .d-d-aname { font-size:12px; color:rgba(255,255,255,0.8); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; display:flex; align-items:center; gap:5px; }
-    .d-d-org   { font-size:9px; font-weight:500; color:rgba(255,255,255,0.35); background:rgba(255,255,255,0.08); padding:1px 4px; border-radius:3px; }
-    .d-d-status { font-size:10px; }
-    .d-status-accepted { color:#4caf7d; } .d-status-tentative { color:#c8a84b; }
-    .d-status-needsAction { color:rgba(255,255,255,0.3); } .d-status-declined { color:#e05c5c; }
-    .d-detail-footer { padding:10px 20px 16px; flex-shrink:0; border-top:1px solid rgba(255,255,255,0.06); }
-    .d-begin-btn { font-size:12px; font-weight:500; color:#fff; padding:6px 14px; border-radius:var(--radius-inner); background:rgba(255,255,255,0.1); transition:background 0.15s; }
-    .d-begin-btn:hover { background:rgba(255,255,255,0.18); }
+      /* ── Event detail panel ─────────────────────────────────────────────────── */
+      .d-detail-panel {
+        position: absolute;
+        inset: 0;
+        background: rgba(15, 15, 15, 0.96);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        animation: dDetailIn 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
+        z-index: 5;
+      }
+      @keyframes dDetailIn {
+        from {
+          transform: translateX(100%);
+        }
+        to {
+          transform: translateX(0);
+        }
+      }
+      .d-detail-hdr {
+        padding: 12px 16px 8px;
+        flex-shrink: 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      }
+      .d-back-btn {
+        font-size: 12px;
+        color: rgba(255, 255, 255, 0.45);
+        transition: color 0.15s;
+      }
+      .d-back-btn:hover {
+        color: #fff;
+      }
+      .d-detail-scroll {
+        flex: 1;
+        overflow-y: auto;
+        padding: 16px 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .d-detail-scroll::-webkit-scrollbar {
+        width: 3px;
+      }
+      .d-detail-scroll::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.15);
+        border-radius: 2px;
+      }
+      .d-d-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: #fff;
+        line-height: 1.35;
+      }
+      .d-d-time {
+        font-size: 12px;
+        color: rgba(255, 255, 255, 0.5);
+      }
+      .d-d-row {
+        font-size: 12px;
+        color: rgba(255, 255, 255, 0.5);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .d-d-notes {
+        font-size: 12px;
+        color: rgba(255, 255, 255, 0.45);
+        line-height: 1.55;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+      .d-d-section {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .d-d-attendee {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+      }
+      .d-d-avatar {
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.1);
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 9px;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+      .d-d-ainfo {
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+        min-width: 0;
+      }
+      .d-d-aname {
+        font-size: 12px;
+        color: rgba(255, 255, 255, 0.8);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+      }
+      .d-d-org {
+        font-size: 9px;
+        font-weight: 500;
+        color: rgba(255, 255, 255, 0.35);
+        background: rgba(255, 255, 255, 0.08);
+        padding: 1px 4px;
+        border-radius: 3px;
+      }
+      .d-d-status {
+        font-size: 10px;
+      }
+      .d-status-accepted {
+        color: #4caf7d;
+      }
+      .d-status-tentative {
+        color: #c8a84b;
+      }
+      .d-status-needsAction {
+        color: rgba(255, 255, 255, 0.3);
+      }
+      .d-status-declined {
+        color: #e05c5c;
+      }
+      .d-detail-footer {
+        padding: 10px 20px 16px;
+        flex-shrink: 0;
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
+      }
+      .d-begin-btn {
+        font-size: 12px;
+        font-weight: 500;
+        color: #fff;
+        padding: 6px 14px;
+        border-radius: var(--radius-inner);
+        background: rgba(255, 255, 255, 0.1);
+        transition: background 0.15s;
+      }
+      .d-begin-btn:hover {
+        background: rgba(255, 255, 255, 0.18);
+      }
 
-    /* ── Agent widget ───────────────────────────────────────────────────────── */
-    #d-agent-wrapper { position:fixed; bottom:24px; right:24px; z-index:100; display:flex; flex-direction:column; align-items:flex-end; gap:8px; }
-    #d-agent-panel { width:380px; max-height:60vh; border-radius:var(--radius-card); display:flex; flex-direction:column; overflow:hidden; }
-    .d-agent-close { background:rgba(0,0,0,0.06) !important; color:rgba(0,0,0,0.4) !important; }
-    .d-agent-close:hover { background:rgba(0,0,0,0.12) !important; color:#000 !important; }
-    .d-tabs { display:flex; gap:4px; padding:12px 16px 0; border-bottom:1px solid rgba(184,190,198,0.2); }
-    .d-tab { font-size:12px; font-weight:400; color:var(--text-secondary); padding:6px 12px; border-radius:10px 10px 0 0; transition:color 0.15s; }
-    .d-tab:hover { color:var(--text-primary); }
-    .d-tab-on { color:var(--text-primary); font-weight:500; box-shadow:0 1px 0 0 var(--text-primary); }
-    .d-msgs { flex:1; overflow-y:auto; padding:12px 16px; display:flex; flex-direction:column; gap:8px; min-height:80px; max-height:240px; }
-    .d-empty-chat { font-size:12px; color:var(--text-secondary); text-align:center; padding:20px 0; line-height:1.6; }
-    .d-msg { max-width:85%; font-size:12px; line-height:1.5; padding:8px 12px; border-radius:var(--radius-inner); }
-    .d-msg-user { align-self:flex-end; background:var(--text-primary); color:#fff; }
-    .d-msg-asst { align-self:flex-start; background:rgba(184,190,198,0.2); color:var(--text-primary); }
-    .d-input-row { padding:10px 16px 14px; }
-    .d-chat-input { width:100%; font-size:13px; color:var(--text-primary); }
-    .d-chat-input::placeholder { color:var(--text-secondary); }
-    .d-people { flex:1; overflow-y:auto; padding:16px; min-height:100px; }
-    .d-empty-people { font-size:12px; color:var(--text-secondary); text-align:center; padding:20px 0; }
-    .d-people-lbl { font-size:11px; color:var(--text-secondary); padding-bottom:10px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-    .d-att-row { display:flex; align-items:center; gap:10px; width:100%; padding:6px 0; border-radius:var(--radius-inner); text-align:left; cursor:pointer; transition:background 0.1s; }
-    .d-att-row:hover { background:rgba(184,190,198,0.12); padding-left:4px; padding-right:4px; }
-    .d-att-av { width:28px; height:28px; border-radius:50%; background:rgba(184,190,198,0.25); color:var(--text-primary); font-size:10px; font-weight:500; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-    .d-att-info { display:flex; flex-direction:column; gap:2px; min-width:0; }
-    .d-att-name { font-size:12px; color:var(--text-primary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; display:flex; align-items:center; gap:5px; }
-    .d-org-tag { font-size:9px; font-weight:500; color:var(--text-secondary); background:rgba(184,190,198,0.2); padding:1px 4px; border-radius:3px; }
-    .d-att-status { font-size:10px; }
-    .d-stt-accepted { color:#4caf7d; } .d-stt-tentative { color:#c8a84b; }
-    .d-stt-needsAction { color:var(--text-secondary); } .d-stt-declined { color:#e05c5c; }
+      /* ── Agent widget ───────────────────────────────────────────────────────── */
+      #d-agent-wrapper {
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        z-index: 100;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 8px;
+      }
+      #d-agent-panel {
+        width: 380px;
+        max-height: 60vh;
+        border-radius: var(--radius-card);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      .d-agent-close {
+        background: rgba(0, 0, 0, 0.06) !important;
+        color: rgba(0, 0, 0, 0.4) !important;
+      }
+      .d-agent-close:hover {
+        background: rgba(0, 0, 0, 0.12) !important;
+        color: #000 !important;
+      }
+      .d-tabs {
+        display: flex;
+        gap: 4px;
+        padding: 12px 16px 0;
+        border-bottom: 1px solid rgba(184, 190, 198, 0.2);
+      }
+      .d-tab {
+        font-size: 12px;
+        font-weight: 400;
+        color: var(--text-secondary);
+        padding: 6px 12px;
+        border-radius: 10px 10px 0 0;
+        transition: color 0.15s;
+      }
+      .d-tab:hover {
+        color: var(--text-primary);
+      }
+      .d-tab-on {
+        color: var(--text-primary);
+        font-weight: 500;
+        box-shadow: 0 1px 0 0 var(--text-primary);
+      }
+      .d-msgs {
+        flex: 1;
+        overflow-y: auto;
+        padding: 12px 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        min-height: 80px;
+        max-height: 240px;
+      }
+      .d-empty-chat {
+        font-size: 12px;
+        color: var(--text-secondary);
+        text-align: center;
+        padding: 20px 0;
+        line-height: 1.6;
+      }
+      .d-msg {
+        max-width: 85%;
+        font-size: 12px;
+        line-height: 1.5;
+        padding: 8px 12px;
+        border-radius: var(--radius-inner);
+      }
+      .d-msg-user {
+        align-self: flex-end;
+        background: var(--text-primary);
+        color: #fff;
+      }
+      .d-msg-asst {
+        align-self: flex-start;
+        background: rgba(184, 190, 198, 0.2);
+        color: var(--text-primary);
+      }
+      .d-input-row {
+        padding: 10px 16px 14px;
+      }
+      .d-chat-input {
+        width: 100%;
+        font-size: 13px;
+        color: var(--text-primary);
+      }
+      .d-chat-input::placeholder {
+        color: var(--text-secondary);
+      }
+      .d-people {
+        flex: 1;
+        overflow-y: auto;
+        padding: 16px;
+        min-height: 100px;
+      }
+      .d-empty-people {
+        font-size: 12px;
+        color: var(--text-secondary);
+        text-align: center;
+        padding: 20px 0;
+      }
+      .d-people-lbl {
+        font-size: 11px;
+        color: var(--text-secondary);
+        padding-bottom: 10px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .d-att-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+        padding: 6px 0;
+        border-radius: var(--radius-inner);
+        text-align: left;
+        cursor: pointer;
+        transition: background 0.1s;
+      }
+      .d-att-row:hover {
+        background: rgba(184, 190, 198, 0.12);
+        padding-left: 4px;
+        padding-right: 4px;
+      }
+      .d-att-av {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: rgba(184, 190, 198, 0.25);
+        color: var(--text-primary);
+        font-size: 10px;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+      .d-att-info {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        min-width: 0;
+      }
+      .d-att-name {
+        font-size: 12px;
+        color: var(--text-primary);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+      }
+      .d-org-tag {
+        font-size: 9px;
+        font-weight: 500;
+        color: var(--text-secondary);
+        background: rgba(184, 190, 198, 0.2);
+        padding: 1px 4px;
+        border-radius: 3px;
+      }
+      .d-att-status {
+        font-size: 10px;
+      }
+      .d-stt-accepted {
+        color: #4caf7d;
+      }
+      .d-stt-tentative {
+        color: #c8a84b;
+      }
+      .d-stt-needsAction {
+        color: var(--text-secondary);
+      }
+      .d-stt-declined {
+        color: #e05c5c;
+      }
 
-    /* ═══════════════════════════════════════════════════════════════════════════
+      /* ═══════════════════════════════════════════════════════════════════════════
        MOBILE STYLES  (scoped under #mobile-view)
        ═══════════════════════════════════════════════════════════════════════════ */
-    #mobile-view #app {
-      min-height: 100vh; min-height: 100svh;
-      display: flex; flex-direction: column;
-    }
-    #mobile-view #flash-overlay {
-      position: fixed; inset: 0;
-      background: rgba(200,240,96,0.22);
-      pointer-events: none; opacity: 0; z-index: 50;
-      transition: opacity 0.15s ease;
-    }
-    #mobile-view #top-section {
-      padding: calc(env(safe-area-inset-top,44px) + 12px) 16px 0;
-      display: flex; flex-direction: column; align-items: center; flex-shrink: 0;
-    }
-    #mobile-view #cadence-mark { margin-bottom: 14px; }
-    #mobile-view #pills-row { display:flex; gap:14px; margin-bottom:22px; }
-    #mobile-view .pill {
-      display:flex; align-items:center; background:rgba(255,255,255,0.08);
-      padding:8px 12px; border-radius:24px; font-size:16px; font-weight:300;
-      color:white; white-space:nowrap; box-shadow:0 4px 8px rgba(0,0,0,0.08);
-    }
-    #mobile-view .day-highlight { background:rgba(255,255,255,0.32); padding:4px 10px; border-radius:16px; margin-left:4px; }
-    #mobile-view #greeting-block { align-self:stretch; padding:0 4px; }
-    #mobile-view #greeting { font-size:32px; font-weight:400; color:white; line-height:1.2; margin-bottom:6px; }
-    #mobile-view #subtitle  { font-size:16px; font-weight:300; color:rgba(255,255,255,0.7); }
-    #mobile-view #card-area {
-      flex:1; display:flex; flex-direction:column; justify-content:center;
-      padding:20px 20px 120px; position:relative;
-    }
-    #mobile-view #card-stack { position:relative; }
-    #mobile-view .signal-card {
-      background:rgba(255,255,255,0.96); border-radius:64px;
-      padding:40px 32px 32px; min-height:210px;
-      box-shadow:0px 0px 32px 0px rgba(0,0,0,0.16);
-      display:flex; flex-direction:column;
-      will-change:transform; touch-action:none; user-select:none; -webkit-user-select:none;
-    }
-    #mobile-view #main-card { position:relative; z-index:2; }
-    #mobile-view #peek-card { position:absolute; top:0; left:0; right:0; z-index:1; transform:scale(0.96) translateY(12px); opacity:0.6; pointer-events:none; transform-origin:center top; }
-    #mobile-view .card-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
-    #mobile-view .cog-badge { display:flex; align-items:center; gap:5px; }
-    #mobile-view .cog-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
-    #mobile-view .cog-label { font-size:11px; font-weight:400; color:#888; }
-    #mobile-view .source-badge { background:#f0f0f0; padding:3px 8px; border-radius:12px; font-size:10px; color:#888; }
-    #mobile-view .card-title { font-size:26px; font-weight:600; color:#0a0a0a; line-height:1.2; margin-bottom:10px; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
-    #mobile-view .card-time   { font-size:14px; font-weight:300; color:#888; margin-bottom:6px; }
-    #mobile-view .card-location { font-size:12px; font-weight:300; color:#aaa; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; margin-bottom:4px; }
-    #mobile-view .score-track { margin-top:auto; padding-top:20px; height:23px; display:flex; align-items:flex-end; }
-    #mobile-view .score-bar-bg { width:100%; height:3px; border-radius:2px; background:#f0f0f0; overflow:hidden; }
-    #mobile-view .score-bar-fill { height:3px; border-radius:2px; }
-    #mobile-view #gesture-hints { text-align:center; margin-top:18px; font-size:11px; font-weight:300; color:rgba(255,255,255,0.35); pointer-events:none; transition:opacity 0.5s; }
-    #mobile-view #empty-state { flex:1; display:flex; align-items:center; justify-content:center; text-align:center; padding:0 32px; }
-    #mobile-view #empty-text  { font-size:14px; font-weight:300; color:rgba(255,255,255,0.5); }
-    #mobile-view #input-bar {
-      position:fixed; bottom:0; left:0; right:0;
-      display:flex; align-items:center; gap:10px;
-      padding:16px 24px; padding-bottom:calc(16px + env(safe-area-inset-bottom,0px)); z-index:40;
-    }
-    #mobile-view #input-wrapper { flex:1; display:flex; align-items:center; gap:8px; background:rgba(35,54,78,0.32); border-radius:24px; padding:8px 12px; }
-    #mobile-view .pin-icon  { width:12px; height:16px; display:flex; flex-direction:column; align-items:center; flex-shrink:0; }
-    #mobile-view .pin-circle { width:8px; height:8px; border-radius:50%; border:1.5px solid rgba(255,255,255,0.5); }
-    #mobile-view .pin-tail  { width:1.5px; height:6px; background:rgba(255,255,255,0.5); margin-top:-1px; }
-    #mobile-view #ask-input { flex:1; font-size:16px; font-weight:400; color:white; }
-    #mobile-view #ask-input::placeholder { color:rgba(255,255,255,0.4); }
-    #mobile-view #mic-btn { width:39px; height:32px; background:rgba(35,54,78,0.32); border-radius:16px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; flex-shrink:0; }
-    #mobile-view .mic-body  { width:9px; height:13px; border-radius:5px; border:1.5px solid rgba(255,255,255,0.6); }
-    #mobile-view .mic-stand { width:13px; height:1.5px; background:rgba(255,255,255,0.6); border-radius:1px; }
-    /* Mobile modals (fixed, so they're outside #mobile-view in the DOM but still within it) */
-    #detail-view { position:fixed; inset:0; background:white; z-index:200; transform:translateY(100%); transition:transform 0.4s cubic-bezier(0.34,1.2,0.64,1); display:flex; flex-direction:column; overflow:hidden; }
-    #detail-view.open { transform:translateY(0); }
-    .detail-handle-area { display:flex; justify-content:center; padding:16px; flex-shrink:0; }
-    .detail-handle-bar  { width:40px; height:4px; border-radius:2px; background:#e0e0e0; }
-    #detail-scroll { flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:0 32px calc(32px + env(safe-area-inset-bottom,0px)); padding-top:calc(env(safe-area-inset-top,44px) + 8px); }
-    .detail-title    { font-size:28px; font-weight:600; color:#0a0a0a; line-height:1.2; margin-bottom:10px; }
-    .detail-date     { font-size:14px; font-weight:300; color:#888; margin-bottom:8px; }
-    .detail-location { font-size:13px; font-weight:300; color:#aaa; margin-bottom:24px; }
-    .detail-section  { margin-bottom:24px; }
-    .detail-section-label { font-size:11px; font-weight:500; color:#aaa; letter-spacing:0.8px; text-transform:uppercase; margin-bottom:12px; }
-    .detail-avatars  { display:flex; flex-wrap:wrap; gap:12px; }
-    .detail-avatar-item { display:flex; flex-direction:column; align-items:center; gap:4px; }
-    .detail-avatar { width:36px; height:36px; border-radius:50%; background:#f0f0f0; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:500; color:#444; }
-    .detail-avatar.organiser { background:#eef3fe; border:1.5px solid #5b8cf7; }
-    .detail-avatar-status    { font-size:10px; font-weight:300; color:#aaa; }
-    .detail-avatar-org-label { font-size:9px; font-weight:500; color:#5b8cf7; }
-    .detail-notes    { font-size:15px; font-weight:300; color:#333; line-height:1.6; }
-    .detail-reminder { font-size:13px; font-weight:300; color:#888; }
-    #inspect-backdrop { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:290; }
-    #inspect-panel { position:fixed; bottom:0; left:0; right:0; height:320px; background:rgba(15,15,15,0.96); border-radius:24px 24px 0 0; z-index:300; transform:translateY(320px); transition:transform 0.3s cubic-bezier(0.34,1.2,0.64,1); display:flex; flex-direction:column; align-items:center; padding:32px 32px calc(24px + env(safe-area-inset-bottom,0px)); }
-    #inspect-panel.open { transform:translateY(0); }
-    .inspect-score { font-size:48px; font-weight:600; color:white; line-height:1; margin-bottom:4px; }
-    .inspect-score-label { font-size:11px; font-weight:300; color:rgba(255,255,255,0.4); letter-spacing:0.5px; margin-bottom:20px; }
-    .inspect-breakdown { width:100%; display:flex; flex-direction:column; gap:8px; margin-bottom:14px; }
-    .inspect-row { display:flex; justify-content:space-between; }
-    .inspect-key { font-size:13px; font-weight:300; color:rgba(255,255,255,0.5); }
-    .inspect-val { font-size:13px; font-weight:500; color:rgba(255,255,255,0.85); }
-    .inspect-description { font-size:12px; font-weight:300; color:rgba(255,255,255,0.4); text-align:center; line-height:1.5; margin-bottom:auto; padding:0 8px; }
-    .inspect-gotit { background:white; color:#0a0a0a; font-size:14px; font-weight:500; padding:10px 32px; border-radius:24px; margin-top:16px; }
+      #mobile-view #app {
+        min-height: 100vh;
+        min-height: 100svh;
+        display: flex;
+        flex-direction: column;
+      }
+      #mobile-view #flash-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(200, 240, 96, 0.22);
+        pointer-events: none;
+        opacity: 0;
+        z-index: 50;
+        transition: opacity 0.15s ease;
+      }
+      #mobile-view #top-section {
+        padding: calc(env(safe-area-inset-top, 44px) + 12px) 16px 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        flex-shrink: 0;
+      }
+      #mobile-view #cadence-mark {
+        margin-bottom: 14px;
+      }
+      #mobile-view #pills-row {
+        display: flex;
+        gap: 14px;
+        margin-bottom: 22px;
+      }
+      #mobile-view .pill {
+        display: flex;
+        align-items: center;
+        background: rgba(255, 255, 255, 0.08);
+        padding: 8px 12px;
+        border-radius: 24px;
+        font-size: 16px;
+        font-weight: 300;
+        color: white;
+        white-space: nowrap;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+      }
+      #mobile-view .day-highlight {
+        background: rgba(255, 255, 255, 0.32);
+        padding: 4px 10px;
+        border-radius: 16px;
+        margin-left: 4px;
+      }
+      #mobile-view #greeting-block {
+        align-self: stretch;
+        padding: 0 4px;
+      }
+      #mobile-view #greeting {
+        font-size: 32px;
+        font-weight: 400;
+        color: white;
+        line-height: 1.2;
+        margin-bottom: 6px;
+      }
+      #mobile-view #subtitle {
+        font-size: 16px;
+        font-weight: 300;
+        color: rgba(255, 255, 255, 0.7);
+      }
+      #mobile-view #card-area {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        padding: 20px 20px 120px;
+        position: relative;
+      }
+      #mobile-view #card-stack {
+        position: relative;
+      }
+      #mobile-view .signal-card {
+        background: rgba(255, 255, 255, 0.96);
+        border-radius: 64px;
+        padding: 40px 32px 32px;
+        min-height: 210px;
+        box-shadow: 0px 0px 32px 0px rgba(0, 0, 0, 0.16);
+        display: flex;
+        flex-direction: column;
+        will-change: transform;
+        touch-action: none;
+        user-select: none;
+        -webkit-user-select: none;
+      }
+      #mobile-view #main-card {
+        position: relative;
+        z-index: 2;
+      }
+      #mobile-view #peek-card {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 1;
+        transform: scale(0.96) translateY(12px);
+        opacity: 0.6;
+        pointer-events: none;
+        transform-origin: center top;
+      }
+      #mobile-view .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+      }
+      #mobile-view .cog-badge {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+      }
+      #mobile-view .cog-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+      #mobile-view .cog-label {
+        font-size: 11px;
+        font-weight: 400;
+        color: #888;
+      }
+      #mobile-view .source-badge {
+        background: #f0f0f0;
+        padding: 3px 8px;
+        border-radius: 12px;
+        font-size: 10px;
+        color: #888;
+      }
+      #mobile-view .card-title {
+        font-size: 26px;
+        font-weight: 600;
+        color: #0a0a0a;
+        line-height: 1.2;
+        margin-bottom: 10px;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+      #mobile-view .card-time {
+        font-size: 14px;
+        font-weight: 300;
+        color: #888;
+        margin-bottom: 6px;
+      }
+      #mobile-view .card-location {
+        font-size: 12px;
+        font-weight: 300;
+        color: #aaa;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        margin-bottom: 4px;
+      }
+      #mobile-view .score-track {
+        margin-top: auto;
+        padding-top: 20px;
+        height: 23px;
+        display: flex;
+        align-items: flex-end;
+      }
+      #mobile-view .score-bar-bg {
+        width: 100%;
+        height: 3px;
+        border-radius: 2px;
+        background: #f0f0f0;
+        overflow: hidden;
+      }
+      #mobile-view .score-bar-fill {
+        height: 3px;
+        border-radius: 2px;
+      }
+      #mobile-view #gesture-hints {
+        text-align: center;
+        margin-top: 18px;
+        font-size: 11px;
+        font-weight: 300;
+        color: rgba(255, 255, 255, 0.35);
+        pointer-events: none;
+        transition: opacity 0.5s;
+      }
+      #mobile-view #empty-state {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 0 32px;
+      }
+      #mobile-view #empty-text {
+        font-size: 14px;
+        font-weight: 300;
+        color: rgba(255, 255, 255, 0.5);
+      }
+      #mobile-view #input-bar {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 16px 24px;
+        padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+        z-index: 40;
+      }
+      #mobile-view #input-wrapper {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(35, 54, 78, 0.32);
+        border-radius: 24px;
+        padding: 8px 12px;
+      }
+      #mobile-view .pin-icon {
+        width: 12px;
+        height: 16px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        flex-shrink: 0;
+      }
+      #mobile-view .pin-circle {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        border: 1.5px solid rgba(255, 255, 255, 0.5);
+      }
+      #mobile-view .pin-tail {
+        width: 1.5px;
+        height: 6px;
+        background: rgba(255, 255, 255, 0.5);
+        margin-top: -1px;
+      }
+      #mobile-view #ask-input {
+        flex: 1;
+        font-size: 16px;
+        font-weight: 400;
+        color: white;
+      }
+      #mobile-view #ask-input::placeholder {
+        color: rgba(255, 255, 255, 0.4);
+      }
+      #mobile-view #mic-btn {
+        width: 39px;
+        height: 32px;
+        background: rgba(35, 54, 78, 0.32);
+        border-radius: 16px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 2px;
+        flex-shrink: 0;
+      }
+      #mobile-view .mic-body {
+        width: 9px;
+        height: 13px;
+        border-radius: 5px;
+        border: 1.5px solid rgba(255, 255, 255, 0.6);
+      }
+      #mobile-view .mic-stand {
+        width: 13px;
+        height: 1.5px;
+        background: rgba(255, 255, 255, 0.6);
+        border-radius: 1px;
+      }
+      /* Mobile modals (fixed, so they're outside #mobile-view in the DOM but still within it) */
+      #detail-view {
+        position: fixed;
+        inset: 0;
+        background: white;
+        z-index: 200;
+        transform: translateY(100%);
+        transition: transform 0.4s cubic-bezier(0.34, 1.2, 0.64, 1);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      #detail-view.open {
+        transform: translateY(0);
+      }
+      .detail-handle-area {
+        display: flex;
+        justify-content: center;
+        padding: 16px;
+        flex-shrink: 0;
+      }
+      .detail-handle-bar {
+        width: 40px;
+        height: 4px;
+        border-radius: 2px;
+        background: #e0e0e0;
+      }
+      #detail-scroll {
+        flex: 1;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        padding: 0 32px calc(32px + env(safe-area-inset-bottom, 0px));
+        padding-top: calc(env(safe-area-inset-top, 44px) + 8px);
+      }
+      .detail-title {
+        font-size: 28px;
+        font-weight: 600;
+        color: #0a0a0a;
+        line-height: 1.2;
+        margin-bottom: 10px;
+      }
+      .detail-date {
+        font-size: 14px;
+        font-weight: 300;
+        color: #888;
+        margin-bottom: 8px;
+      }
+      .detail-location {
+        font-size: 13px;
+        font-weight: 300;
+        color: #aaa;
+        margin-bottom: 24px;
+      }
+      .detail-section {
+        margin-bottom: 24px;
+      }
+      .detail-section-label {
+        font-size: 11px;
+        font-weight: 500;
+        color: #aaa;
+        letter-spacing: 0.8px;
+        text-transform: uppercase;
+        margin-bottom: 12px;
+      }
+      .detail-avatars {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+      .detail-avatar-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+      }
+      .detail-avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: #f0f0f0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: 500;
+        color: #444;
+      }
+      .detail-avatar.organiser {
+        background: #eef3fe;
+        border: 1.5px solid #5b8cf7;
+      }
+      .detail-avatar-status {
+        font-size: 10px;
+        font-weight: 300;
+        color: #aaa;
+      }
+      .detail-avatar-org-label {
+        font-size: 9px;
+        font-weight: 500;
+        color: #5b8cf7;
+      }
+      .detail-notes {
+        font-size: 15px;
+        font-weight: 300;
+        color: #333;
+        line-height: 1.6;
+      }
+      .detail-reminder {
+        font-size: 13px;
+        font-weight: 300;
+        color: #888;
+      }
+      #inspect-backdrop {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.4);
+        z-index: 290;
+      }
+      #inspect-panel {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 320px;
+        background: rgba(15, 15, 15, 0.96);
+        border-radius: 24px 24px 0 0;
+        z-index: 300;
+        transform: translateY(320px);
+        transition: transform 0.3s cubic-bezier(0.34, 1.2, 0.64, 1);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 32px 32px calc(24px + env(safe-area-inset-bottom, 0px));
+      }
+      #inspect-panel.open {
+        transform: translateY(0);
+      }
+      .inspect-score {
+        font-size: 48px;
+        font-weight: 600;
+        color: white;
+        line-height: 1;
+        margin-bottom: 4px;
+      }
+      .inspect-score-label {
+        font-size: 11px;
+        font-weight: 300;
+        color: rgba(255, 255, 255, 0.4);
+        letter-spacing: 0.5px;
+        margin-bottom: 20px;
+      }
+      .inspect-breakdown {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 14px;
+      }
+      .inspect-row {
+        display: flex;
+        justify-content: space-between;
+      }
+      .inspect-key {
+        font-size: 13px;
+        font-weight: 300;
+        color: rgba(255, 255, 255, 0.5);
+      }
+      .inspect-val {
+        font-size: 13px;
+        font-weight: 500;
+        color: rgba(255, 255, 255, 0.85);
+      }
+      .inspect-description {
+        font-size: 12px;
+        font-weight: 300;
+        color: rgba(255, 255, 255, 0.4);
+        text-align: center;
+        line-height: 1.5;
+        margin-bottom: auto;
+        padding: 0 8px;
+      }
+      .inspect-gotit {
+        background: white;
+        color: #0a0a0a;
+        font-size: 14px;
+        font-weight: 500;
+        padding: 10px 32px;
+        border-radius: 24px;
+        margin-top: 16px;
+      }
 
-    /* ── View switcher ──────────────────────────────────────────────────────── */
-    #view-switcher {
-      position: fixed;
-      bottom: 24px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 9999;
-      background: rgba(0,0,0,0.12);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      border: 1px solid rgba(255,255,255,0.2);
-      border-radius: 24px;
-      padding: 8px 16px;
-      font-size: 12px;
-      font-family: 'Outfit', sans-serif;
-      font-weight: 400;
-      color: rgba(255,255,255,0.85);
-      cursor: pointer;
-      white-space: nowrap;
-      transition: background 0.15s, color 0.15s, border-color 0.15s;
-    }
-    #view-switcher:hover { background: rgba(0,0,0,0.22); }
-    /* Dark version when desktop is active */
-    #view-switcher.switcher-dark {
-      background: rgba(255,255,255,0.7);
-      border-color: rgba(0,0,0,0.1);
-      color: rgba(0,0,0,0.6);
-      backdrop-filter: blur(8px);
-    }
-    #view-switcher.switcher-dark:hover { background: rgba(255,255,255,0.85); color: rgba(0,0,0,0.8); }
-  </style>
-</head>
-<body>
-
-<!-- ═══════════════════════════════════════════════════════════════════════════
+      /* ── View switcher ──────────────────────────────────────────────────────── */
+      #view-switcher {
+        position: fixed;
+        bottom: 24px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 9999;
+        background: rgba(0, 0, 0, 0.12);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 24px;
+        padding: 8px 16px;
+        font-size: 12px;
+        font-family: "Outfit", sans-serif;
+        font-weight: 400;
+        color: rgba(255, 255, 255, 0.85);
+        cursor: pointer;
+        white-space: nowrap;
+        transition:
+          background 0.15s,
+          color 0.15s,
+          border-color 0.15s;
+      }
+      #view-switcher:hover {
+        background: rgba(0, 0, 0, 0.22);
+      }
+      /* Dark version when desktop is active */
+      #view-switcher.switcher-dark {
+        background: rgba(255, 255, 255, 0.7);
+        border-color: rgba(0, 0, 0, 0.1);
+        color: rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(8px);
+      }
+      #view-switcher.switcher-dark:hover {
+        background: rgba(255, 255, 255, 0.85);
+        color: rgba(0, 0, 0, 0.8);
+      }
+    </style>
+  </head>
+  <body>
+    <!-- ═══════════════════════════════════════════════════════════════════════════
      DESKTOP VIEW
      ═══════════════════════════════════════════════════════════════════════════ -->
-<div id="desktop-view">
-  <div id="d-workspace">
-
-    <!-- Status bar -->
-    <div id="d-status-bar">
-      <span id="d-time-text" style="font-variant-numeric:tabular-nums"></span>
-      <div class="d-sb-divider"></div>
-      <div class="d-sb-dot" id="d-sb-dot"></div>
-      <span id="d-sb-label" style="font-size:12px;color:var(--text-secondary)">Loading…</span>
-    </div>
-
-    <!-- Foveal canvas -->
-    <div id="d-canvas">
-      <div id="d-watermark">Cadence</div>
-    </div>
-
-    <!-- Calendar widget (top left) -->
-    <div id="d-cal-wrapper">
-      <button id="d-cal-pill" class="d-pill" onclick="dToggleCal()">
-        <span id="d-cal-dot" class="d-pill-dot-pulse"></span>
-        <span id="d-cal-title" class="d-pill-title">Calendar</span>
-      </button>
-      <div id="d-cal-panel" class="d-panel" style="display:none">
-        <div class="d-panel-top">
-          <button class="d-close-btn" onclick="dToggleCal()">×</button>
+    <div id="desktop-view">
+      <div id="d-workspace">
+        <!-- Status bar -->
+        <div id="d-status-bar">
+          <span
+            id="d-time-text"
+            style="font-variant-numeric: tabular-nums"
+          ></span>
+          <div class="d-sb-divider"></div>
+          <div class="d-sb-dot" id="d-sb-dot"></div>
+          <span
+            id="d-sb-label"
+            style="font-size: 12px; color: var(--text-secondary)"
+            >Loading…</span
+          >
         </div>
-        <!-- Month calendar -->
-        <div class="d-month-cal">
-          <div class="d-month-header">
-            <button class="d-nav-btn" onclick="dPrevMonth()">‹</button>
-            <span id="d-month-title" class="d-month-title"></span>
-            <button class="d-nav-btn" onclick="dNextMonth()">›</button>
-          </div>
-          <div class="d-day-headers">
-            <span class="d-day-hdr">M</span><span class="d-day-hdr">T</span>
-            <span class="d-day-hdr">W</span><span class="d-day-hdr">T</span>
-            <span class="d-day-hdr">F</span><span class="d-day-hdr">S</span>
-            <span class="d-day-hdr">S</span>
-          </div>
-          <div id="d-day-grid" class="d-day-grid"></div>
+
+        <!-- Foveal canvas -->
+        <div id="d-canvas">
+          <div id="d-watermark">Cadence</div>
         </div>
-        <div class="d-divider"></div>
-        <!-- Timeline -->
-        <div class="d-tl-container">
-          <div class="d-tl-header">
-            <span id="d-tl-label" class="d-tl-label">Today</span>
-            <span id="d-tl-sub" class="d-tl-sub"></span>
+
+        <!-- Calendar widget (top left) -->
+        <div id="d-cal-wrapper">
+          <button id="d-cal-pill" class="d-pill" onclick="dToggleCal()">
+            <span id="d-cal-dot" class="d-pill-dot-pulse"></span>
+            <span id="d-cal-title" class="d-pill-title">Calendar</span>
+          </button>
+          <div id="d-cal-panel" class="d-panel" style="display: none">
+            <div class="d-panel-top">
+              <button class="d-close-btn" onclick="dToggleCal()">×</button>
+            </div>
+            <!-- Month calendar -->
+            <div class="d-month-cal">
+              <div class="d-month-header">
+                <button class="d-nav-btn" onclick="dPrevMonth()">‹</button>
+                <span id="d-month-title" class="d-month-title"></span>
+                <button class="d-nav-btn" onclick="dNextMonth()">›</button>
+              </div>
+              <div class="d-day-headers">
+                <span class="d-day-hdr">M</span><span class="d-day-hdr">T</span>
+                <span class="d-day-hdr">W</span><span class="d-day-hdr">T</span>
+                <span class="d-day-hdr">F</span><span class="d-day-hdr">S</span>
+                <span class="d-day-hdr">S</span>
+              </div>
+              <div id="d-day-grid" class="d-day-grid"></div>
+            </div>
+            <div class="d-divider"></div>
+            <!-- Timeline -->
+            <div class="d-tl-container">
+              <div class="d-tl-header">
+                <span id="d-tl-label" class="d-tl-label">Today</span>
+                <span id="d-tl-sub" class="d-tl-sub"></span>
+              </div>
+              <div class="d-tl-scroll" id="d-tl-scroll">
+                <div class="d-tl-inner" id="d-tl-inner"></div>
+              </div>
+            </div>
           </div>
-          <div class="d-tl-scroll" id="d-tl-scroll">
-            <div class="d-tl-inner" id="d-tl-inner"></div>
+        </div>
+
+        <!-- Agent widget (bottom right) -->
+        <div id="d-agent-wrapper">
+          <div id="d-agent-panel" style="display: none">
+            <div class="d-panel-top">
+              <button
+                class="d-close-btn d-agent-close"
+                onclick="dToggleAgent()"
+              >
+                ×
+              </button>
+            </div>
+            <!-- Tabs -->
+            <div class="d-tabs">
+              <button
+                id="d-tab-agent"
+                class="d-tab d-tab-on"
+                onclick="dSetTab('agent')"
+              >
+                Agent
+              </button>
+              <button
+                id="d-tab-people"
+                class="d-tab"
+                onclick="dSetTab('people')"
+              >
+                People
+              </button>
+            </div>
+            <!-- Agent tab -->
+            <div id="d-tab-agent-body">
+              <div class="d-msgs" id="d-msgs">
+                <div class="d-empty-chat" id="d-empty-chat">
+                  Ask anything, add a task, or compose a message.
+                </div>
+              </div>
+              <div class="d-input-row">
+                <input
+                  id="d-chat-input"
+                  class="d-chat-input"
+                  placeholder="Message…"
+                  onkeydown="
+                    if (event.key === 'Enter' && !event.shiftKey) {
+                      event.preventDefault();
+                      dSendMsg();
+                    }
+                  "
+                />
+              </div>
+            </div>
+            <!-- People tab -->
+            <div id="d-tab-people-body" style="display: none">
+              <div class="d-people" id="d-people-body">
+                <div class="d-empty-people">
+                  No collaborators in active events
+                </div>
+              </div>
+            </div>
           </div>
+          <button id="d-agent-pill" class="d-pill" onclick="dToggleAgent()">
+            <span
+              class="d-pill-dot"
+              id="d-agent-dot"
+              style="background: rgba(100, 100, 100, 0.3)"
+            ></span>
+            Ask…
+          </button>
         </div>
       </div>
+      <!-- /d-workspace -->
     </div>
+    <!-- /desktop-view -->
 
-    <!-- Agent widget (bottom right) -->
-    <div id="d-agent-wrapper">
-      <div id="d-agent-panel" style="display:none">
-        <div class="d-panel-top">
-          <button class="d-close-btn d-agent-close" onclick="dToggleAgent()">×</button>
-        </div>
-        <!-- Tabs -->
-        <div class="d-tabs">
-          <button id="d-tab-agent"  class="d-tab d-tab-on" onclick="dSetTab('agent')">Agent</button>
-          <button id="d-tab-people" class="d-tab"          onclick="dSetTab('people')">People</button>
-        </div>
-        <!-- Agent tab -->
-        <div id="d-tab-agent-body">
-          <div class="d-msgs" id="d-msgs">
-            <div class="d-empty-chat" id="d-empty-chat">Ask anything, add a task, or compose a message.</div>
-          </div>
-          <div class="d-input-row">
-            <input id="d-chat-input" class="d-chat-input" placeholder="Message…"
-              onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();dSendMsg();}" />
-          </div>
-        </div>
-        <!-- People tab -->
-        <div id="d-tab-people-body" style="display:none">
-          <div class="d-people" id="d-people-body">
-            <div class="d-empty-people">No collaborators in active events</div>
-          </div>
-        </div>
-      </div>
-      <button id="d-agent-pill" class="d-pill" onclick="dToggleAgent()">
-        <span class="d-pill-dot" id="d-agent-dot" style="background:rgba(100,100,100,0.3)"></span>
-        Ask…
-      </button>
-    </div>
-
-  </div><!-- /d-workspace -->
-</div><!-- /desktop-view -->
-
-
-<!-- ═══════════════════════════════════════════════════════════════════════════
+    <!-- ═══════════════════════════════════════════════════════════════════════════
      MOBILE VIEW
      ═══════════════════════════════════════════════════════════════════════════ -->
-<div id="mobile-view">
-  <div id="app">
-    <div id="flash-overlay"></div>
-    <div id="top-section">
-      <svg id="cadence-mark" width="16" height="22" viewBox="0 0 16 22">
-        <path d="M8 0v22M0 11h16" stroke="rgba(255,255,255,0.5)" stroke-width="1.5" fill="none"/>
-      </svg>
-      <div id="pills-row">
-        <div class="pill" id="weather-pill">○</div>
-        <div class="pill" id="date-pill"></div>
-        <div class="pill" id="countdown-pill">—</div>
+    <div id="mobile-view">
+      <div id="app">
+        <div id="flash-overlay"></div>
+        <div id="top-section">
+          <svg id="cadence-mark" width="16" height="22" viewBox="0 0 16 22">
+            <path
+              d="M8 0v22M0 11h16"
+              stroke="rgba(255,255,255,0.5)"
+              stroke-width="1.5"
+              fill="none"
+            />
+          </svg>
+          <div id="pills-row">
+            <div class="pill" id="weather-pill">○</div>
+            <div class="pill" id="date-pill"></div>
+            <div class="pill" id="countdown-pill">—</div>
+          </div>
+          <div id="greeting-block">
+            <h1 id="greeting"></h1>
+            <p id="subtitle"></p>
+          </div>
+        </div>
+        <div id="card-area">
+          <div id="card-stack" style="display: none">
+            <div id="peek-card" class="signal-card"></div>
+            <div id="main-card" class="signal-card"></div>
+          </div>
+          <div id="empty-state" style="display: none">
+            <p id="empty-text"></p>
+          </div>
+          <div id="gesture-hints">
+            ← Dismiss &nbsp;&nbsp; ↑ Later &nbsp;&nbsp; Accept →
+          </div>
+        </div>
+        <div id="input-bar">
+          <div id="input-wrapper">
+            <div class="pin-icon">
+              <div class="pin-circle"></div>
+              <div class="pin-tail"></div>
+            </div>
+            <input
+              id="ask-input"
+              type="text"
+              placeholder="Ask…"
+              autocomplete="off"
+            />
+          </div>
+          <button id="mic-btn" aria-label="Submit">
+            <div class="mic-body"></div>
+            <div class="mic-stand"></div>
+          </button>
+        </div>
       </div>
-      <div id="greeting-block">
-        <h1 id="greeting"></h1>
-        <p  id="subtitle"></p>
+      <!-- Mobile modals (fixed — outside #app but still in #mobile-view visibility context) -->
+      <div id="detail-view">
+        <div class="detail-handle-area" id="detail-handle">
+          <div class="detail-handle-bar"></div>
+        </div>
+        <div id="detail-scroll"></div>
       </div>
+      <div id="inspect-backdrop" onclick="closeInspectPanel()"></div>
+      <div id="inspect-panel"></div>
     </div>
-    <div id="card-area">
-      <div id="card-stack" style="display:none">
-        <div id="peek-card" class="signal-card"></div>
-        <div id="main-card" class="signal-card"></div>
-      </div>
-      <div id="empty-state" style="display:none">
-        <p id="empty-text"></p>
-      </div>
-      <div id="gesture-hints">← Dismiss &nbsp;&nbsp; ↑ Later &nbsp;&nbsp; Accept →</div>
+    <!-- /mobile-view -->
+
+    <!-- ── View switcher (always visible) ───────────────────────────────────────── -->
+    <div id="view-switcher" onclick="toggleView()">
+      <span id="switcher-label"></span>
     </div>
-    <div id="input-bar">
-      <div id="input-wrapper">
-        <div class="pin-icon"><div class="pin-circle"></div><div class="pin-tail"></div></div>
-        <input id="ask-input" type="text" placeholder="Ask…" autocomplete="off"/>
-      </div>
-      <button id="mic-btn" aria-label="Submit">
-        <div class="mic-body"></div><div class="mic-stand"></div>
-      </button>
-    </div>
-  </div>
-  <!-- Mobile modals (fixed — outside #app but still in #mobile-view visibility context) -->
-  <div id="detail-view">
-    <div class="detail-handle-area" id="detail-handle">
-      <div class="detail-handle-bar"></div>
-    </div>
-    <div id="detail-scroll"></div>
-  </div>
-  <div id="inspect-backdrop" onclick="closeInspectPanel()"></div>
-  <div id="inspect-panel"></div>
-</div><!-- /mobile-view -->
 
+    <script>
+      "use strict";
 
-<!-- ── View switcher (always visible) ───────────────────────────────────────── -->
-<div id="view-switcher" onclick="toggleView()">
-  <span id="switcher-label"></span>
-</div>
+      // ── Shared API ──────────────────────────────────────────────────────────────
+      // Replace YOUR_LOCAL_IP with your machine's IP from ipconfig (e.g. 192.168.1.42)
+      const API_BASE = "http://localhost:3001";
 
-<script>
-'use strict';
+      // ── Shared colour maps ──────────────────────────────────────────────────────
+      const COG_COLORS = {
+        authorizational: "#5B8CF7",
+        action_bound: "#F7C05B",
+        conflict: "#F75B5B",
+        informational: "#B8BEC6",
+        deadline: "#B8BEC6",
+      };
+      const COG_LABELS = {
+        authorizational: "Auth",
+        action_bound: "Action",
+        conflict: "Conflict",
+        informational: "Info",
+        deadline: "Deadline",
+      };
+      const COG_DESC = {
+        authorizational:
+          "The system has resolved this. It needs your approval.",
+        action_bound:
+          "This requires you to act externally. Acknowledge or defer.",
+        conflict: "Two signals overlap. A decision is needed.",
+        informational: "Awareness only. No action required.",
+        deadline: "A time-bound task is approaching.",
+      };
+      const SOURCE_LABELS = {
+        google_calendar: "Google Cal",
+        gmail: "Gmail",
+        manual: "Manual",
+        webhook: "Webhook",
+        apple_calendar: "Apple Cal",
+      };
 
-// ── Shared API ──────────────────────────────────────────────────────────────
-// Replace YOUR_LOCAL_IP with your machine's IP from ipconfig (e.g. 192.168.1.42)
-const API_BASE = 'http://localhost:3001';
+      // ── View switching ──────────────────────────────────────────────────────────
+      const isMobile =
+        /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ||
+        window.innerWidth < 768;
+      let currentView = isMobile ? "mobile" : "desktop";
 
-// ── Shared colour maps ──────────────────────────────────────────────────────
-const COG_COLORS = {
-  authorizational:'#5B8CF7', action_bound:'#F7C05B',
-  conflict:'#F75B5B', informational:'#B8BEC6', deadline:'#B8BEC6',
-};
-const COG_LABELS  = { authorizational:'Auth', action_bound:'Action', conflict:'Conflict', informational:'Info', deadline:'Deadline' };
-const COG_DESC    = {
-  authorizational:'The system has resolved this. It needs your approval.',
-  action_bound:'This requires you to act externally. Acknowledge or defer.',
-  conflict:'Two signals overlap. A decision is needed.',
-  informational:'Awareness only. No action required.',
-  deadline:'A time-bound task is approaching.',
-};
-const SOURCE_LABELS = { google_calendar:'Google Cal', gmail:'Gmail', manual:'Manual', webhook:'Webhook', apple_calendar:'Apple Cal' };
+      function showView(v) {
+        currentView = v;
+        const dv = document.getElementById("desktop-view");
+        const mv = document.getElementById("mobile-view");
+        const sw = document.getElementById("view-switcher");
+        const lb = document.getElementById("switcher-label");
+        if (v === "desktop") {
+          dv.classList.remove("view-hidden");
+          mv.classList.add("view-hidden");
+          lb.textContent = "📱 Mobile";
+          sw.classList.add("switcher-dark");
+        } else {
+          mv.classList.remove("view-hidden");
+          dv.classList.add("view-hidden");
+          lb.textContent = "☰ Desktop";
+          sw.classList.remove("switcher-dark");
+        }
+      }
 
-// ── View switching ──────────────────────────────────────────────────────────
-const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || window.innerWidth < 768;
-let currentView = isMobile ? 'mobile' : 'desktop';
+      function toggleView() {
+        showView(currentView === "desktop" ? "mobile" : "desktop");
+      }
 
-function showView(v) {
-  currentView = v;
-  const dv = document.getElementById('desktop-view');
-  const mv = document.getElementById('mobile-view');
-  const sw = document.getElementById('view-switcher');
-  const lb = document.getElementById('switcher-label');
-  if (v === 'desktop') {
-    dv.classList.remove('view-hidden');
-    mv.classList.add('view-hidden');
-    lb.textContent = '📱 Mobile';
-    sw.classList.add('switcher-dark');
-  } else {
-    mv.classList.remove('view-hidden');
-    dv.classList.add('view-hidden');
-    lb.textContent = '☰ Desktop';
-    sw.classList.remove('switcher-dark');
-  }
-}
+      // ════════════════════════════════════════════════════════════════════════════
+      // DESKTOP MODULE
+      // ════════════════════════════════════════════════════════════════════════════
 
-function toggleView() {
-  showView(currentView === 'desktop' ? 'mobile' : 'desktop');
-}
+      let dEvents = [];
+      let dCalOpen = false;
+      let dAgentOpen = false;
+      let dCurrentTab = "agent";
+      let dSelectedDay = new Date();
+      let dViewMonth = new Date();
+      let dMessages = [];
+      let dDetailEvent = null;
+      let dBgX = 0,
+        dBgY = 0,
+        dDragging = false;
+      let dDragSX, dDragSY, dDragOX, dDragOY;
 
-// ════════════════════════════════════════════════════════════════════════════
-// DESKTOP MODULE
-// ════════════════════════════════════════════════════════════════════════════
+      function dEsc(s) {
+        return String(s ?? "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;");
+      }
+      function dFmt12(d) {
+        const h = d.getHours(),
+          m = d.getMinutes();
+        return `${h % 12 || 12}:${String(m).padStart(2, "0")} ${h >= 12 ? "PM" : "AM"}`;
+      }
+      function dTimeToPx(d) {
+        return ((d.getHours() * 60 + d.getMinutes()) / 60) * 52;
+      }
+      function dSameDay(a, b) {
+        return (
+          a.getFullYear() === b.getFullYear() &&
+          a.getMonth() === b.getMonth() &&
+          a.getDate() === b.getDate()
+        );
+      }
 
-let dEvents = [];
-let dCalOpen = false;
-let dAgentOpen = false;
-let dCurrentTab = 'agent';
-let dSelectedDay = new Date();
-let dViewMonth = new Date();
-let dMessages = [];
-let dDetailEvent = null;
-let dBgX = 0, dBgY = 0, dDragging = false;
-let dDragSX, dDragSY, dDragOX, dDragOY;
+      // ── Fetch ───────────────────────────────────────────────────────────────────
+      async function dFetchEvents() {
+        try {
+          fetch(`${API_BASE}/sync/google`).catch(() => {});
+          let events = [];
+          try {
+            const r = await fetch(`${API_BASE}/digest`);
+            events = (await r.json()).events ?? [];
+          } catch {}
+          if (!events.length) {
+            try {
+              const r = await fetch(`${API_BASE}/events/surfaced`);
+              events = (await r.json()).events ?? [];
+            } catch {}
+          }
+          dEvents = events;
+        } catch {}
+        dRenderPill();
+        dRenderMonthCal();
+        dRenderTimeline();
+        dUpdateStatusBar();
+        dRenderPeopleTab();
+      }
 
-function dEsc(s) {
-  return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-function dFmt12(d) {
-  const h = d.getHours(), m = d.getMinutes();
-  return `${h%12||12}:${String(m).padStart(2,'0')} ${h>=12?'PM':'AM'}`;
-}
-function dTimeToPx(d) {
-  return (d.getHours()*60 + d.getMinutes()) / 60 * 52;
-}
-function dSameDay(a, b) {
-  return a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate();
-}
+      // ── Status bar ──────────────────────────────────────────────────────────────
+      function dUpdateClock() {
+        const now = new Date();
+        const t = dFmt12(now);
+        document.getElementById("d-time-text").textContent = t;
+      }
+      function dUpdateStatusBar() {
+        const count = dEvents.filter((e) => e.score >= 65).length;
+        const lb = document.getElementById("d-sb-label");
+        lb.textContent = count
+          ? `${count} signal${count > 1 ? "s" : ""}`
+          : "Clear";
+        const dot = document.getElementById("d-sb-dot");
+        dot.style.background = count
+          ? "var(--text-secondary)"
+          : "var(--ui-secondary)";
+      }
 
-// ── Fetch ───────────────────────────────────────────────────────────────────
-async function dFetchEvents() {
-  try {
-    fetch(`${API_BASE}/sync/google`).catch(()=>{});
-    let events = [];
-    try {
-      const r = await fetch(`${API_BASE}/digest`);
-      events = (await r.json()).events ?? [];
-    } catch {}
-    if (!events.length) {
-      try {
-        const r = await fetch(`${API_BASE}/events/surfaced`);
-        events = (await r.json()).events ?? [];
-      } catch {}
-    }
-    dEvents = events;
-  } catch {}
-  dRenderPill();
-  dRenderMonthCal();
-  dRenderTimeline();
-  dUpdateStatusBar();
-  dRenderPeopleTab();
-}
+      // ── Calendar pill ────────────────────────────────────────────────────────────
+      function dRenderPill() {
+        const now = new Date();
+        const active = dEvents.find((e) => {
+          const s = new Date(e.timestamp);
+          const end = e.deadline
+            ? new Date(e.deadline)
+            : new Date(s.getTime() + 3_600_000);
+          return s <= now && now <= end;
+        });
+        const upcoming = [...dEvents]
+          .filter((e) => new Date(e.timestamp) > now)
+          .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+        const ev = active || upcoming[0];
+        const dot = document.getElementById("d-cal-dot");
+        const title = document.getElementById("d-cal-title");
+        if (ev) {
+          dot.className = "d-pill-dot";
+          dot.style.background = COG_COLORS[ev.cognitive_type] || "#B8BEC6";
+          title.textContent = ev.title;
+        } else {
+          dot.className = "d-pill-dot-pulse";
+          dot.style.background = "";
+          const d = dSelectedDay;
+          title.textContent = d.toLocaleDateString("en-US", {
+            weekday: "short",
+            month: "short",
+            day: "numeric",
+          });
+        }
+      }
 
-// ── Status bar ──────────────────────────────────────────────────────────────
-function dUpdateClock() {
-  const now = new Date();
-  const t = dFmt12(now);
-  document.getElementById('d-time-text').textContent = t;
-}
-function dUpdateStatusBar() {
-  const count = dEvents.filter(e => e.score >= 65).length;
-  const lb = document.getElementById('d-sb-label');
-  lb.textContent = count ? `${count} signal${count>1?'s':''}` : 'Clear';
-  const dot = document.getElementById('d-sb-dot');
-  dot.style.background = count ? 'var(--text-secondary)' : 'var(--ui-secondary)';
-}
+      // ── Toggle calendar ──────────────────────────────────────────────────────────
+      function dToggleCal() {
+        dCalOpen = !dCalOpen;
+        const pill = document.getElementById("d-cal-pill");
+        const panel = document.getElementById("d-cal-panel");
+        pill.style.display = dCalOpen ? "none" : "flex";
+        panel.style.display = dCalOpen ? "flex" : "none";
+        if (dCalOpen) {
+          dCloseDetail();
+          dRenderMonthCal();
+          dRenderTimeline();
+        }
+      }
 
-// ── Calendar pill ────────────────────────────────────────────────────────────
-function dRenderPill() {
-  const now = new Date();
-  const active = dEvents.find(e => {
-    const s = new Date(e.timestamp);
-    const end = e.deadline ? new Date(e.deadline) : new Date(s.getTime()+3_600_000);
-    return s<=now && now<=end;
-  });
-  const upcoming = [...dEvents].filter(e=>new Date(e.timestamp)>now)
-    .sort((a,b)=>new Date(a.timestamp)-new Date(b.timestamp));
-  const ev = active || upcoming[0];
-  const dot = document.getElementById('d-cal-dot');
-  const title = document.getElementById('d-cal-title');
-  if (ev) {
-    dot.className = 'd-pill-dot';
-    dot.style.background = COG_COLORS[ev.cognitive_type] || '#B8BEC6';
-    title.textContent = ev.title;
-  } else {
-    dot.className = 'd-pill-dot-pulse';
-    dot.style.background = '';
-    const d = dSelectedDay;
-    title.textContent = d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
-  }
-}
+      // ── Month calendar ───────────────────────────────────────────────────────────
+      function dRenderMonthCal() {
+        const y = dViewMonth.getFullYear(),
+          m = dViewMonth.getMonth();
+        document.getElementById("d-month-title").textContent =
+          dViewMonth.toLocaleString("en-US", {
+            month: "long",
+            year: "numeric",
+          });
+        const grid = document.getElementById("d-day-grid");
+        grid.innerHTML = "";
+        const firstDow = new Date(y, m, 1).getDay(); // 0=Sun
+        const startOffset = (firstDow + 6) % 7; // Mon=0
+        const daysInMonth = new Date(y, m + 1, 0).getDate();
+        const today = new Date();
 
-// ── Toggle calendar ──────────────────────────────────────────────────────────
-function dToggleCal() {
-  dCalOpen = !dCalOpen;
-  const pill  = document.getElementById('d-cal-pill');
-  const panel = document.getElementById('d-cal-panel');
-  pill.style.display  = dCalOpen ? 'none' : 'flex';
-  panel.style.display = dCalOpen ? 'flex' : 'none';
-  if (dCalOpen) { dCloseDetail(); dRenderMonthCal(); dRenderTimeline(); }
-}
+        // Days with events
+        const evDays = new Set(
+          dEvents.map((e) => {
+            const d = new Date(e.timestamp);
+            return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+          }),
+        );
 
-// ── Month calendar ───────────────────────────────────────────────────────────
-function dRenderMonthCal() {
-  const y = dViewMonth.getFullYear(), m = dViewMonth.getMonth();
-  document.getElementById('d-month-title').textContent =
-    dViewMonth.toLocaleString('en-US',{month:'long',year:'numeric'});
-  const grid = document.getElementById('d-day-grid');
-  grid.innerHTML = '';
-  const firstDow = new Date(y, m, 1).getDay(); // 0=Sun
-  const startOffset = (firstDow + 6) % 7; // Mon=0
-  const daysInMonth = new Date(y, m+1, 0).getDate();
-  const today = new Date();
+        // Pad start
+        for (let i = 0; i < startOffset; i++) {
+          const prev = new Date(y, m, -startOffset + i + 1);
+          const cell = document.createElement("div");
+          cell.className = "d-day-cell d-day-other";
+          cell.innerHTML = `<span class="d-day-num">${prev.getDate()}</span>`;
+          cell.onclick = () => dSelectDay(prev);
+          grid.appendChild(cell);
+        }
+        // Current month days
+        for (let d = 1; d <= daysInMonth; d++) {
+          const date = new Date(y, m, d);
+          const cell = document.createElement("div");
+          let cls = "d-day-cell";
+          if (dSameDay(date, today)) cls += " d-day-today";
+          if (dSameDay(date, dSelectedDay)) cls += " d-day-selected";
+          cell.className = cls;
+          const key = `${y}-${m}-${d}`;
+          cell.innerHTML = `<span class="d-day-num">${d}</span>${evDays.has(key) ? '<span class="d-day-dot"></span>' : ""}`;
+          cell.onclick = () => dSelectDay(date);
+          grid.appendChild(cell);
+        }
+      }
+      function dPrevMonth() {
+        dViewMonth.setMonth(dViewMonth.getMonth() - 1);
+        dRenderMonthCal();
+      }
+      function dNextMonth() {
+        dViewMonth.setMonth(dViewMonth.getMonth() + 1);
+        dRenderMonthCal();
+      }
+      function dSelectDay(date) {
+        dSelectedDay = new Date(date);
+        dCloseDetail();
+        dRenderMonthCal();
+        dRenderTimeline();
+      }
 
-  // Days with events
-  const evDays = new Set(dEvents.map(e => {
-    const d = new Date(e.timestamp);
-    return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
-  }));
+      // ── Timeline ─────────────────────────────────────────────────────────────────
+      function dRenderTimeline() {
+        const label = document.getElementById("d-tl-label");
+        const sub = document.getElementById("d-tl-sub");
+        const inner = document.getElementById("d-tl-inner");
+        const tls = document.getElementById("d-tl-scroll");
+        if (!inner) return;
+        // Restore visibility in case dShowDetail() hid these
+        if (tls) tls.style.display = "";
+        if (label) label.style.display = "";
+        inner.innerHTML = "";
 
-  // Pad start
-  for (let i = 0; i < startOffset; i++) {
-    const prev = new Date(y, m, -startOffset + i + 1);
-    const cell = document.createElement('div');
-    cell.className = 'd-day-cell d-day-other';
-    cell.innerHTML = `<span class="d-day-num">${prev.getDate()}</span>`;
-    cell.onclick = () => dSelectDay(prev);
-    grid.appendChild(cell);
-  }
-  // Current month days
-  for (let d = 1; d <= daysInMonth; d++) {
-    const date = new Date(y, m, d);
-    const cell = document.createElement('div');
-    let cls = 'd-day-cell';
-    if (dSameDay(date, today))        cls += ' d-day-today';
-    if (dSameDay(date, dSelectedDay)) cls += ' d-day-selected';
-    cell.className = cls;
-    const key = `${y}-${m}-${d}`;
-    cell.innerHTML = `<span class="d-day-num">${d}</span>${evDays.has(key)?'<span class="d-day-dot"></span>':''}`;
-    cell.onclick = () => dSelectDay(date);
-    grid.appendChild(cell);
-  }
-}
-function dPrevMonth() { dViewMonth.setMonth(dViewMonth.getMonth()-1); dRenderMonthCal(); }
-function dNextMonth() { dViewMonth.setMonth(dViewMonth.getMonth()+1); dRenderMonthCal(); }
-function dSelectDay(date) {
-  dSelectedDay = new Date(date);
-  dCloseDetail();
-  dRenderMonthCal();
-  dRenderTimeline();
-}
+        const today = new Date();
+        label.textContent = dSameDay(dSelectedDay, today)
+          ? "Today"
+          : dSelectedDay.toLocaleDateString("en-US", {
+              weekday: "long",
+              month: "short",
+              day: "numeric",
+            });
 
-// ── Timeline ─────────────────────────────────────────────────────────────────
-function dRenderTimeline() {
-  const label = document.getElementById('d-tl-label');
-  const sub   = document.getElementById('d-tl-sub');
-  const inner = document.getElementById('d-tl-inner');
-  const tls   = document.getElementById('d-tl-scroll');
-  if (!inner) return;
-  // Restore visibility in case dShowDetail() hid these
-  if (tls)   tls.style.display   = '';
-  if (label) label.style.display = '';
-  inner.innerHTML = '';
+        const dayEvents = dEvents.filter((e) =>
+          dSameDay(new Date(e.timestamp), dSelectedDay),
+        );
+        sub.textContent = dayEvents.length
+          ? `${dayEvents.length} event${dayEvents.length > 1 ? "s" : ""}`
+          : "";
 
-  const today = new Date();
-  label.textContent = dSameDay(dSelectedDay, today) ? 'Today'
-    : dSelectedDay.toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'});
+        // Hour rows
+        for (let h = 0; h < 24; h++) {
+          const row = document.createElement("div");
+          row.className = "d-hour-row";
+          row.style.top = `${h * 52}px`;
+          const lbl =
+            h === 0
+              ? "12 AM"
+              : h < 12
+                ? `${h} AM`
+                : h === 12
+                  ? "12 PM"
+                  : `${h - 12} PM`;
+          row.innerHTML = `<span class="d-hour-lbl">${lbl}</span><div class="d-hour-line"></div>`;
+          inner.appendChild(row);
+        }
 
-  const dayEvents = dEvents.filter(e => dSameDay(new Date(e.timestamp), dSelectedDay));
-  sub.textContent = dayEvents.length ? `${dayEvents.length} event${dayEvents.length>1?'s':''}` : '';
+        // Now line (only for today)
+        if (dSameDay(dSelectedDay, today)) {
+          const now = new Date();
+          const nowLine = document.createElement("div");
+          nowLine.className = "d-now-line";
+          nowLine.id = "d-now-line";
+          nowLine.style.top = `${dTimeToPx(now)}px`;
+          nowLine.innerHTML = `<span class="d-now-lbl">${dFmt12(now)}</span><div class="d-now-dot"></div><div class="d-now-bar"></div>`;
+          inner.appendChild(nowLine);
+        }
 
-  // Hour rows
-  for (let h = 0; h < 24; h++) {
-    const row = document.createElement('div');
-    row.className = 'd-hour-row';
-    row.style.top = `${h*52}px`;
-    const lbl = h===0?'12 AM': h<12?`${h} AM`: h===12?'12 PM':`${h-12} PM`;
-    row.innerHTML = `<span class="d-hour-lbl">${lbl}</span><div class="d-hour-line"></div>`;
-    inner.appendChild(row);
-  }
+        // Events — simple column layout
+        const layout = dAssignColumns(dayEvents);
+        const TRACK_LEFT = 68,
+          TRACK_RIGHT_PAD = 20,
+          PANEL_W = 380;
+        const AVAIL = PANEL_W - TRACK_LEFT - TRACK_RIGHT_PAD;
 
-  // Now line (only for today)
-  if (dSameDay(dSelectedDay, today)) {
-    const now = new Date();
-    const nowLine = document.createElement('div');
-    nowLine.className = 'd-now-line';
-    nowLine.id = 'd-now-line';
-    nowLine.style.top = `${dTimeToPx(now)}px`;
-    nowLine.innerHTML = `<span class="d-now-lbl">${dFmt12(now)}</span><div class="d-now-dot"></div><div class="d-now-bar"></div>`;
-    inner.appendChild(nowLine);
-  }
+        for (const { ev, col, totalCols } of layout) {
+          const colW =
+            totalCols > 1 ? (AVAIL - (totalCols - 1) * 2) / totalCols : AVAIL;
+          const left = TRACK_LEFT + col * (colW + 2);
+          const startD = new Date(ev.timestamp);
+          const endD = ev.deadline
+            ? new Date(ev.deadline)
+            : new Date(startD.getTime() + 3_600_000);
+          const topPx = dTimeToPx(startD);
+          const hPx = Math.max(22, dTimeToPx(endD) - topPx);
+          const cogColor = COG_COLORS[ev.cognitive_type] || "#B8BEC6";
+          const isDone = endD < today;
 
-  // Events — simple column layout
-  const layout = dAssignColumns(dayEvents);
-  const TRACK_LEFT = 68, TRACK_RIGHT_PAD = 20, PANEL_W = 380;
-  const AVAIL = PANEL_W - TRACK_LEFT - TRACK_RIGHT_PAD;
+          const el = document.createElement("div");
+          el.className = "d-tl-event" + (isDone ? " d-tl-done" : "");
+          el.style.cssText = `top:${topPx}px;height:${hPx}px;left:${left}px;width:${colW}px;border-left-color:${cogColor};background:${cogColor}1a;`;
+          el.title = ev.title;
+          if (hPx >= 30) {
+            el.innerHTML =
+              `<span class="d-tl-title">${dEsc(ev.title)}</span>` +
+              `<span class="d-tl-time">${dFmt12(startD)}</span>` +
+              (ev.location
+                ? `<span class="d-tl-loc">📍 ${dEsc(ev.location)}</span>`
+                : "");
+          }
+          el.onclick = () => dShowDetail(ev);
+          inner.appendChild(el);
+        }
 
-  for (const { ev, col, totalCols } of layout) {
-    const colW = totalCols > 1 ? (AVAIL - (totalCols-1)*2) / totalCols : AVAIL;
-    const left = TRACK_LEFT + col * (colW + 2);
-    const startD = new Date(ev.timestamp);
-    const endD   = ev.deadline ? new Date(ev.deadline) : new Date(startD.getTime()+3_600_000);
-    const topPx  = dTimeToPx(startD);
-    const hPx    = Math.max(22, dTimeToPx(endD) - topPx);
-    const cogColor = COG_COLORS[ev.cognitive_type] || '#B8BEC6';
-    const isDone = endD < today;
+        // Auto-scroll to current time (today only)
+        if (dSameDay(dSelectedDay, today)) {
+          if (tls) {
+            const nowPx = dTimeToPx(today);
+            setTimeout(() => {
+              tls.scrollTop = Math.max(0, nowPx - 120);
+            }, 60);
+          }
+        }
 
-    const el = document.createElement('div');
-    el.className = 'd-tl-event' + (isDone?' d-tl-done':'');
-    el.style.cssText = `top:${topPx}px;height:${hPx}px;left:${left}px;width:${colW}px;border-left-color:${cogColor};background:${cogColor}1a;`;
-    el.title = ev.title;
-    if (hPx >= 30) {
-      el.innerHTML = `<span class="d-tl-title">${dEsc(ev.title)}</span>`
-        + `<span class="d-tl-time">${dFmt12(startD)}</span>`
-        + (ev.location?`<span class="d-tl-loc">📍 ${dEsc(ev.location)}</span>`:'');
-    }
-    el.onclick = () => dShowDetail(ev);
-    inner.appendChild(el);
-  }
+        // Update now line every minute
+        clearInterval(window._dNowInterval);
+        if (dSameDay(dSelectedDay, today)) {
+          window._dNowInterval = setInterval(() => {
+            const nl = document.getElementById("d-now-line");
+            if (nl) {
+              nl.style.top = `${dTimeToPx(new Date())}px`;
+              nl.querySelector(".d-now-lbl").textContent = dFmt12(new Date());
+            }
+          }, 60_000);
+        }
+      }
 
-  // Auto-scroll to current time (today only)
-  if (dSameDay(dSelectedDay, today)) {
-    if (tls) {
-      const nowPx = dTimeToPx(today);
-      setTimeout(() => { tls.scrollTop = Math.max(0, nowPx - 120); }, 60);
-    }
-  }
+      function dAssignColumns(events) {
+        const sorted = [...events].sort(
+          (a, b) => new Date(a.timestamp) - new Date(b.timestamp),
+        );
+        const items = sorted.map((ev) => ({
+          ev,
+          col: 0,
+          totalCols: 1,
+          endMs: ev.deadline
+            ? new Date(ev.deadline).getTime()
+            : new Date(ev.timestamp).getTime() + 3_600_000,
+        }));
+        const occupied = [];
+        for (const item of items) {
+          const startMs = new Date(item.ev.timestamp).getTime();
+          let col = 0;
+          while (occupied[col] !== undefined && occupied[col] > startMs) col++;
+          item.col = col;
+          occupied[col] = item.endMs;
+        }
+        // Max cols per overlap group
+        for (const item of items) {
+          const sMs = new Date(item.ev.timestamp).getTime();
+          let max = item.col;
+          for (const other of items) {
+            const oS = new Date(other.ev.timestamp).getTime();
+            if (oS < item.endMs && other.endMs > sMs)
+              max = Math.max(max, other.col);
+          }
+          item.totalCols = max + 1;
+        }
+        return items;
+      }
 
-  // Update now line every minute
-  clearInterval(window._dNowInterval);
-  if (dSameDay(dSelectedDay, today)) {
-    window._dNowInterval = setInterval(() => {
-      const nl = document.getElementById('d-now-line');
-      if (nl) { nl.style.top = `${dTimeToPx(new Date())}px`; nl.querySelector('.d-now-lbl').textContent = dFmt12(new Date()); }
-    }, 60_000);
-  }
-}
+      // ── Event detail ─────────────────────────────────────────────────────────────
+      function dShowDetail(ev) {
+        dDetailEvent = ev;
+        const container = document.querySelector(".d-tl-container");
+        if (!container) return;
+        // Remove old detail panel
+        const old = container.querySelector(".d-detail-panel");
+        if (old) old.remove();
+        const tls = document.getElementById("d-tl-scroll");
+        if (tls) tls.style.display = "none";
+        document.getElementById("d-tl-label").style.display = "none";
 
-function dAssignColumns(events) {
-  const sorted = [...events].sort((a,b)=>new Date(a.timestamp)-new Date(b.timestamp));
-  const items = sorted.map(ev => ({
-    ev,
-    col: 0,
-    totalCols: 1,
-    endMs: ev.deadline ? new Date(ev.deadline).getTime() : new Date(ev.timestamp).getTime()+3_600_000,
-  }));
-  const occupied = [];
-  for (const item of items) {
-    const startMs = new Date(item.ev.timestamp).getTime();
-    let col = 0;
-    while (occupied[col] !== undefined && occupied[col] > startMs) col++;
-    item.col = col;
-    occupied[col] = item.endMs;
-  }
-  // Max cols per overlap group
-  for (const item of items) {
-    const sMs = new Date(item.ev.timestamp).getTime();
-    let max = item.col;
-    for (const other of items) {
-      const oS = new Date(other.ev.timestamp).getTime();
-      if (oS < item.endMs && other.endMs > sMs) max = Math.max(max, other.col);
-    }
-    item.totalCols = max + 1;
-  }
-  return items;
-}
+        const startD = new Date(ev.timestamp);
+        const endD = ev.deadline ? new Date(ev.deadline) : null;
+        const timeStr = endD
+          ? `${dFmt12(startD)} – ${dFmt12(endD)}`
+          : dFmt12(startD);
+        const attendees = ev.attendees || [];
 
-// ── Event detail ─────────────────────────────────────────────────────────────
-function dShowDetail(ev) {
-  dDetailEvent = ev;
-  const container = document.querySelector('.d-tl-container');
-  if (!container) return;
-  // Remove old detail panel
-  const old = container.querySelector('.d-detail-panel');
-  if (old) old.remove();
-  const tls = document.getElementById('d-tl-scroll');
-  if (tls) tls.style.display = 'none';
-  document.getElementById('d-tl-label').style.display = 'none';
-
-  const startD = new Date(ev.timestamp);
-  const endD   = ev.deadline ? new Date(ev.deadline) : null;
-  const timeStr = endD ? `${dFmt12(startD)} – ${dFmt12(endD)}` : dFmt12(startD);
-  const attendees = ev.attendees || [];
-
-  const panel = document.createElement('div');
-  panel.className = 'd-detail-panel';
-  panel.innerHTML = `
+        const panel = document.createElement("div");
+        panel.className = "d-detail-panel";
+        panel.innerHTML = `
     <div class="d-detail-hdr">
       <button class="d-back-btn" onclick="dCloseDetail()">← Back</button>
     </div>
     <div class="d-detail-scroll">
       <p class="d-d-title">${dEsc(ev.title)}</p>
       <p class="d-d-time">${dEsc(timeStr)}</p>
-      ${ev.location ? `<p class="d-d-row">📍 ${dEsc(ev.location)}</p>` : ''}
-      ${attendees.length ? `<div class="d-d-section">${attendees.map(a=>{
-        const initials = a.name ? a.name.trim().split(/\s+/).reduce((acc,p,i,arr)=>i===0||i===arr.length-1?acc+p[0]:'',''  ).toUpperCase().slice(0,2) : a.email.slice(0,2).toUpperCase();
-        const sts = {accepted:'✓ Going',tentative:'? Maybe',needsAction:'— Pending',declined:'✗ Declined'}[a.status]||'';
-        const stsCls = `d-status-${a.status||'needsAction'}`;
-        return `<div class="d-d-attendee">
+      ${ev.location ? `<p class="d-d-row">📍 ${dEsc(ev.location)}</p>` : ""}
+      ${
+        attendees.length
+          ? `<div class="d-d-section">${attendees
+              .map((a) => {
+                const initials = a.name
+                  ? a.name
+                      .trim()
+                      .split(/\s+/)
+                      .reduce(
+                        (acc, p, i, arr) =>
+                          i === 0 || i === arr.length - 1 ? acc + p[0] : "",
+                        "",
+                      )
+                      .toUpperCase()
+                      .slice(0, 2)
+                  : a.email.slice(0, 2).toUpperCase();
+                const sts =
+                  {
+                    accepted: "✓ Going",
+                    tentative: "? Maybe",
+                    needsAction: "— Pending",
+                    declined: "✗ Declined",
+                  }[a.status] || "";
+                const stsCls = `d-status-${a.status || "needsAction"}`;
+                return `<div class="d-d-attendee">
           <div class="d-d-avatar">${dEsc(initials)}</div>
           <div class="d-d-ainfo">
-            <span class="d-d-aname">${dEsc(a.name||a.email)}${a.organiser?'<span class="d-d-org">org</span>':''}</span>
+            <span class="d-d-aname">${dEsc(a.name || a.email)}${a.organiser ? '<span class="d-d-org">org</span>' : ""}</span>
             <span class="d-d-status ${stsCls}">${sts}</span>
           </div>
         </div>`;
-      }).join('')}</div>` : ''}
-      ${ev.raw_content ? `<p class="d-d-notes">${dEsc(ev.raw_content)}</p>` : ''}
-      ${ev.reminder_minutes!=null ? `<p class="d-d-row">🔔 ${ev.reminder_minutes} min before</p>` : ''}
+              })
+              .join("")}</div>`
+          : ""
+      }
+      ${ev.raw_content ? `<p class="d-d-notes">${dEsc(ev.raw_content)}</p>` : ""}
+      ${ev.reminder_minutes != null ? `<p class="d-d-row">🔔 ${ev.reminder_minutes} min before</p>` : ""}
     </div>
   `;
-  container.appendChild(panel);
-}
+        container.appendChild(panel);
+      }
 
-function dCloseDetail() {
-  dDetailEvent = null;
-  const panel = document.querySelector('.d-detail-panel');
-  if (panel) panel.remove();
-  const tls = document.getElementById('d-tl-scroll');
-  if (tls) tls.style.display = '';
-  const lbl = document.getElementById('d-tl-label');
-  if (lbl) lbl.style.display = '';
-}
+      function dCloseDetail() {
+        dDetailEvent = null;
+        const panel = document.querySelector(".d-detail-panel");
+        if (panel) panel.remove();
+        const tls = document.getElementById("d-tl-scroll");
+        if (tls) tls.style.display = "";
+        const lbl = document.getElementById("d-tl-label");
+        if (lbl) lbl.style.display = "";
+      }
 
-// ── Agent widget ─────────────────────────────────────────────────────────────
-function dToggleAgent() {
-  dAgentOpen = !dAgentOpen;
-  const pill  = document.getElementById('d-agent-pill');
-  const panel = document.getElementById('d-agent-panel');
-  pill.style.display  = dAgentOpen ? 'none' : 'flex';
-  panel.style.display = dAgentOpen ? 'flex' : 'none';
-  if (dAgentOpen) {
-    dSetTab('agent');
-    document.getElementById('d-chat-input').focus();
-  }
-}
+      // ── Agent widget ─────────────────────────────────────────────────────────────
+      function dToggleAgent() {
+        dAgentOpen = !dAgentOpen;
+        const pill = document.getElementById("d-agent-pill");
+        const panel = document.getElementById("d-agent-panel");
+        pill.style.display = dAgentOpen ? "none" : "flex";
+        panel.style.display = dAgentOpen ? "flex" : "none";
+        if (dAgentOpen) {
+          dSetTab("agent");
+          document.getElementById("d-chat-input").focus();
+        }
+      }
 
-function dSetTab(tab) {
-  dCurrentTab = tab;
-  document.getElementById('d-tab-agent').className  = 'd-tab' + (tab==='agent'?' d-tab-on':'');
-  document.getElementById('d-tab-people').className = 'd-tab' + (tab==='people'?' d-tab-on':'');
-  document.getElementById('d-tab-agent-body').style.display  = tab==='agent'  ? '' : 'none';
-  document.getElementById('d-tab-people-body').style.display = tab==='people' ? '' : 'none';
-  if (tab==='people') dRenderPeopleTab();
-}
+      function dSetTab(tab) {
+        dCurrentTab = tab;
+        document.getElementById("d-tab-agent").className =
+          "d-tab" + (tab === "agent" ? " d-tab-on" : "");
+        document.getElementById("d-tab-people").className =
+          "d-tab" + (tab === "people" ? " d-tab-on" : "");
+        document.getElementById("d-tab-agent-body").style.display =
+          tab === "agent" ? "" : "none";
+        document.getElementById("d-tab-people-body").style.display =
+          tab === "people" ? "" : "none";
+        if (tab === "people") dRenderPeopleTab();
+      }
 
-function dSendMsg() {
-  const input = document.getElementById('d-chat-input');
-  const text = input.value.trim();
-  if (!text) return;
-  input.value = '';
-  // Add user bubble
-  document.getElementById('d-empty-chat').style.display='none';
-  const msgs = document.getElementById('d-msgs');
-  const bubble = document.createElement('div');
-  bubble.className = 'd-msg d-msg-user';
-  bubble.textContent = text;
-  msgs.appendChild(bubble);
-  msgs.scrollTop = msgs.scrollHeight;
-  // POST to /events
-  fetch(`${API_BASE}/events`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:text,source:'manual'})}).catch(()=>{});
-}
+      function dSendMsg() {
+        const input = document.getElementById("d-chat-input");
+        const text = input.value.trim();
+        if (!text) return;
+        input.value = "";
+        // Add user bubble
+        document.getElementById("d-empty-chat").style.display = "none";
+        const msgs = document.getElementById("d-msgs");
+        const bubble = document.createElement("div");
+        bubble.className = "d-msg d-msg-user";
+        bubble.textContent = text;
+        msgs.appendChild(bubble);
+        msgs.scrollTop = msgs.scrollHeight;
+        // POST to /events
+        fetch(`${API_BASE}/events`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title: text, source: "manual" }),
+        }).catch(() => {});
+      }
 
-function dRenderPeopleTab() {
-  const body = document.getElementById('d-people-body');
-  if (!body) return;
-  const now = new Date();
-  const active = dEvents.find(e=>{
-    const s=new Date(e.timestamp), end=e.deadline?new Date(e.deadline):new Date(s.getTime()+3_600_000);
-    return s<=now&&now<=end;
-  });
-  const upcoming = [...dEvents].filter(e=>new Date(e.timestamp)>now).sort((a,b)=>new Date(a.timestamp)-new Date(b.timestamp));
-  const ev = active||upcoming[0];
-  const attendees = ev?.attendees || [];
-  if (!attendees.length) {
-    body.innerHTML = '<div class="d-empty-people">No collaborators in active events</div>';
-    return;
-  }
-  body.innerHTML = `<div class="d-people-lbl">${dEsc(ev.title)}</div>`
-    + attendees.map(a=>{
-      const initials = a.name?a.name.trim().split(/\s+/).reduce((acc,p,i,arr)=>i===0||i===arr.length-1?acc+p[0]:'','').toUpperCase().slice(0,2):a.email.slice(0,2).toUpperCase();
-      const sts={accepted:'✓ Going',tentative:'? Maybe',needsAction:'— Pending',declined:'✗ Declined'}[a.status]||'';
-      const stsCls=`d-stt-${a.status||'needsAction'}`;
-      return `<button class="d-att-row">
+      function dRenderPeopleTab() {
+        const body = document.getElementById("d-people-body");
+        if (!body) return;
+        const now = new Date();
+        const active = dEvents.find((e) => {
+          const s = new Date(e.timestamp),
+            end = e.deadline
+              ? new Date(e.deadline)
+              : new Date(s.getTime() + 3_600_000);
+          return s <= now && now <= end;
+        });
+        const upcoming = [...dEvents]
+          .filter((e) => new Date(e.timestamp) > now)
+          .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+        const ev = active || upcoming[0];
+        const attendees = ev?.attendees || [];
+        if (!attendees.length) {
+          body.innerHTML =
+            '<div class="d-empty-people">No collaborators in active events</div>';
+          return;
+        }
+        body.innerHTML =
+          `<div class="d-people-lbl">${dEsc(ev.title)}</div>` +
+          attendees
+            .map((a) => {
+              const initials = a.name
+                ? a.name
+                    .trim()
+                    .split(/\s+/)
+                    .reduce(
+                      (acc, p, i, arr) =>
+                        i === 0 || i === arr.length - 1 ? acc + p[0] : "",
+                      "",
+                    )
+                    .toUpperCase()
+                    .slice(0, 2)
+                : a.email.slice(0, 2).toUpperCase();
+              const sts =
+                {
+                  accepted: "✓ Going",
+                  tentative: "? Maybe",
+                  needsAction: "— Pending",
+                  declined: "✗ Declined",
+                }[a.status] || "";
+              const stsCls = `d-stt-${a.status || "needsAction"}`;
+              return `<button class="d-att-row">
         <div class="d-att-av">${dEsc(initials)}</div>
         <div class="d-att-info">
-          <span class="d-att-name">${dEsc(a.name||a.email)}${a.organiser?'<span class="d-org-tag">org</span>':''}</span>
+          <span class="d-att-name">${dEsc(a.name || a.email)}${a.organiser ? '<span class="d-org-tag">org</span>' : ""}</span>
           <span class="d-att-status ${stsCls}">${sts}</span>
         </div>
       </button>`;
-    }).join('');
-}
+            })
+            .join("");
+      }
 
-// ── Draggable background ──────────────────────────────────────────────────────
-function dInitDrag() {
-  const ws = document.getElementById('d-workspace');
-  if (!ws) return;
-  ws.addEventListener('mousedown', e => {
-    if (e.target !== ws) return;
-    dDragging=true; dDragSX=e.clientX; dDragSY=e.clientY; dDragOX=dBgX; dDragOY=dBgY;
-    ws.classList.add('dragging');
-  });
-  ws.addEventListener('mousemove', e => {
-    if (!dDragging) return;
-    dBgX = dDragOX + (e.clientX-dDragSX);
-    dBgY = dDragOY + (e.clientY-dDragSY);
-    ws.style.backgroundPosition = `${dBgX}px ${dBgY}px`;
-  });
-  ws.addEventListener('mouseup',    () => { dDragging=false; ws.classList.remove('dragging'); });
-  ws.addEventListener('mouseleave', () => { dDragging=false; ws.classList.remove('dragging'); });
-}
+      // ── Draggable background ──────────────────────────────────────────────────────
+      function dInitDrag() {
+        const ws = document.getElementById("d-workspace");
+        if (!ws) return;
+        ws.addEventListener("mousedown", (e) => {
+          if (e.target !== ws) return;
+          dDragging = true;
+          dDragSX = e.clientX;
+          dDragSY = e.clientY;
+          dDragOX = dBgX;
+          dDragOY = dBgY;
+          ws.classList.add("dragging");
+        });
+        ws.addEventListener("mousemove", (e) => {
+          if (!dDragging) return;
+          dBgX = dDragOX + (e.clientX - dDragSX);
+          dBgY = dDragOY + (e.clientY - dDragSY);
+          ws.style.backgroundPosition = `${dBgX}px ${dBgY}px`;
+        });
+        ws.addEventListener("mouseup", () => {
+          dDragging = false;
+          ws.classList.remove("dragging");
+        });
+        ws.addEventListener("mouseleave", () => {
+          dDragging = false;
+          ws.classList.remove("dragging");
+        });
+      }
 
-// ── Desktop init ──────────────────────────────────────────────────────────────
-function initDesktop() {
-  dInitDrag();
-  dUpdateClock();
-  setInterval(dUpdateClock, 1000);
-  dFetchEvents();
-  setInterval(dFetchEvents, 5*60_000);
-}
+      // ── Desktop init ──────────────────────────────────────────────────────────────
+      function initDesktop() {
+        dInitDrag();
+        dUpdateClock();
+        setInterval(dUpdateClock, 1000);
+        dFetchEvents();
+        setInterval(dFetchEvents, 5 * 60_000);
+      }
 
-// ════════════════════════════════════════════════════════════════════════════
-// MOBILE MODULE
-// ════════════════════════════════════════════════════════════════════════════
+      // ════════════════════════════════════════════════════════════════════════════
+      // MOBILE MODULE
+      // ════════════════════════════════════════════════════════════════════════════
 
-const GRADIENTS = {
-  morning:   'linear-gradient(to bottom,rgb(0,3,14) 0%,rgb(8,49,136) 18%,rgb(45,120,230) 40%,rgb(148,205,255) 57%,rgb(249,253,255) 100%)',
-  afternoon: 'linear-gradient(to bottom,rgb(14,8,0) 0%,rgb(136,80,8) 18%,rgb(230,160,45) 40%,rgb(255,220,148) 57%,rgb(255,253,249) 100%)',
-  evening:   'linear-gradient(to bottom,rgb(3,0,14) 0%,rgb(49,8,100) 18%,rgb(100,45,180) 40%,rgb(180,148,255) 57%,rgb(253,249,255) 100%)',
-  night:     'linear-gradient(to bottom,rgb(0,0,8) 0%,rgb(5,5,30) 40%,rgb(10,10,40) 100%)',
-};
-const ATTENDEE_STATUS = { accepted:'✓', tentative:'?', needsAction:'—', declined:'✗' };
-const M_MAX = 4, M_THRESHOLD = 65;
+      const GRADIENTS = {
+        morning:
+          "linear-gradient(to bottom,rgb(0,3,14) 0%,rgb(8,49,136) 18%,rgb(45,120,230) 40%,rgb(148,205,255) 57%,rgb(249,253,255) 100%)",
+        afternoon:
+          "linear-gradient(to bottom,rgb(14,8,0) 0%,rgb(136,80,8) 18%,rgb(230,160,45) 40%,rgb(255,220,148) 57%,rgb(255,253,249) 100%)",
+        evening:
+          "linear-gradient(to bottom,rgb(3,0,14) 0%,rgb(49,8,100) 18%,rgb(100,45,180) 40%,rgb(180,148,255) 57%,rgb(253,249,255) 100%)",
+        night:
+          "linear-gradient(to bottom,rgb(0,0,8) 0%,rgb(5,5,30) 40%,rgb(10,10,40) 100%)",
+      };
+      const ATTENDEE_STATUS = {
+        accepted: "✓",
+        tentative: "?",
+        needsAction: "—",
+        declined: "✗",
+      };
+      const M_MAX = 4,
+        M_THRESHOLD = 65;
 
-const state = { queue:[], allEvents:[], hintCount:0, isSwiping:false };
+      const state = {
+        queue: [],
+        allEvents: [],
+        hintCount: 0,
+        isSwiping: false,
+      };
 
-function mPeriod(h) {
-  if(h>=5&&h<12)return'morning'; if(h>=12&&h<18)return'afternoon';
-  if(h>=18&&h<22)return'evening'; return'night';
-}
-function esc(s) {
-  return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-function fmt12(d) { const h=d.getHours(),m=d.getMinutes(); return`${h%12||12}:${String(m).padStart(2,'0')} ${h>=12?'PM':'AM'}`; }
-function formatRange(ev) { const s=new Date(ev.timestamp); if(!ev.deadline)return fmt12(s); return`${fmt12(s)} – ${fmt12(new Date(ev.deadline))}`; }
-function formatFullDate(ev) {
-  const s=new Date(ev.timestamp);
-  const d=s.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
-  if(!ev.deadline)return`${d} at ${fmt12(s)}`;
-  return`${d}  ${fmt12(s)} – ${fmt12(new Date(ev.deadline))}`;
-}
-function mInitials(a) {
-  if(a.name){const p=a.name.trim().split(/\s+/);return(p.length>=2?(p[0][0]+p[p.length-1][0]):p[0].slice(0,2)).toUpperCase();}
-  return(a.email||'??').slice(0,2).toUpperCase();
-}
+      function mPeriod(h) {
+        if (h >= 5 && h < 12) return "morning";
+        if (h >= 12 && h < 18) return "afternoon";
+        if (h >= 18 && h < 22) return "evening";
+        return "night";
+      }
+      function esc(s) {
+        return String(s ?? "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;");
+      }
+      function fmt12(d) {
+        const h = d.getHours(),
+          m = d.getMinutes();
+        return `${h % 12 || 12}:${String(m).padStart(2, "0")} ${h >= 12 ? "PM" : "AM"}`;
+      }
+      function formatRange(ev) {
+        const s = new Date(ev.timestamp);
+        if (!ev.deadline) return fmt12(s);
+        return `${fmt12(s)} – ${fmt12(new Date(ev.deadline))}`;
+      }
+      function formatFullDate(ev) {
+        const s = new Date(ev.timestamp);
+        const d = s.toLocaleDateString("en-US", {
+          weekday: "long",
+          month: "long",
+          day: "numeric",
+        });
+        if (!ev.deadline) return `${d} at ${fmt12(s)}`;
+        return `${d}  ${fmt12(s)} – ${fmt12(new Date(ev.deadline))}`;
+      }
+      function mInitials(a) {
+        if (a.name) {
+          const p = a.name.trim().split(/\s+/);
+          return (
+            p.length >= 2 ? p[0][0] + p[p.length - 1][0] : p[0].slice(0, 2)
+          ).toUpperCase();
+        }
+        return (a.email || "??").slice(0, 2).toUpperCase();
+      }
 
-function applyGradient() {
-  const p=mPeriod(new Date().getHours());
-  document.getElementById('app').style.background=GRADIENTS[p];
-}
-function updateGreeting() {
-  const h=new Date().getHours();
-  let g; if(h>=5&&h<12)g='Good Morning'; else if(h>=12&&h<18)g='Good Afternoon'; else if(h>=18&&h<22)g='Good Evening'; else g='Still up?';
-  document.getElementById('greeting').textContent=g;
-  const n=state.queue.length;
-  const s=n===0?'Nothing urgent right now.':n===1?'One thing needs your attention.':n<=3?`${n} things on your radar today.`:'Your focus window is full.';
-  document.getElementById('subtitle').textContent=s;
-}
-function updateDatePill() {
-  const now=new Date(), month=now.toLocaleString('en-US',{month:'short'}), day=String(now.getDate()).padStart(2,'0');
-  document.getElementById('date-pill').innerHTML=`${esc(month)}. <span class="day-highlight">${esc(day)}</span>`;
-}
-function updateCountdown() {
-  const now=new Date();
-  const active=state.allEvents.find(e=>{const s=new Date(e.timestamp),end=e.deadline?new Date(e.deadline):new Date(s.getTime()+3_600_000);return s<=now&&now<=end;});
-  if(active){document.getElementById('countdown-pill').textContent='now';return;}
-  const upcoming=[...state.allEvents].filter(e=>new Date(e.timestamp)>now).sort((a,b)=>new Date(a.timestamp)-new Date(b.timestamp));
-  if(!upcoming.length){document.getElementById('countdown-pill').textContent='—';return;}
-  const ms=new Date(upcoming[0].timestamp)-now, mins=Math.floor(ms/60_000), h=Math.floor(mins/60), m=mins%60;
-  document.getElementById('countdown-pill').textContent=h>0?`in ${h}h`:`in ${m}m`;
-}
-function updateEmptyText() {
-  const now=new Date();
-  const upcoming=[...state.allEvents].filter(e=>new Date(e.timestamp)>now).sort((a,b)=>new Date(a.timestamp)-new Date(b.timestamp));
-  if(!upcoming.length){document.getElementById('empty-text').textContent='Nothing scheduled today';return;}
-  const ev=upcoming[0], ms=new Date(ev.timestamp)-now, mins=Math.floor(ms/60_000), h=Math.floor(mins/60), m=mins%60;
-  const t=h>0&&m>0?`in ${h}h ${m}m`:h>0?`in ${h}h`:`in ${m}m`;
-  document.getElementById('empty-text').textContent=`Next: ${ev.title} ${t}`;
-}
-function fetchWeather() {
-  const WMO={0:'☀️',1:'🌤',2:'⛅',3:'☁️',45:'🌫',48:'🌫',51:'🌦',53:'🌦',55:'🌦',61:'🌧',63:'🌧',65:'🌧',71:'🌨',73:'🌨',75:'🌨',80:'🌦',81:'🌦',82:'🌦',95:'⛈',96:'⛈',99:'⛈'};
-  navigator.geolocation.getCurrentPosition(async pos=>{
-    try{const r=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${pos.coords.latitude}&longitude=${pos.coords.longitude}&current_weather=true`);
-    const data=await r.json();
-    document.getElementById('weather-pill').textContent=`${WMO[data.current_weather.weathercode]??'🌡'} ${Math.round(data.current_weather.temperature)}°`;}catch{}
-  },()=>{});
-}
+      function applyGradient() {
+        const p = mPeriod(new Date().getHours());
+        document.getElementById("app").style.background = GRADIENTS[p];
+      }
+      function updateGreeting() {
+        const h = new Date().getHours();
+        let g;
+        if (h >= 5 && h < 12) g = "Good Morning";
+        else if (h >= 12 && h < 18) g = "Good Afternoon";
+        else if (h >= 18 && h < 22) g = "Good Evening";
+        else g = "Still up?";
+        document.getElementById("greeting").textContent = g;
+        const n = state.queue.length;
+        const s =
+          n === 0
+            ? "Nothing urgent right now."
+            : n === 1
+              ? "One thing needs your attention."
+              : n <= 3
+                ? `${n} things on your radar today.`
+                : "Your focus window is full.";
+        document.getElementById("subtitle").textContent = s;
+      }
+      function updateDatePill() {
+        const now = new Date(),
+          month = now.toLocaleString("en-US", { month: "short" }),
+          day = String(now.getDate()).padStart(2, "0");
+        document.getElementById("date-pill").innerHTML =
+          `${esc(month)}. <span class="day-highlight">${esc(day)}</span>`;
+      }
+      function updateCountdown() {
+        const now = new Date();
+        const active = state.allEvents.find((e) => {
+          const s = new Date(e.timestamp),
+            end = e.deadline
+              ? new Date(e.deadline)
+              : new Date(s.getTime() + 3_600_000);
+          return s <= now && now <= end;
+        });
+        if (active) {
+          document.getElementById("countdown-pill").textContent = "now";
+          return;
+        }
+        const upcoming = [...state.allEvents]
+          .filter((e) => new Date(e.timestamp) > now)
+          .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+        if (!upcoming.length) {
+          document.getElementById("countdown-pill").textContent = "—";
+          return;
+        }
+        const ms = new Date(upcoming[0].timestamp) - now,
+          mins = Math.floor(ms / 60_000),
+          h = Math.floor(mins / 60),
+          m = mins % 60;
+        document.getElementById("countdown-pill").textContent =
+          h > 0 ? `in ${h}h` : `in ${m}m`;
+      }
+      function updateEmptyText() {
+        const now = new Date();
+        const upcoming = [...state.allEvents]
+          .filter((e) => new Date(e.timestamp) > now)
+          .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+        if (!upcoming.length) {
+          document.getElementById("empty-text").textContent =
+            "Nothing scheduled today";
+          return;
+        }
+        const ev = upcoming[0],
+          ms = new Date(ev.timestamp) - now,
+          mins = Math.floor(ms / 60_000),
+          h = Math.floor(mins / 60),
+          m = mins % 60;
+        const t =
+          h > 0 && m > 0 ? `in ${h}h ${m}m` : h > 0 ? `in ${h}h` : `in ${m}m`;
+        document.getElementById("empty-text").textContent =
+          `Next: ${ev.title} ${t}`;
+      }
+      function fetchWeather() {
+        const WMO = {
+          0: "☀️",
+          1: "🌤",
+          2: "⛅",
+          3: "☁️",
+          45: "🌫",
+          48: "🌫",
+          51: "🌦",
+          53: "🌦",
+          55: "🌦",
+          61: "🌧",
+          63: "🌧",
+          65: "🌧",
+          71: "🌨",
+          73: "🌨",
+          75: "🌨",
+          80: "🌦",
+          81: "🌦",
+          82: "🌦",
+          95: "⛈",
+          96: "⛈",
+          99: "⛈",
+        };
+        navigator.geolocation.getCurrentPosition(
+          async (pos) => {
+            try {
+              const r = await fetch(
+                `https://api.open-meteo.com/v1/forecast?latitude=${pos.coords.latitude}&longitude=${pos.coords.longitude}&current_weather=true`,
+              );
+              const data = await r.json();
+              document.getElementById("weather-pill").textContent =
+                `${WMO[data.current_weather.weathercode] ?? "🌡"} ${Math.round(data.current_weather.temperature)}°`;
+            } catch {}
+          },
+          () => {},
+        );
+      }
 
-async function fetchSignals() {
-  try {
-    fetch(`${API_BASE}/sync/google`).catch(()=>{});
-    let events=[];
-    try{const r=await fetch(`${API_BASE}/digest`);events=(await r.json()).events??[];}catch{}
-    if(!events.length){try{const r=await fetch(`${API_BASE}/events/surfaced`);events=(await r.json()).events??[];}catch{}}
-    state.allEvents=events;
-    state.queue=events.filter(e=>e.score>=M_THRESHOLD).sort((a,b)=>b.score-a.score).slice(0,M_MAX);
-  }catch(err){console.error('[Mobile] fetchSignals:',err);}
-  renderAll();
-}
+      async function fetchSignals() {
+        try {
+          fetch(`${API_BASE}/sync/google`).catch(() => {});
+          let events = [];
+          try {
+            const r = await fetch(`${API_BASE}/digest`);
+            events = (await r.json()).events ?? [];
+          } catch {}
+          if (!events.length) {
+            try {
+              const r = await fetch(`${API_BASE}/events/surfaced`);
+              events = (await r.json()).events ?? [];
+            } catch {}
+          }
+          state.allEvents = events;
+          state.queue = events
+            .filter((e) => e.score >= M_THRESHOLD)
+            .sort((a, b) => b.score - a.score)
+            .slice(0, M_MAX);
+        } catch (err) {
+          console.error("[Mobile] fetchSignals:", err);
+        }
+        renderAll();
+      }
 
-function cardHTML(ev) {
-  const cc=COG_COLORS[ev.cognitive_type]??'#B8BEC6', cl=COG_LABELS[ev.cognitive_type]??'Info';
-  const sl=SOURCE_LABELS[ev.source]??esc(ev.source), score=Math.min(100,Math.max(0,ev.score??0));
-  return`<div class="card-header"><div class="cog-badge"><span class="cog-dot" style="background:${cc}"></span><span class="cog-label">${esc(cl)}</span></div><div class="source-badge">${esc(sl)}</div></div>
+      function cardHTML(ev) {
+        const cc = COG_COLORS[ev.cognitive_type] ?? "#B8BEC6",
+          cl = COG_LABELS[ev.cognitive_type] ?? "Info";
+        const sl = SOURCE_LABELS[ev.source] ?? esc(ev.source),
+          score = Math.min(100, Math.max(0, ev.score ?? 0));
+        return `<div class="card-header"><div class="cog-badge"><span class="cog-dot" style="background:${cc}"></span><span class="cog-label">${esc(cl)}</span></div><div class="source-badge">${esc(sl)}</div></div>
 <div class="card-title">${esc(ev.title)}</div>
 <div class="card-time">${esc(formatRange(ev))}</div>
-${ev.location?`<div class="card-location">📍 ${esc(ev.location)}</div>`:''}
+${ev.location ? `<div class="card-location">📍 ${esc(ev.location)}</div>` : ""}
 <div class="score-track"><div class="score-bar-bg"><div class="score-bar-fill" style="width:${score}%;background:${cc}66"></div></div></div>`;
-}
+      }
 
-function renderAll() {
-  applyGradient(); updateGreeting(); updateDatePill(); updateCountdown();
-  const stack=document.getElementById('card-stack'), empty=document.getElementById('empty-state'), hints=document.getElementById('gesture-hints');
-  const mainEl=document.getElementById('main-card'), peekEl=document.getElementById('peek-card');
-  if(!state.queue.length){stack.style.display='none';empty.style.display='flex';hints.style.display='none';updateEmptyText();return;}
-  stack.style.display='block';empty.style.display='none';hints.style.display=state.hintCount<3?'block':'none';
-  mainEl.innerHTML=cardHTML(state.queue[0]); mainEl.style.transform=''; mainEl.style.opacity=''; mainEl.style.transition='';
-  if(state.queue[1]){peekEl.innerHTML=cardHTML(state.queue[1]);peekEl.style.display='block';}else{peekEl.style.display='none';}
-  attachGestures(mainEl);
-}
+      function renderAll() {
+        applyGradient();
+        updateGreeting();
+        updateDatePill();
+        updateCountdown();
+        const stack = document.getElementById("card-stack"),
+          empty = document.getElementById("empty-state"),
+          hints = document.getElementById("gesture-hints");
+        const mainEl = document.getElementById("main-card"),
+          peekEl = document.getElementById("peek-card");
+        if (!state.queue.length) {
+          stack.style.display = "none";
+          empty.style.display = "flex";
+          hints.style.display = "none";
+          updateEmptyText();
+          return;
+        }
+        stack.style.display = "block";
+        empty.style.display = "none";
+        hints.style.display = state.hintCount < 3 ? "block" : "none";
+        mainEl.innerHTML = cardHTML(state.queue[0]);
+        mainEl.style.transform = "";
+        mainEl.style.opacity = "";
+        mainEl.style.transition = "";
+        if (state.queue[1]) {
+          peekEl.innerHTML = cardHTML(state.queue[1]);
+          peekEl.style.display = "block";
+        } else {
+          peekEl.style.display = "none";
+        }
+        attachGestures(mainEl);
+      }
 
-function flashGreen(){const el=document.getElementById('flash-overlay');el.style.opacity='1';setTimeout(()=>{el.style.opacity='0';},400);}
+      function flashGreen() {
+        const el = document.getElementById("flash-overlay");
+        el.style.opacity = "1";
+        setTimeout(() => {
+          el.style.opacity = "0";
+        }, 400);
+      }
 
-async function postFeedback(id,outcome){try{await fetch(`${API_BASE}/feedback`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({cadence_event_id:id,outcome})});}catch{}}
+      async function postFeedback(id, outcome) {
+        try {
+          await fetch(`${API_BASE}/feedback`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ cadence_event_id: id, outcome }),
+          });
+        } catch {}
+      }
 
-function doSwipeRight(){if(state.isSwiping||!state.queue.length)return;state.isSwiping=true;state.hintCount++;const card=state.queue[0];const el=document.getElementById('main-card');el.style.transition='transform 0.3s cubic-bezier(0.16,1,0.3,1),opacity 0.3s';el.style.transform='translateX(130vw) rotate(15deg)';el.style.opacity='0';flashGreen();postFeedback(card.id,'actioned');promotePeek();setTimeout(()=>{state.queue.shift();state.isSwiping=false;renderAll();},340);}
-function doSwipeLeft(){if(state.isSwiping||!state.queue.length)return;state.isSwiping=true;state.hintCount++;const card=state.queue[0];const el=document.getElementById('main-card');el.style.transition='transform 0.3s cubic-bezier(0.16,1,0.3,1),opacity 0.3s';el.style.transform='translateX(-130vw) rotate(-15deg)';el.style.opacity='0';postFeedback(card.id,'dismissed');promotePeek();setTimeout(()=>{state.queue.shift();state.isSwiping=false;renderAll();},340);}
-function doSwipeUp(){if(state.isSwiping||!state.queue.length)return;state.isSwiping=true;state.hintCount++;const card=state.queue[0];const el=document.getElementById('main-card');el.style.transition='transform 0.3s cubic-bezier(0.16,1,0.3,1),opacity 0.3s';el.style.transform='translateY(-110vh)';el.style.opacity='0';postFeedback(card.id,'ignored');promotePeek();setTimeout(()=>{state.queue.shift();state.queue.push(card);state.isSwiping=false;renderAll();},340);}
-function snapBack(el){el.style.transition='transform 0.45s cubic-bezier(0.34,1.56,0.64,1)';el.style.transform='translateX(0) translateY(0) rotate(0deg)';}
-function promotePeek(){const peek=document.getElementById('peek-card');if(!state.queue[1])return;peek.style.transition='transform 0.4s cubic-bezier(0.34,1.2,0.64,1),opacity 0.3s';peek.style.transform='scale(1) translateY(0)';peek.style.opacity='1';}
+      function doSwipeRight() {
+        if (state.isSwiping || !state.queue.length) return;
+        state.isSwiping = true;
+        state.hintCount++;
+        const card = state.queue[0];
+        const el = document.getElementById("main-card");
+        el.style.transition =
+          "transform 0.3s cubic-bezier(0.16,1,0.3,1),opacity 0.3s";
+        el.style.transform = "translateX(130vw) rotate(15deg)";
+        el.style.opacity = "0";
+        flashGreen();
+        postFeedback(card.id, "actioned");
+        promotePeek();
+        setTimeout(() => {
+          state.queue.shift();
+          state.isSwiping = false;
+          renderAll();
+        }, 340);
+      }
+      function doSwipeLeft() {
+        if (state.isSwiping || !state.queue.length) return;
+        state.isSwiping = true;
+        state.hintCount++;
+        const card = state.queue[0];
+        const el = document.getElementById("main-card");
+        el.style.transition =
+          "transform 0.3s cubic-bezier(0.16,1,0.3,1),opacity 0.3s";
+        el.style.transform = "translateX(-130vw) rotate(-15deg)";
+        el.style.opacity = "0";
+        postFeedback(card.id, "dismissed");
+        promotePeek();
+        setTimeout(() => {
+          state.queue.shift();
+          state.isSwiping = false;
+          renderAll();
+        }, 340);
+      }
+      function doSwipeUp() {
+        if (state.isSwiping || !state.queue.length) return;
+        state.isSwiping = true;
+        state.hintCount++;
+        const card = state.queue[0];
+        const el = document.getElementById("main-card");
+        el.style.transition =
+          "transform 0.3s cubic-bezier(0.16,1,0.3,1),opacity 0.3s";
+        el.style.transform = "translateY(-110vh)";
+        el.style.opacity = "0";
+        postFeedback(card.id, "ignored");
+        promotePeek();
+        setTimeout(() => {
+          state.queue.shift();
+          state.queue.push(card);
+          state.isSwiping = false;
+          renderAll();
+        }, 340);
+      }
+      function snapBack(el) {
+        el.style.transition = "transform 0.45s cubic-bezier(0.34,1.56,0.64,1)";
+        el.style.transform = "translateX(0) translateY(0) rotate(0deg)";
+      }
+      function promotePeek() {
+        const peek = document.getElementById("peek-card");
+        if (!state.queue[1]) return;
+        peek.style.transition =
+          "transform 0.4s cubic-bezier(0.34,1.2,0.64,1),opacity 0.3s";
+        peek.style.transform = "scale(1) translateY(0)";
+        peek.style.opacity = "1";
+      }
 
-function attachGestures(el) {
-  let startX,startY,startTime,lpTimer=null,lpFired=false,dragging=false;
-  el.addEventListener('touchstart',e=>{if(state.isSwiping)return;startX=e.touches[0].clientX;startY=e.touches[0].clientY;startTime=Date.now();lpFired=false;dragging=false;lpTimer=setTimeout(()=>{lpFired=true;if(state.queue[0])openInspectPanel(state.queue[0]);},500);},{passive:true});
-  el.addEventListener('touchmove',e=>{clearTimeout(lpTimer);if(state.isSwiping)return;dragging=true;e.preventDefault();const dx=e.touches[0].clientX-startX,dy=e.touches[0].clientY-startY;el.style.transition='none';el.style.transform=`translateX(${dx}px) translateY(${dy*0.4}px) rotate(${dx*0.04}deg)`;},{passive:false});
-  el.addEventListener('touchend',e=>{clearTimeout(lpTimer);if(state.isSwiping||lpFired)return;const dx=e.changedTouches[0].clientX-startX,dy=e.changedTouches[0].clientY-startY,dist=Math.sqrt(dx*dx+dy*dy),dt=Date.now()-startTime;if(dist<10&&dt<300&&!dragging){el.style.transition='';el.style.transform='';if(state.queue[0])openDetailView(state.queue[0]);}else if(dx>80){doSwipeRight();}else if(dx<-80){doSwipeLeft();}else if(dy<-80){doSwipeUp();}else{snapBack(el);}},{passive:true});
-  el.addEventListener('touchcancel',()=>{clearTimeout(lpTimer);snapBack(el);},{passive:true});
-}
+      function attachGestures(el) {
+        let startX,
+          startY,
+          startTime,
+          lpTimer = null,
+          lpFired = false,
+          dragging = false;
+        el.addEventListener(
+          "touchstart",
+          (e) => {
+            if (state.isSwiping) return;
+            startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
+            startTime = Date.now();
+            lpFired = false;
+            dragging = false;
+            lpTimer = setTimeout(() => {
+              lpFired = true;
+              if (state.queue[0]) openInspectPanel(state.queue[0]);
+            }, 500);
+          },
+          { passive: true },
+        );
+        el.addEventListener(
+          "touchmove",
+          (e) => {
+            clearTimeout(lpTimer);
+            if (state.isSwiping) return;
+            dragging = true;
+            e.preventDefault();
+            const dx = e.touches[0].clientX - startX,
+              dy = e.touches[0].clientY - startY;
+            el.style.transition = "none";
+            el.style.transform = `translateX(${dx}px) translateY(${dy * 0.4}px) rotate(${dx * 0.04}deg)`;
+          },
+          { passive: false },
+        );
+        el.addEventListener(
+          "touchend",
+          (e) => {
+            clearTimeout(lpTimer);
+            if (state.isSwiping || lpFired) return;
+            const dx = e.changedTouches[0].clientX - startX,
+              dy = e.changedTouches[0].clientY - startY,
+              dist = Math.sqrt(dx * dx + dy * dy),
+              dt = Date.now() - startTime;
+            if (dist < 10 && dt < 300 && !dragging) {
+              el.style.transition = "";
+              el.style.transform = "";
+              if (state.queue[0]) openDetailView(state.queue[0]);
+            } else if (dx > 80) {
+              doSwipeRight();
+            } else if (dx < -80) {
+              doSwipeLeft();
+            } else if (dy < -80) {
+              doSwipeUp();
+            } else {
+              snapBack(el);
+            }
+          },
+          { passive: true },
+        );
+        el.addEventListener(
+          "touchcancel",
+          () => {
+            clearTimeout(lpTimer);
+            snapBack(el);
+          },
+          { passive: true },
+        );
+      }
 
-function openDetailView(ev) {
-  const attendeesHtml=(ev.attendees&&ev.attendees.length)?`<div class="detail-section"><div class="detail-section-label">People</div><div class="detail-avatars">${ev.attendees.map(a=>`<div class="detail-avatar-item"><div class="detail-avatar${a.organiser?' organiser':''}">${esc(mInitials(a))}</div><div class="detail-avatar-status">${ATTENDEE_STATUS[a.status]??'—'}</div>${a.organiser?'<div class="detail-avatar-org-label">org</div>':''}</div>`).join('')}</div></div>`:'';
-  const notesHtml=ev.raw_content?`<div class="detail-section"><div class="detail-section-label">Notes</div><div class="detail-notes">${esc(ev.raw_content)}</div></div>`:'';
-  const reminderHtml=ev.reminder_minutes!=null?`<div class="detail-reminder">🔔 ${ev.reminder_minutes} minutes before</div>`:'';
-  document.getElementById('detail-scroll').innerHTML=`<div class="detail-title">${esc(ev.title)}</div><div class="detail-date">${esc(formatFullDate(ev))}</div>${ev.location?`<div class="detail-location">📍 ${esc(ev.location)}</div>`:''}${attendeesHtml}${notesHtml}${reminderHtml}`;
-  document.getElementById('detail-view').classList.add('open');
-  const handle=document.getElementById('detail-handle');
-  let dtSY;
-  handle.ontouchstart=e=>{dtSY=e.touches[0].clientY;};
-  handle.ontouchend=e=>{if(e.changedTouches[0].clientY-dtSY>80)closeDetailView();};
-}
-function closeDetailView(){document.getElementById('detail-view').classList.remove('open');}
+      function openDetailView(ev) {
+        const attendeesHtml =
+          ev.attendees && ev.attendees.length
+            ? `<div class="detail-section"><div class="detail-section-label">People</div><div class="detail-avatars">${ev.attendees.map((a) => `<div class="detail-avatar-item"><div class="detail-avatar${a.organiser ? " organiser" : ""}">${esc(mInitials(a))}</div><div class="detail-avatar-status">${ATTENDEE_STATUS[a.status] ?? "—"}</div>${a.organiser ? '<div class="detail-avatar-org-label">org</div>' : ""}</div>`).join("")}</div></div>`
+            : "";
+        const notesHtml = ev.raw_content
+          ? `<div class="detail-section"><div class="detail-section-label">Notes</div><div class="detail-notes">${esc(ev.raw_content)}</div></div>`
+          : "";
+        const reminderHtml =
+          ev.reminder_minutes != null
+            ? `<div class="detail-reminder">🔔 ${ev.reminder_minutes} minutes before</div>`
+            : "";
+        document.getElementById("detail-scroll").innerHTML =
+          `<div class="detail-title">${esc(ev.title)}</div><div class="detail-date">${esc(formatFullDate(ev))}</div>${ev.location ? `<div class="detail-location">📍 ${esc(ev.location)}</div>` : ""}${attendeesHtml}${notesHtml}${reminderHtml}`;
+        document.getElementById("detail-view").classList.add("open");
+        const handle = document.getElementById("detail-handle");
+        let dtSY;
+        handle.ontouchstart = (e) => {
+          dtSY = e.touches[0].clientY;
+        };
+        handle.ontouchend = (e) => {
+          if (e.changedTouches[0].clientY - dtSY > 80) closeDetailView();
+        };
+      }
+      function closeDetailView() {
+        document.getElementById("detail-view").classList.remove("open");
+      }
 
-function openInspectPanel(ev) {
-  const cc=COG_COLORS[ev.cognitive_type]??'#B8BEC6', sl=SOURCE_LABELS[ev.source]??esc(ev.source), desc=COG_DESC[ev.cognitive_type]??'';
-  document.getElementById('inspect-panel').innerHTML=`<div class="inspect-score">${Math.round(ev.score??0)}</div><div class="inspect-score-label">Priority Score</div><div class="inspect-breakdown"><div class="inspect-row"><span class="inspect-key">Cognitive type</span><span class="inspect-val" style="color:${cc}">${esc((ev.cognitive_type??'').replace('_',' '))}</span></div><div class="inspect-row"><span class="inspect-key">Source</span><span class="inspect-val">${esc(sl)}</span></div>${ev.deadline?`<div class="inspect-row"><span class="inspect-key">Has deadline</span><span class="inspect-val">×1.8</span></div>`:''}</div><div class="inspect-description">${esc(desc)}</div><button class="inspect-gotit" onclick="closeInspectPanel()">Got it</button>`;
-  document.getElementById('inspect-panel').classList.add('open');
-  document.getElementById('inspect-backdrop').style.display='block';
-}
-function closeInspectPanel(){document.getElementById('inspect-panel').classList.remove('open');document.getElementById('inspect-backdrop').style.display='none';}
+      function openInspectPanel(ev) {
+        const cc = COG_COLORS[ev.cognitive_type] ?? "#B8BEC6",
+          sl = SOURCE_LABELS[ev.source] ?? esc(ev.source),
+          desc = COG_DESC[ev.cognitive_type] ?? "";
+        document.getElementById("inspect-panel").innerHTML =
+          `<div class="inspect-score">${Math.round(ev.score ?? 0)}</div><div class="inspect-score-label">Priority Score</div><div class="inspect-breakdown"><div class="inspect-row"><span class="inspect-key">Cognitive type</span><span class="inspect-val" style="color:${cc}">${esc((ev.cognitive_type ?? "").replace("_", " "))}</span></div><div class="inspect-row"><span class="inspect-key">Source</span><span class="inspect-val">${esc(sl)}</span></div>${ev.deadline ? `<div class="inspect-row"><span class="inspect-key">Has deadline</span><span class="inspect-val">×1.8</span></div>` : ""}</div><div class="inspect-description">${esc(desc)}</div><button class="inspect-gotit" onclick="closeInspectPanel()">Got it</button>`;
+        document.getElementById("inspect-panel").classList.add("open");
+        document.getElementById("inspect-backdrop").style.display = "block";
+      }
+      function closeInspectPanel() {
+        document.getElementById("inspect-panel").classList.remove("open");
+        document.getElementById("inspect-backdrop").style.display = "none";
+      }
 
-async function submitMobileInput() {
-  const input=document.getElementById('ask-input'), text=input.value.trim();
-  if(!text)return; input.value=''; if(typeof input.blur==='function')input.blur();
-  try{await fetch(`${API_BASE}/events`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:text,source:'manual'})});await fetchSignals();}catch{}
-}
+      async function submitMobileInput() {
+        const input = document.getElementById("ask-input"),
+          text = input.value.trim();
+        if (!text) return;
+        input.value = "";
+        if (typeof input.blur === "function") input.blur();
+        try {
+          await fetch(`${API_BASE}/events`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ title: text, source: "manual" }),
+          });
+          await fetchSignals();
+        } catch {}
+      }
 
-function initMobile() {
-  applyGradient(); updateGreeting(); updateDatePill(); updateCountdown();
-  fetchWeather(); fetchSignals();
-  setInterval(()=>{applyGradient();updateGreeting();updateCountdown();updateEmptyText();},60_000);
-  setInterval(fetchSignals,5*60_000);
-  document.getElementById('mic-btn').onclick=submitMobileInput;
-  document.getElementById('ask-input').onkeydown=e=>{if(e.key==='Enter')submitMobileInput();};
-}
+      function initMobile() {
+        applyGradient();
+        updateGreeting();
+        updateDatePill();
+        updateCountdown();
+        fetchWeather();
+        fetchSignals();
+        setInterval(() => {
+          applyGradient();
+          updateGreeting();
+          updateCountdown();
+          updateEmptyText();
+        }, 60_000);
+        setInterval(fetchSignals, 5 * 60_000);
+        document.getElementById("mic-btn").onclick = submitMobileInput;
+        document.getElementById("ask-input").onkeydown = (e) => {
+          if (e.key === "Enter") submitMobileInput();
+        };
+      }
 
-// ════════════════════════════════════════════════════════════════════════════
-// BOOT
-// ════════════════════════════════════════════════════════════════════════════
-showView(currentView);
-initDesktop();
-initMobile();
-</script>
-</body>
+      // ════════════════════════════════════════════════════════════════════════════
+      // BOOT
+      // ════════════════════════════════════════════════════════════════════════════
+      showView(currentView);
+      initDesktop();
+      initMobile();
+    </script>
+  </body>
 </html>
