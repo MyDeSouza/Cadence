@@ -747,7 +747,7 @@ function dToggleCal() {
   const panel = document.getElementById('d-cal-panel');
   pill.style.display  = dCalOpen ? 'none' : 'flex';
   panel.style.display = dCalOpen ? 'flex' : 'none';
-  if (dCalOpen) { dRenderMonthCal(); dRenderTimeline(); }
+  if (dCalOpen) { dCloseDetail(); dRenderMonthCal(); dRenderTimeline(); }
 }
 
 // ── Month calendar ───────────────────────────────────────────────────────────
