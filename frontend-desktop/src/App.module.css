@@ -2,10 +2,18 @@
   position: relative;
   width: 100%;
   height: 100%;
-  background-color: #ffffff;
-  /* Dot grid */
-  background-image: radial-gradient(circle, #e9e9e9 2px, transparent 2px);
-  background-size: 52px 52px;
+  background-size: 28px 28px;
   background-position: 0 0;
   overflow: hidden;
+  transition: background-color 2s ease;
+}
+
+.workspace_day {
+  background-color: #E8ECF0;
+  background-image: radial-gradient(circle, rgba(160, 170, 185, 0.55) 1.5px, transparent 1.5px);
+}
+
+.workspace_night {
+  background-color: #0D0D0D;
+  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.07) 1.5px, transparent 1.5px);
 }

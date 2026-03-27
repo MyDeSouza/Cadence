@@ -4,10 +4,13 @@ import {
   startOfWeek, startOfMonth, isToday, isSameDay, isSameMonth,
 } from 'date-fns';
 import type { Attendee, CadenceEvent } from '../../types';
+import type { Theme } from '../../hooks/useAdaptiveTheme';
 import { useDigest } from '../../hooks/useDigest';
 import styles from './CalendarWidget.module.css';
 
 interface Props {
+  theme: Theme;
+  onClose: () => void;
   onBeginSession: (event: CadenceEvent) => void;
 }
 
@@ -19,7 +22,7 @@ const COGNITIVE_META: Record<string, { color: string; label: string }> = {
   deadline:        { color: '#B8BEC6', label: 'Deadline' },
 };
 
-const HOUR_HEIGHT = 52; // px — 24 × 52 = 1248px total
+const HOUR_HEIGHT = 52;
 
 function fmt12(iso: string): string {
   return format(parseISO(iso), 'h:mm a');
@@ -38,14 +41,12 @@ function isActive(event: CadenceEvent, now: Date): boolean {
   return start <= now && now <= end;
 }
 
-// Calendar-day difference (ignores time of day)
 function daysBetween(a: Date, b: Date): number {
   const midnight = (d: Date) =>
     new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
   return Math.round((midnight(b) - midnight(a)) / 86_400_000);
 }
 
-// Short label shown next to the selected date in the timeline header
 function getDayLabel(selectedDay: Date, now: Date): string {
   const diff = daysBetween(now, selectedDay);
   if (diff === 0)  return 'Today';
@@ -55,25 +56,6 @@ function getDayLabel(selectedDay: Date, now: Date): string {
   return '';
 }
 
-// Returns the most relevant event for the collapsed pill
-function getPillEvent(
-  events: CadenceEvent[],
-  now: Date,
-): { event: CadenceEvent; active: boolean } | null {
-  if (events.length === 0) return null;
-
-  const activeEvent = events.find((e) => isActive(e, now));
-  if (activeEvent) return { event: activeEvent, active: true };
-
-  const next = events.find((e) => new Date(e.timestamp) > now);
-  if (next) return { event: next, active: false };
-
-  // All complete — show most recent
-  return { event: events[events.length - 1], active: false };
-}
-
-// ── Overlap column layout ──────────────────────────────────────
-// Returns the unix-ms end time for an event (defaulting to +1h if no deadline)
 function eventEndMs(e: CadenceEvent): number {
   return e.deadline
     ? new Date(e.deadline).getTime()
@@ -91,7 +73,6 @@ interface EventLayout {
 function layoutDayEvents(events: CadenceEvent[]): EventLayout[] {
   if (events.length === 0) return [];
 
-  // ── Step 1: union-find to cluster transitively-overlapping events ──
   const parent = new Map<string, string>(events.map((e) => [e.id, e.id]));
 
   function find(id: string): string {
@@ -105,7 +86,7 @@ function layoutDayEvents(events: CadenceEvent[]): EventLayout[] {
       const aE = eventEndMs(events[i]);
       const bS = new Date(events[j].timestamp).getTime();
       const bE = eventEndMs(events[j]);
-      if (aS < bE && bS < aE) { // strict overlap
+      if (aS < bE && bS < aE) {
         parent.set(find(events[i].id), find(events[j].id));
       }
     }
@@ -118,7 +99,6 @@ function layoutDayEvents(events: CadenceEvent[]): EventLayout[] {
     clusters.get(root)!.push(e);
   }
 
-  // ── Step 2: assign column indices within each cluster ─────────────
   const result: EventLayout[] = [];
 
   for (const cluster of clusters.values()) {
@@ -126,7 +106,6 @@ function layoutDayEvents(events: CadenceEvent[]): EventLayout[] {
       (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
     );
 
-    // Greedy: assign each event to the first free column
     const colEnds: number[] = [];
     const colAssign = new Map<string, number>();
 
@@ -141,9 +120,9 @@ function layoutDayEvents(events: CadenceEvent[]): EventLayout[] {
     const colCount = colEnds.length;
 
     for (const e of cluster) {
-      const start    = parseISO(e.timestamp);
-      const startH   = start.getHours() + start.getMinutes() / 60;
-      const durH     = (eventEndMs(e) - new Date(e.timestamp).getTime()) / 3_600_000;
+      const start  = parseISO(e.timestamp);
+      const startH = start.getHours() + start.getMinutes() / 60;
+      const durH   = (eventEndMs(e) - new Date(e.timestamp).getTime()) / 3_600_000;
       result.push({
         event:    e,
         top:      startH * HOUR_HEIGHT,
@@ -157,16 +136,15 @@ function layoutDayEvents(events: CadenceEvent[]): EventLayout[] {
   return result;
 }
 
-// ── Month calendar grid ────────────────────────────────────────
 function MonthCalendar({
   viewMonth, selectedDay, events, onDaySelect, onPrev, onNext,
 }: {
-  viewMonth:  Date;
+  viewMonth:   Date;
   selectedDay: Date;
-  events:     CadenceEvent[];
+  events:      CadenceEvent[];
   onDaySelect: (d: Date) => void;
-  onPrev:     () => void;
-  onNext:     () => void;
+  onPrev:      () => void;
+  onNext:      () => void;
 }) {
   const monthStart = startOfMonth(viewMonth);
   const gridStart  = startOfWeek(monthStart, { weekStartsOn: 1 });
@@ -218,7 +196,6 @@ function MonthCalendar({
   );
 }
 
-// ── Event detail helpers ───────────────────────────────────────
 function detailInitials(a: Attendee): string {
   if (a.name) {
     const parts = a.name.trim().split(/\s+/);
@@ -236,7 +213,6 @@ const DETAIL_STATUS: Record<Attendee['status'], string> = {
   declined:    '✗ Declined',
 };
 
-// ── Expanded event detail panel ────────────────────────────────
 function EventDetail({
   event, onBack, onBegin,
 }: {
@@ -306,8 +282,6 @@ function EventDetail({
   );
 }
 
-// ── Timeline event bento box ───────────────────────────────────
-// left/right are computed from column layout — NOT from CSS class defaults.
 function TimelineEvent({
   event, top, height, colIndex, colCount,
   complete: done, active: live, onSelect,
@@ -322,13 +296,9 @@ function TimelineEvent({
   onSelect: (e: CadenceEvent) => void;
 }) {
   const meta   = COGNITIVE_META[event.cognitive_type] ?? COGNITIVE_META.informational;
-  const titleColor = done ? 'rgba(255,255,255,0.25)' : '#ffffff';
-  const bg     = done ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.07)';
   const shadow = live ? `inset 3px 0 10px ${meta.color}50` : undefined;
   const tiny   = height < 48;
 
-  // Available track = 100% - 52px (hour labels) - 20px (right pad) = calc(100% - 72px)
-  // 2px gap added between adjacent columns (not on outer edges)
   const GAP = colCount > 1 ? 2 : 0;
   const lFrac = (colIndex / colCount).toFixed(8);
   const rFrac = ((colCount - colIndex - 1) / colCount).toFixed(8);
@@ -352,15 +322,14 @@ function TimelineEvent({
       ].join(' ')}
       style={{
         top, left, right,
-        background: bg, borderLeftColor: meta.color, boxShadow: shadow,
+        borderLeftColor: meta.color,
+        boxShadow: shadow,
         '--card-h': `${height}px`,
       } as React.CSSProperties}
       title={tiny ? event.title : undefined}
       onClick={() => onSelect(event)}
     >
-      <span className={styles.tlTitle} style={{ color: titleColor }}>
-        {event.title}
-      </span>
+      <span className={styles.tlTitle}>{event.title}</span>
       <span className={styles.tlTime}>{timeLabel}</span>
       {event.location && (
         <span className={styles.tlLocation}>📍 {event.location}</span>
@@ -369,7 +338,6 @@ function TimelineEvent({
   );
 }
 
-// ── 24-hour timeline ───────────────────────────────────────────
 function DayTimeline({
   events, selectedDay, now, onSelect,
 }: {
@@ -387,7 +355,6 @@ function DayTimeline({
   const laid      = layoutDayEvents(dayEvents);
   const dayLabel  = getDayLabel(selectedDay, now);
 
-  // Auto-scroll to centre current time when today's timeline is opened
   useEffect(() => {
     if (!isSelectedToday || !scrollRef.current) return;
     const openedAt   = new Date();
@@ -402,7 +369,6 @@ function DayTimeline({
 
   return (
     <>
-      {/* Section header — date + days-ahead badge */}
       <div className={styles.tlSectionHeader}>
         <span className={styles.tlSectionLabel}>
           {format(selectedDay, 'EEEE, MMMM d')}
@@ -410,7 +376,6 @@ function DayTimeline({
         {dayLabel && <span className={styles.tlDayAhead}>{dayLabel}</span>}
       </div>
 
-      {/* Beyond 14-day sync range */}
       {isBeyondRange ? (
         <div className={styles.tlBeyondRange}>
           Sync extends 14 days ahead
@@ -419,7 +384,6 @@ function DayTimeline({
         <div className={styles.tlScroll} ref={scrollRef}>
           <div className={styles.tlInner}>
 
-            {/* Hour rows — labels + grid lines */}
             {Array.from({ length: 24 }, (_, h) => (
               <div key={h} className={styles.hourRow} style={{ top: h * HOUR_HEIGHT }}>
                 <span className={styles.hourLabel}>{String(h).padStart(2, '0')}:00</span>
@@ -427,7 +391,6 @@ function DayTimeline({
               </div>
             ))}
 
-            {/* Current time indicator */}
             {nowTop !== null && (
               <div className={styles.nowLine} style={{ top: nowTop }}>
                 <span className={styles.nowLabel}>{format(now, 'HH:mm')}</span>
@@ -436,7 +399,6 @@ function DayTimeline({
               </div>
             )}
 
-            {/* Event bento boxes with column layout */}
             {laid.map(({ event, top, height, colIndex, colCount }) => (
               <TimelineEvent
                 key={event.id}
@@ -458,13 +420,11 @@ function DayTimeline({
   );
 }
 
-// ── CalendarWidget ─────────────────────────────────────────────
-export function CalendarWidget({ onBeginSession }: Props) {
-  const [expanded,       setExpanded]       = useState(false);
-  const [viewMonth,      setViewMonth]      = useState(() => new Date());
-  const [selectedDay,    setSelectedDay]    = useState(() => new Date());
-  const [now,            setNow]            = useState(() => new Date());
-  const [selectedEvent,  setSelectedEvent]  = useState<CadenceEvent | null>(null);
+export function CalendarWidget({ theme, onClose, onBeginSession }: Props) {
+  const [viewMonth,     setViewMonth]     = useState(() => new Date());
+  const [selectedDay,   setSelectedDay]   = useState(() => new Date());
+  const [now,           setNow]           = useState(() => new Date());
+  const [selectedEvent, setSelectedEvent] = useState<CadenceEvent | null>(null);
   const { events } = useDigest();
 
   useEffect(() => {
@@ -472,74 +432,49 @@ export function CalendarWidget({ onBeginSession }: Props) {
     return () => clearInterval(t);
   }, []);
 
-  const pillData = getPillEvent(events, now);
-  const pillMeta = pillData
-    ? (COGNITIVE_META[pillData.event.cognitive_type] ?? COGNITIVE_META.informational)
-    : null;
-
   return (
     <div className={styles.wrapper}>
+      <div className={styles.panel} data-theme={theme}>
 
-      {/* ── Collapsed pill ── */}
-      {!expanded && (
-        <button className={styles.pill} onClick={() => setExpanded(true)}>
-          {pillData?.active ? (
-            <span className={styles.pillDot} style={{ background: pillMeta!.color }} />
-          ) : (
-            <span className={styles.pillDotPulse} />
-          )}
-          <span className={styles.pillTitle}>
-            {format(now, 'EEEE, MMMM d, yyyy')}
-            {pillData ? `  |  ${pillData.event.title}` : ''}
-          </span>
-        </button>
-      )}
+        <div className={styles.panelTopRow}>
+          <button
+            className={styles.closeBtn}
+            onClick={onClose}
+            aria-label="Close calendar"
+          >
+            ×
+          </button>
+        </div>
 
-      {/* ── Expanded panel ── */}
-      {expanded && (
-        <div className={styles.panel}>
+        <MonthCalendar
+          viewMonth={viewMonth}
+          selectedDay={selectedDay}
+          events={events}
+          onDaySelect={setSelectedDay}
+          onPrev={() => setViewMonth((m) => subMonths(m, 1))}
+          onNext={() => setViewMonth((m) => addMonths(m, 1))}
+        />
 
-          <div className={styles.panelTopRow}>
-            <button
-              className={styles.closeBtn}
-              onClick={() => setExpanded(false)}
-              aria-label="Close calendar"
-            >
-              ×
-            </button>
-          </div>
+        <div className={styles.divider} />
 
-          <MonthCalendar
-            viewMonth={viewMonth}
-            selectedDay={selectedDay}
+        <div className={styles.timelineContainer}>
+          <DayTimeline
             events={events}
-            onDaySelect={setSelectedDay}
-            onPrev={() => setViewMonth((m) => subMonths(m, 1))}
-            onNext={() => setViewMonth((m) => addMonths(m, 1))}
+            selectedDay={selectedDay}
+            now={now}
+            onSelect={setSelectedEvent}
           />
 
-          <div className={styles.divider} />
-
-          <div className={styles.timelineContainer}>
-            <DayTimeline
-              events={events}
-              selectedDay={selectedDay}
-              now={now}
-              onSelect={setSelectedEvent}
+          {selectedEvent && (
+            <EventDetail
+              event={selectedEvent}
+              onBack={() => setSelectedEvent(null)}
+              onBegin={(e) => { setSelectedEvent(null); onBeginSession(e); }}
             />
-
-            {selectedEvent && (
-              <EventDetail
-                event={selectedEvent}
-                onBack={() => setSelectedEvent(null)}
-                onBegin={(e) => { setSelectedEvent(null); onBeginSession(e); }}
-              />
-            )}
-          </div>
-
+          )}
         </div>
-      )}
 
+      </div>
     </div>
   );
 }

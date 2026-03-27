@@ -1,62 +1,6 @@
 .canvas {
   position: fixed;
   inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   pointer-events: none;
   z-index: 5;
-}
-
-.watermark {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: clamp(32px, 5vw, 64px);
-  font-weight: 300;
-  color: var(--text-primary);
-  opacity: 0.08;
-  letter-spacing: -0.02em;
-  white-space: nowrap;
-  pointer-events: none;
-  user-select: none;
-  text-align: center;
-  max-width: 80vw;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.timer {
-  position: fixed;
-  top: 24px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  pointer-events: all;
-}
-
-.timerLabel {
-  font-size: 13px;
-  font-weight: 400;
-  color: var(--text-secondary);
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0.05em;
-}
-
-.endBtn {
-  font-size: 11px;
-  font-weight: 400;
-  color: var(--text-secondary);
-  padding: 3px 10px;
-  border-radius: var(--radius-pill);
-  border: 1px solid rgba(184, 190, 198, 0.4);
-  transition: color 0.15s, border-color 0.15s;
-}
-
-.endBtn:hover {
-  color: var(--text-primary);
-  border-color: rgba(10, 10, 10, 0.2);
 }

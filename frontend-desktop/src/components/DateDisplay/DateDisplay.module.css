@@ -1,0 +1,44 @@
+.wrapper {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  background: none;
+  border: none;
+  transition: opacity 0.15s ease;
+}
+
+.wrapper:hover {
+  opacity: 0.8;
+}
+
+.month {
+  font-family: 'Outfit', sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+}
+
+.month_day  { color: rgba(0, 0, 0, 0.45); }
+.month_night { color: rgba(255, 255, 255, 0.45); }
+
+.day {
+  font-family: 'Outfit', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 5px 13px;
+  border-radius: 11px;
+}
+
+.day_day {
+  background: #0D0D0D;
+  color: #FFFFFF;
+}
+
+.day_night {
+  background: #FFFFFF;
+  color: #0D0D0D;
+}

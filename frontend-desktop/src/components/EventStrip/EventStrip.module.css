@@ -1,0 +1,99 @@
+.strip {
+  position: fixed;
+  top: 24px;
+  left: 24px;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.mark {
+  width: 42px;
+  height: 42px;
+  border-radius: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.mark:hover {
+  opacity: 0.8;
+}
+
+.mark_day {
+  background: #0D0D0D;
+}
+
+.mark_night {
+  background: #1A1A1A;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.row1 {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.row2 {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+
+.title {
+  font-family: 'Outfit', sans-serif;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+  white-space: nowrap;
+}
+
+.title_day  { color: #0D0D0D; }
+.title_night { color: #FFFFFF; }
+
+.timeRange {
+  font-family: 'Outfit', sans-serif;
+  font-size: 13px;
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+.timeRange_day  { color: rgba(0, 0, 0, 0.4); }
+.timeRange_night { color: rgba(255, 255, 255, 0.4); }
+
+.subtitle {
+  font-family: 'Outfit', sans-serif;
+  font-size: 12px;
+  font-weight: 300;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.subtitle_day  { color: rgba(0, 0, 0, 0.38); }
+.subtitle_night { color: rgba(255, 255, 255, 0.32); }
+
+.duration {
+  font-family: 'Outfit', sans-serif;
+  font-size: 12px;
+  font-weight: 300;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.duration_day  { color: rgba(0, 0, 0, 0.28); }
+.duration_night { color: rgba(255, 255, 255, 0.22); }
