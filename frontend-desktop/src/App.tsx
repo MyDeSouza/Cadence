@@ -78,7 +78,7 @@ export default function App() {
           onBeginSession={handleBeginSession}
         />
       )}
-      <FovealCanvas session={session} onEndSession={handleEndSession} />
+      <FovealCanvas session={session} onEndSession={handleEndSession} theme={theme} />
       <AgentWidget theme={theme} />
     </div>
   );

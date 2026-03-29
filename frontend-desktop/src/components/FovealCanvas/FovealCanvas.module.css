@@ -4,3 +4,98 @@
   pointer-events: none;
   z-index: 5;
 }
+
+/* ── Document card ─────────────────────────────────────── */
+.card {
+  position: fixed;
+  width: 220px;
+  border-radius: 14px;
+  padding: 14px 18px;
+  pointer-events: all;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  animation: cardIn 300ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.card_day {
+  background:     rgba(255, 255, 255, 0.82);
+  border:         1px solid rgba(0, 0, 0, 0.07);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow:     0 2px 12px rgba(0, 0, 0, 0.06);
+}
+
+.card_night {
+  background:     rgba(28, 28, 28, 0.88);
+  border:         1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* ── Card header: icon + title ─────────────────────────── */
+.cardHeader {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.cardIcon {
+  flex-shrink: 0;
+  margin-top: 1px;
+  line-height: 0;
+}
+
+.cardIcon_day  { color: rgba(0, 0, 0, 0.5); }
+.cardIcon_night { color: rgba(255, 255, 255, 0.45); }
+
+.cardTitle {
+  font-family: 'Outfit', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.cardTitle_day  { color: #0D0D0D; }
+.cardTitle_night { color: #FFFFFF; }
+
+/* ── Card meta: modified + open link ──────────────────── */
+.cardMeta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.cardModified {
+  font-family: 'Outfit', sans-serif;
+  font-size: 11px;
+  font-weight: 300;
+  white-space: nowrap;
+}
+
+.cardModified_day  { color: rgba(0, 0, 0, 0.4); }
+.cardModified_night { color: rgba(255, 255, 255, 0.35); }
+
+.cardOpen {
+  font-family: 'Outfit', sans-serif;
+  font-size: 11px;
+  font-weight: 400;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: opacity 0.12s ease;
+}
+
+.cardOpen:hover { opacity: 0.7; }
+
+.cardOpen_day  { color: rgba(0, 0, 0, 0.35); }
+.cardOpen_night { color: rgba(255, 255, 255, 0.3); }
