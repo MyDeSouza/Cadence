@@ -6,6 +6,7 @@ import {
 import type { Attendee, CadenceEvent } from '../../types';
 import type { Theme } from '../../hooks/useAdaptiveTheme';
 import { useDigest } from '../../hooks/useDigest';
+import { useDriveFiles } from '../../hooks/useDriveFiles';
 import styles from './CalendarWidget.module.css';
 
 interface Props {
@@ -213,13 +214,32 @@ const DETAIL_STATUS: Record<Attendee['status'], string> = {
   declined:    '✗ Declined',
 };
 
+type DriveFileType = 'doc' | 'slides' | 'sheet' | 'pdf';
+
+interface DriveFile {
+  title:    string;
+  url:      string;
+  type:     DriveFileType;
+  modified: string;
+  eventId?: string;
+}
+
+const DRIVE_ICONS: Record<DriveFileType, string> = {
+  doc:    '📄',
+  slides: '📊',
+  sheet:  '📋',
+  pdf:    '📕',
+};
+
 function EventDetail({
-  event, onBack, onBegin,
+  event, driveFiles, onBack, onBegin,
 }: {
-  event:   CadenceEvent;
-  onBack:  () => void;
-  onBegin: (e: CadenceEvent) => void;
+  event:      CadenceEvent;
+  driveFiles: DriveFile[];
+  onBack:     () => void;
+  onBegin:    (e: CadenceEvent) => void;
 }) {
+  const matchedFiles = driveFiles.filter((f) => f.eventId === event.id);
   const timeLabel = event.deadline
     ? `${fmt12(event.timestamp)} – ${fmt12(event.deadline)}`
     : fmt12(event.timestamp);
@@ -260,6 +280,24 @@ function EventDetail({
                   </span>
                 </span>
               </div>
+            ))}
+          </div>
+        )}
+
+        {matchedFiles.length > 0 && (
+          <div className={styles.detailSection}>
+            {matchedFiles.map((f) => (
+              <a
+                key={f.url}
+                href={f.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={styles.driveFile}
+              >
+                <span className={styles.driveIcon}>{DRIVE_ICONS[f.type]}</span>
+                <span className={styles.driveTitle}>{f.title}</span>
+                <span className={styles.driveArrow}>→</span>
+              </a>
             ))}
           </div>
         )}
@@ -425,7 +463,8 @@ export function CalendarWidget({ theme, onClose, onBeginSession }: Props) {
   const [selectedDay,   setSelectedDay]   = useState(() => new Date());
   const [now,           setNow]           = useState(() => new Date());
   const [selectedEvent, setSelectedEvent] = useState<CadenceEvent | null>(null);
-  const { events } = useDigest();
+  const { events }     = useDigest();
+  const { files: driveFiles } = useDriveFiles();
 
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 60_000);
@@ -468,6 +507,7 @@ export function CalendarWidget({ theme, onClose, onBeginSession }: Props) {
           {selectedEvent && (
             <EventDetail
               event={selectedEvent}
+              driveFiles={driveFiles}
               onBack={() => setSelectedEvent(null)}
               onBegin={(e) => { setSelectedEvent(null); onBeginSession(e); }}
             />

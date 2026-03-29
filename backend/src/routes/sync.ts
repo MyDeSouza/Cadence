@@ -3,6 +3,8 @@ import { google } from 'googleapis';
 import { Prisma } from '@prisma/client';
 import prisma from '../db';
 import { adaptGoogleCalendarEvent } from '../adapters/google-calendar.adapter';
+import { fetchRecentDriveFiles } from '../adapters/google-drive.adapter';
+import type { AttendeeRecord } from '../types';
 import { scoreEvent } from '../engine/scoring';
 import { classifyEvent } from '../engine/classification';
 import { getPreferences } from '../lib/preferences';
@@ -196,6 +198,49 @@ router.delete('/google/events/:googleEventId', async (req: Request, res: Respons
   await (calendar.events.delete({ calendarId: 'primary', eventId: String(googleEventId) }) as any);
 
   res.status(204).send();
+});
+
+// ─── GET /sync/drive — Drive files modified in the last 7 days ───────────────
+// Matches each file to an upcoming event by comparing the file owner email to
+// event attendees and the organiser. Returns matched eventId when found.
+
+router.get('/drive', async (_req: Request, res: Response): Promise<void> => {
+  const auth  = await getAuthorizedClient();
+  const files = await fetchRecentDriveFiles(auth);
+
+  // Load upcoming events (next 14 days) with attendees for matching
+  const now      = new Date();
+  const cutoff   = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
+  const upcoming = await prisma.cadenceEvent.findMany({
+    where: {
+      timestamp: { gte: now, lte: cutoff },
+      source:    'google_calendar',
+    },
+    select: { id: true, attendees: true, organiser_email: true },
+  });
+
+  const result = files.map((file) => {
+    let eventId: string | undefined;
+
+    if (file.owner) {
+      const matched = upcoming.find((ev) => {
+        if (ev.organiser_email === file.owner) return true;
+        const attendees = ev.attendees as AttendeeRecord[] | null;
+        return attendees?.some((a) => a.email === file.owner);
+      });
+      eventId = matched?.id;
+    }
+
+    return {
+      title:    file.title,
+      url:      file.url,
+      type:     file.type,
+      modified: file.modified,
+      ...(eventId ? { eventId } : {}),
+    };
+  });
+
+  res.json({ files: result });
 });
 
 export default router;

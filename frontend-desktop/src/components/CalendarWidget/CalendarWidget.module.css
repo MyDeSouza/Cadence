@@ -591,3 +591,41 @@
 .detailBegin:hover {
   background: var(--cal-btn-hover);
 }
+
+/* ── Drive file rows ────────────────────────────────────── */
+.driveFile {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: var(--cal-btn-bg);
+  text-decoration: none;
+  transition: background 0.1s ease;
+}
+
+.driveFile:hover {
+  background: var(--cal-btn-hover);
+}
+
+.driveIcon {
+  font-size: 13px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.driveTitle {
+  font-size: 12px;
+  color: var(--cal-text);
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.driveArrow {
+  font-size: 11px;
+  color: var(--cal-text-sub);
+  flex-shrink: 0;
+}
