@@ -1,6 +1,6 @@
 // ─── Core contract — every signal normalizes to this before scoring ───────────
 
-export type EventSource = 'google_calendar' | 'gmail' | 'manual' | 'webhook' | 'apple_calendar';
+export type EventSource = 'google_calendar' | 'gmail' | 'manual' | 'webhook' | 'apple_calendar' | 'microsoft_calendar';
 export type EventType = 'event' | 'task' | 'notification' | 'email';
 export type CognitiveType = 'informational' | 'authorizational' | 'action_bound' | 'conflict';
 export type UserActionedState = 'actioned' | 'dismissed' | 'ignored';

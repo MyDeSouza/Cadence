@@ -15,6 +15,7 @@ enum EventSource {
   manual
   webhook
   apple_calendar
+  microsoft_calendar
 }
 
 enum EventType {
