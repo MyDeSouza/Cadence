@@ -9,9 +9,10 @@ import { API_BASE } from '../../constants/api';
 type Tab = 'agent' | 'people';
 
 interface Message {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
+  id:         string;
+  role:       'user' | 'assistant';
+  content:    string;
+  streaming?: boolean;
 }
 
 const DEFAULT_TONE: TonePosition = { label: 'Neutral', x: 0.5, y: 0.5 };
@@ -65,13 +66,14 @@ interface Props {
 }
 
 export function AgentWidget({ theme }: Props) {
-  const [expanded, setExpanded] = useState(false);
-  const [tab, setTab] = useState<Tab>('agent');
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState('');
-  const [showIdeation, setShowIdeation] = useState(false);
-  const [ideationDraft, setIdeationDraft] = useState('');
-  const [tone, setTone] = useState<TonePosition>(DEFAULT_TONE);
+  const [expanded,       setExpanded]       = useState(false);
+  const [tab,            setTab]            = useState<Tab>('agent');
+  const [messages,       setMessages]       = useState<Message[]>([]);
+  const [input,          setInput]          = useState('');
+  const [isLoading,      setIsLoading]      = useState(false);
+  const [showIdeation,   setShowIdeation]   = useState(false);
+  const [ideationDraft,  setIdeationDraft]  = useState('');
+  const [tone,           setTone]           = useState<TonePosition>(DEFAULT_TONE);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { events } = useDigest();
 
@@ -80,19 +82,55 @@ export function AgentWidget({ theme }: Props) {
   }, [messages]);
 
   const sendMessage = async () => {
-    if (!input.trim()) return;
-    const userMsg: Message = { id: Date.now().toString(), role: 'user', content: input };
-    setMessages((prev) => [...prev, userMsg]);
+    if (!input.trim() || isLoading) return;
+
+    const text      = input.trim();
+    const userMsgId = `u-${Date.now()}`;
+    const asstMsgId = `a-${Date.now()}`;
+
+    setMessages((prev) => [
+      ...prev,
+      { id: userMsgId, role: 'user',      content: text },
+      { id: asstMsgId, role: 'assistant', content: '', streaming: true },
+    ]);
     setInput('');
+    setIsLoading(true);
 
     try {
-      await fetch(`${API_BASE}/events`, {
-        method: 'POST',
+      const res = await fetch(`${API_BASE}/ask`, {
+        method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: input, source: 'agent' }),
+        body:    JSON.stringify({ message: text }),
       });
+
+      if (!res.ok || !res.body) throw new Error('bad response');
+
+      const reader  = res.body.getReader();
+      const decoder = new TextDecoder();
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value, { stream: true });
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === asstMsgId ? { ...m, content: m.content + chunk } : m
+          )
+        );
+      }
     } catch {
-      // silent
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === asstMsgId
+            ? { ...m, content: 'Unable to reach the model. Is Ollama running?' }
+            : m
+        )
+      );
+    } finally {
+      setMessages((prev) =>
+        prev.map((m) => (m.id === asstMsgId ? { ...m, streaming: false } : m))
+      );
+      setIsLoading(false);
     }
   };
 
@@ -128,15 +166,26 @@ export function AgentWidget({ theme }: Props) {
               <div className={styles.messages}>
                 {messages.length === 0 && (
                   <div className={`${styles.emptyChat} ${styles[`emptyChat_${theme}`]}`}>
-                    Ask anything, add a task, or compose a message.
+                    Ask anything about your day.
                   </div>
                 )}
                 {messages.map((msg) => (
                   <div
                     key={msg.id}
-                    className={`${styles.message} ${msg.role === 'user' ? styles[`msgUser_${theme}`] : styles[`msgAssistant_${theme}`]}`}
+                    className={[
+                      styles.message,
+                      msg.role === 'user'
+                        ? styles[`msgUser_${theme}`]
+                        : styles[`msgAssistant_${theme}`],
+                    ].join(' ')}
                   >
                     {msg.content}
+                    {msg.streaming && msg.content === '' && (
+                      <span className={`${styles.streamDot} ${styles[`streamDot_${theme}`]}`} />
+                    )}
+                    {msg.streaming && msg.content !== '' && (
+                      <span className={`${styles.streamCursor} ${styles[`streamCursor_${theme}`]}`} />
+                    )}
                   </div>
                 ))}
                 <div ref={messagesEndRef} />
@@ -167,8 +216,9 @@ export function AgentWidget({ theme }: Props) {
               <div className={`${styles.inputRow} ${styles[`inputRow_${theme}`]}`}>
                 <input
                   className={`${styles.chatInput} ${styles[`chatInput_${theme}`]}`}
-                  placeholder="Message..."
+                  placeholder={isLoading ? 'Thinking…' : 'Message…'}
                   value={input}
+                  disabled={isLoading}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
                 />
@@ -178,7 +228,7 @@ export function AgentWidget({ theme }: Props) {
 
           {tab === 'people' && (() => {
             const focusEvent = getActiveFocusEvent(events);
-            const attendees = focusEvent?.attendees ?? [];
+            const attendees  = focusEvent?.attendees ?? [];
             if (attendees.length === 0) {
               return (
                 <div className={styles.people}>

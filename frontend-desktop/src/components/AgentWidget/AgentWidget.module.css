@@ -359,3 +359,44 @@
 .status_tentative   { color: #c8a84b; }
 .status_needsAction { color: rgba(128, 128, 128, 0.7); }
 .status_declined    { color: #e05c5c; }
+
+/* ── Streaming indicators ───────────────────────────────── */
+
+/* Blinking dot — shown while assistant message content is empty */
+.streamDot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  margin-left: 2px;
+  vertical-align: middle;
+  animation: blink 1s ease-in-out infinite;
+}
+
+.streamDot_day  { background: rgba(0, 0, 0, 0.35); }
+.streamDot_night { background: rgba(255, 255, 255, 0.4); }
+
+/* Blinking cursor — shown while tokens are arriving */
+.streamCursor {
+  display: inline-block;
+  width: 2px;
+  height: 12px;
+  border-radius: 1px;
+  margin-left: 2px;
+  vertical-align: middle;
+  animation: blink 0.8s ease-in-out infinite;
+}
+
+.streamCursor_day  { background: rgba(0, 0, 0, 0.4); }
+.streamCursor_night { background: rgba(255, 255, 255, 0.45); }
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+
+/* Disabled input while loading */
+.chatInput:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}

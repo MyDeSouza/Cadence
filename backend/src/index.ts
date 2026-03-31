@@ -7,6 +7,7 @@ import digestRouter from './routes/digest';
 import feedbackRouter from './routes/feedback';
 import syncRouter from './routes/sync';
 import microsoftSyncRouter from './routes/microsoft-sync';
+import askRouter from './routes/ask';
 
 const app = express();
 const PORT = process.env.PORT ?? 3001;
@@ -24,6 +25,7 @@ app.use('/digest', digestRouter);
 app.use('/feedback', feedbackRouter);
 app.use('/sync', syncRouter);
 app.use('/sync/microsoft', microsoftSyncRouter);
+app.use('/ask', askRouter);
 
 // ─── Health check ─────────────────────────────────────────────────────────────
 
