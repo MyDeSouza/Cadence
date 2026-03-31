@@ -192,9 +192,16 @@ export function FovealCanvas({ theme }: Props) {
   const dismiss = (id: string) => setDismissed((prev) => new Set(prev).add(id));
 
   const focusEvent   = getFocusEvent(events);
-  const matchedFiles = focusEvent
-    ? allFiles.filter((f) => f.eventId === focusEvent.id)
-    : [];
+  // Show files matched to the active event, files matched to any event,
+  // and unmatched files ("none") — up to 4 total.
+  const matchedFiles = allFiles
+    .sort((a, b) => {
+      // Prioritise files matched to the current focus event
+      const aMatch = focusEvent && a.eventId === focusEvent.id ? 0 : a.eventId && a.eventId !== 'none' ? 1 : 2;
+      const bMatch = focusEvent && b.eventId === focusEvent.id ? 0 : b.eventId && b.eventId !== 'none' ? 1 : 2;
+      return aMatch - bMatch;
+    })
+    .slice(0, 4);
 
   // Show up to 4 upcoming/active surfaced signals (Cowan's limit)
   const now           = new Date();
