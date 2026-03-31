@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import type { Attendee, CadenceEvent, TonePosition } from '../../types';
+import type { Attendee, CadenceEvent } from '../../types';
 import type { Theme } from '../../hooks/useAdaptiveTheme';
-import { ToneSelector } from '../ToneSelector';
 import { useDigest } from '../../hooks/useDigest';
 import styles from './AgentWidget.module.css';
 import { API_BASE } from '../../constants/api';
@@ -14,8 +13,6 @@ interface Message {
   content:    string;
   streaming?: boolean;
 }
-
-const DEFAULT_TONE: TonePosition = { label: 'Neutral', x: 0.5, y: 0.5 };
 
 function getInitials(attendee: Attendee): string {
   if (attendee.name) {
@@ -49,14 +46,16 @@ function MicIcon() {
   return (
     <svg width="14" height="18" viewBox="0 0 14 18" fill="none" aria-hidden="true">
       <rect x="4" y="1" width="6" height="9" rx="3" stroke="white" strokeWidth="1.5" strokeOpacity="0.8" />
-      <path
-        d="M1 8c0 3.314 2.686 6 6 6s6-2.686 6-6"
-        stroke="white"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeOpacity="0.8"
-      />
+      <path d="M1 8c0 3.314 2.686 6 6 6s6-2.686 6-6" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeOpacity="0.8" />
       <line x1="7" y1="14" x2="7" y2="17" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeOpacity="0.8" />
+    </svg>
+  );
+}
+
+function StopIcon() {
+  return (
+    <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
+      <rect x="1" y="1" width="8" height="8" rx="1.5" fill="currentColor" />
     </svg>
   );
 }
@@ -66,20 +65,22 @@ interface Props {
 }
 
 export function AgentWidget({ theme }: Props) {
-  const [expanded,       setExpanded]       = useState(false);
-  const [tab,            setTab]            = useState<Tab>('agent');
-  const [messages,       setMessages]       = useState<Message[]>([]);
-  const [input,          setInput]          = useState('');
-  const [isLoading,      setIsLoading]      = useState(false);
-  const [showIdeation,   setShowIdeation]   = useState(false);
-  const [ideationDraft,  setIdeationDraft]  = useState('');
-  const [tone,           setTone]           = useState<TonePosition>(DEFAULT_TONE);
+  const [expanded,  setExpanded]  = useState(false);
+  const [tab,       setTab]       = useState<Tab>('agent');
+  const [messages,  setMessages]  = useState<Message[]>([]);
+  const [input,     setInput]     = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const abortRef       = useRef<AbortController | null>(null);
   const { events } = useDigest();
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  const stopStream = () => {
+    abortRef.current?.abort();
+  };
 
   const sendMessage = async () => {
     if (!input.trim() || isLoading) return;
@@ -96,11 +97,15 @@ export function AgentWidget({ theme }: Props) {
     setInput('');
     setIsLoading(true);
 
+    const controller   = new AbortController();
+    abortRef.current   = controller;
+
     try {
       const res = await fetch(`${API_BASE}/ask`, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({ message: text }),
+        signal:  controller.signal,
       });
 
       if (!res.ok || !res.body) throw new Error('bad response');
@@ -118,15 +123,19 @@ export function AgentWidget({ theme }: Props) {
           )
         );
       }
-    } catch {
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.id === asstMsgId
-            ? { ...m, content: 'Unable to reach the model. Is Ollama running?' }
-            : m
-        )
-      );
+    } catch (err) {
+      const isAbort = err instanceof Error && err.name === 'AbortError';
+      if (!isAbort) {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === asstMsgId
+              ? { ...m, content: 'Unable to reach the model. Is Ollama running?' }
+              : m
+          )
+        );
+      }
     } finally {
+      abortRef.current = null;
       setMessages((prev) =>
         prev.map((m) => (m.id === asstMsgId ? { ...m, streaming: false } : m))
       );
@@ -191,25 +200,16 @@ export function AgentWidget({ theme }: Props) {
                 <div ref={messagesEndRef} />
               </div>
 
-              <div className={`${styles.ideationToggleRow} ${styles[`ideationToggleRow_${theme}`]}`}>
-                <button
-                  className={`${styles.ideationToggle} ${styles[`ideationToggle_${theme}`]}`}
-                  onClick={() => setShowIdeation((v) => !v)}
-                >
-                  {showIdeation ? 'Hide compose' : 'Compose message'}
-                </button>
-              </div>
-
-              {showIdeation && (
-                <div className={`${styles.ideation} ${styles[`ideation_${theme}`]}`}>
-                  <textarea
-                    className={`${styles.ideationArea} ${styles[`ideationArea_${theme}`]}`}
-                    placeholder="Draft a message..."
-                    value={ideationDraft}
-                    onChange={(e) => setIdeationDraft(e.target.value)}
-                    rows={3}
-                  />
-                  <ToneSelector value={tone} onChange={setTone} />
+              {/* Stop button — only while streaming */}
+              {isLoading && (
+                <div className={`${styles.stopRow} ${styles[`stopRow_${theme}`]}`}>
+                  <button
+                    className={`${styles.stopBtn} ${styles[`stopBtn_${theme}`]}`}
+                    onClick={stopStream}
+                  >
+                    <StopIcon />
+                    Stop
+                  </button>
                 </div>
               )}
 
@@ -247,11 +247,7 @@ export function AgentWidget({ theme }: Props) {
                   <button
                     key={a.email}
                     className={`${styles.attendeeRow} ${styles[`attendeeRow_${theme}`]}`}
-                    onClick={() => {
-                      setIdeationDraft(`To: ${a.email}\n\n`);
-                      setShowIdeation(true);
-                      setTab('agent');
-                    }}
+                    onClick={() => setTab('agent')}
                   >
                     <span className={`${styles.attendeeAvatar} ${styles[`attendeeAvatar_${theme}`]}`}>
                       {getInitials(a)}

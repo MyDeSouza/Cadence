@@ -21,15 +21,21 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
     return;
   }
 
-  // ── Fetch surfaced signals (same query as GET /events/surfaced) ────────────
+  // ── Fetch forward-looking surfaced signals only ────────────────────────────
   const prefs = await getPreferences();
+  const now   = new Date();
 
   const events = await prisma.cadenceEvent.findMany({
     where: {
       score:         { gte: prefs.surface_threshold },
       user_actioned: null,
+      // Only future events — past signals have no bearing on what's next
+      OR: [
+        { deadline:  { gte: now } },
+        { timestamp: { gte: now } },
+      ],
     },
-    orderBy: { score: 'desc' },
+    orderBy: { timestamp: 'asc' },
   });
 
   // ── Build context block ────────────────────────────────────────────────────
@@ -37,19 +43,18 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
     .map((e, i) => {
       const due = e.deadline
         ? ` — due ${new Date(e.deadline).toLocaleString('en-GB', { dateStyle: 'short', timeStyle: 'short' })}`
-        : '';
-      return `${i + 1}. "${e.title}" [${e.cognitive_type ?? 'informational'}, score ${e.score?.toFixed(0) ?? '?'}]${due}`;
+        : ` — at ${new Date(e.timestamp).toLocaleString('en-GB', { dateStyle: 'short', timeStyle: 'short' })}`;
+      return `${i + 1}. "${e.title}" [${e.cognitive_type ?? 'informational'}]${due}`;
     })
     .join('\n');
 
   const context = contextLines.length > 0
-    ? `The user's current surfaced signals:\n${contextLines}\n\n`
-    : `There are no active surfaced signals right now.\n\n`;
+    ? `The user's upcoming surfaced signals:\n${contextLines}\n\n`
+    : `There are no upcoming surfaced signals right now.\n\n`;
 
   const prompt =
     `You are Cadence, a focused cognitive triage assistant. ` +
-    `You help the user reason about their day based on their current task and event signals. ` +
-    `Be direct and concise.\n\n` +
+    `Respond in 2-3 sentences maximum. Be direct. No bullet points, no numbered lists, no headers — plain conversational text only.\n\n` +
     context +
     `User: ${message.trim()}\nCadence:`;
 

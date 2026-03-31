@@ -27,15 +27,9 @@
   transition: opacity 0.15s ease;
 }
 
-.askPill:hover {
-  opacity: 0.85;
-}
+.askPill:hover { opacity: 0.85; }
 
-.askPill_day {
-  background: #0D0D0D;
-  color: #FFFFFF;
-}
-
+.askPill_day   { background: #0D0D0D; color: #FFFFFF; }
 .askPill_night {
   background: #1A1A1A;
   color: rgba(255, 255, 255, 0.65);
@@ -54,14 +48,9 @@
   transition: opacity 0.15s ease;
 }
 
-.micBtn:hover {
-  opacity: 0.85;
-}
+.micBtn:hover { opacity: 0.85; }
 
-.micBtn_day {
-  background: #0D0D0D;
-}
-
+.micBtn_day   { background: #0D0D0D; }
 .micBtn_night {
   background: #1A1A1A;
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -88,17 +77,8 @@
   to   { opacity: 1; transform: scale(1) translateY(0); }
 }
 
-.panel_day {
-  background: rgba(255, 255, 255, 0.88);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  color: #0D0D0D;
-}
-
-.panel_night {
-  background: rgba(18, 18, 18, 0.94);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  color: #FFFFFF;
-}
+.panel_day   { background: rgba(255, 255, 255, 0.88); border: 1px solid rgba(0, 0, 0, 0.08); color: #0D0D0D; }
+.panel_night { background: rgba(18, 18, 18, 0.94); border: 1px solid rgba(255, 255, 255, 0.08); color: #FFFFFF; }
 
 /* ── Tabs ───────────────────────────────────────────────── */
 .tabs {
@@ -107,7 +87,7 @@
   padding: 12px 16px 0;
 }
 
-.tabs_day  { border-bottom: 1px solid rgba(0, 0, 0, 0.08); }
+.tabs_day   { border-bottom: 1px solid rgba(0, 0, 0, 0.08); }
 .tabs_night { border-bottom: 1px solid rgba(255, 255, 255, 0.08); }
 
 .tabBtn {
@@ -119,13 +99,13 @@
   cursor: pointer;
 }
 
-.tabBtn_day  { color: rgba(0, 0, 0, 0.45); }
+.tabBtn_day   { color: rgba(0, 0, 0, 0.45); }
 .tabBtn_night { color: rgba(255, 255, 255, 0.45); }
 
-.tabBtn_day:hover  { color: #0D0D0D; }
+.tabBtn_day:hover   { color: #0D0D0D; }
 .tabBtn_night:hover { color: #FFFFFF; }
 
-.tabActive.tabBtn_day  { color: #0D0D0D; font-weight: 500; box-shadow: 0 1px 0 0 #0D0D0D; }
+.tabActive.tabBtn_day   { color: #0D0D0D; font-weight: 500; box-shadow: 0 1px 0 0 #0D0D0D; }
 .tabActive.tabBtn_night { color: #FFFFFF; font-weight: 500; box-shadow: 0 1px 0 0 #FFFFFF; }
 
 /* ── Messages ───────────────────────────────────────────── */
@@ -158,91 +138,45 @@
   border-radius: 12px;
 }
 
-.msgUser_day {
-  align-self: flex-end;
-  background: #0D0D0D;
-  color: #FFFFFF;
-}
+.msgUser_day      { align-self: flex-end;  background: #0D0D0D; color: #FFFFFF; }
+.msgUser_night    { align-self: flex-end;  background: #FFFFFF; color: #0D0D0D; }
+.msgAssistant_day { align-self: flex-start; background: rgba(0, 0, 0, 0.06); color: #0D0D0D; }
+.msgAssistant_night { align-self: flex-start; background: rgba(255, 255, 255, 0.08); color: #FFFFFF; }
 
-.msgUser_night {
-  align-self: flex-end;
-  background: #FFFFFF;
-  color: #0D0D0D;
-}
-
-.msgAssistant_day {
-  align-self: flex-start;
-  background: rgba(0, 0, 0, 0.06);
-  color: #0D0D0D;
-}
-
-.msgAssistant_night {
-  align-self: flex-start;
-  background: rgba(255, 255, 255, 0.08);
-  color: #FFFFFF;
-}
-
-/* ── Ideation ───────────────────────────────────────────── */
-.ideationToggleRow {
+/* ── Stop button ────────────────────────────────────────── */
+.stopRow {
   padding: 6px 16px;
+  display: flex;
+  justify-content: center;
 }
 
-.ideationToggleRow_day  { border-top: 1px solid rgba(0, 0, 0, 0.06); }
-.ideationToggleRow_night { border-top: 1px solid rgba(255, 255, 255, 0.06); }
+.stopRow_day   { border-top: 1px solid rgba(0, 0, 0, 0.06); }
+.stopRow_night { border-top: 1px solid rgba(255, 255, 255, 0.06); }
 
-.ideationToggle {
+.stopBtn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-family: 'Outfit', sans-serif;
   font-size: 11px;
   font-weight: 400;
-  transition: color 0.15s;
+  padding: 4px 12px;
+  border-radius: 100px;
   cursor: pointer;
+  transition: opacity 0.15s ease;
 }
 
-.ideationToggle_day  { color: rgba(0, 0, 0, 0.4); }
-.ideationToggle_night { color: rgba(255, 255, 255, 0.4); }
+.stopBtn:hover { opacity: 0.75; }
 
-.ideationToggle_day:hover  { color: #0D0D0D; }
-.ideationToggle_night:hover { color: #FFFFFF; }
-
-.ideation {
-  padding: 0 16px 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.ideation_day  { border-bottom: 1px solid rgba(0, 0, 0, 0.06); }
-.ideation_night { border-bottom: 1px solid rgba(255, 255, 255, 0.06); }
-
-.ideationArea {
-  width: 100%;
-  border-radius: 12px;
-  padding: 8px 10px;
-  font-size: 12px;
-  resize: none;
-  outline: none;
-  line-height: 1.5;
-  background: transparent;
-}
-
-.ideationArea_day {
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  color: #0D0D0D;
-}
-
-.ideationArea_night {
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #FFFFFF;
-}
-
-.ideationArea_day::placeholder  { color: rgba(0, 0, 0, 0.35); }
-.ideationArea_night::placeholder { color: rgba(255, 255, 255, 0.35); }
+.stopBtn_day   { background: rgba(0, 0, 0, 0.07); color: rgba(0, 0, 0, 0.55); }
+.stopBtn_night { background: rgba(255, 255, 255, 0.08); color: rgba(255, 255, 255, 0.5); }
 
 /* ── Chat input ─────────────────────────────────────────── */
 .inputRow {
   padding: 10px 16px 14px;
 }
 
-.inputRow_day  { border-top: 1px solid rgba(0, 0, 0, 0.06); }
+.inputRow_day   { border-top: 1px solid rgba(0, 0, 0, 0.06); }
 .inputRow_night { border-top: 1px solid rgba(255, 255, 255, 0.06); }
 
 .chatInput {
@@ -253,11 +187,13 @@
   outline: none;
 }
 
-.chatInput_day  { color: #0D0D0D; }
+.chatInput_day   { color: #0D0D0D; }
 .chatInput_night { color: #FFFFFF; }
 
-.chatInput_day::placeholder  { color: rgba(0, 0, 0, 0.35); }
+.chatInput_day::placeholder   { color: rgba(0, 0, 0, 0.35); }
 .chatInput_night::placeholder { color: rgba(255, 255, 255, 0.35); }
+
+.chatInput:disabled { opacity: 0.45; cursor: not-allowed; }
 
 /* ── People tab ─────────────────────────────────────────── */
 .people {
@@ -299,7 +235,7 @@
   transition: background 0.1s ease;
 }
 
-.attendeeRow_day:hover  { background: rgba(0, 0, 0, 0.05); padding-left: 4px; padding-right: 4px; }
+.attendeeRow_day:hover   { background: rgba(0, 0, 0, 0.05); padding-left: 4px; padding-right: 4px; }
 .attendeeRow_night:hover { background: rgba(255, 255, 255, 0.06); padding-left: 4px; padding-right: 4px; }
 
 .attendeeAvatar {
@@ -315,7 +251,7 @@
   letter-spacing: 0.03em;
 }
 
-.attendeeAvatar_day  { background: rgba(0, 0, 0, 0.08); color: #0D0D0D; }
+.attendeeAvatar_day   { background: rgba(0, 0, 0, 0.08); color: #0D0D0D; }
 .attendeeAvatar_night { background: rgba(255, 255, 255, 0.1); color: rgba(255, 255, 255, 0.7); }
 
 .attendeeInfo {
@@ -335,7 +271,7 @@
   gap: 5px;
 }
 
-.attendeeName_day  { color: #0D0D0D; }
+.attendeeName_day   { color: #0D0D0D; }
 .attendeeName_night { color: rgba(255, 255, 255, 0.85); }
 
 .organiserTag {
@@ -347,13 +283,10 @@
   flex-shrink: 0;
 }
 
-.organiserTag_day  { color: rgba(0, 0, 0, 0.4); background: rgba(0, 0, 0, 0.06); }
+.organiserTag_day   { color: rgba(0, 0, 0, 0.4); background: rgba(0, 0, 0, 0.06); }
 .organiserTag_night { color: rgba(255, 255, 255, 0.35); background: rgba(255, 255, 255, 0.08); }
 
-.statusBadge {
-  font-size: 10px;
-  font-weight: 400;
-}
+.statusBadge { font-size: 10px; font-weight: 400; }
 
 .status_accepted    { color: #4caf7d; }
 .status_tentative   { color: #c8a84b; }
@@ -361,8 +294,6 @@
 .status_declined    { color: #e05c5c; }
 
 /* ── Streaming indicators ───────────────────────────────── */
-
-/* Blinking dot — shown while assistant message content is empty */
 .streamDot {
   display: inline-block;
   width: 6px;
@@ -373,10 +304,9 @@
   animation: blink 1s ease-in-out infinite;
 }
 
-.streamDot_day  { background: rgba(0, 0, 0, 0.35); }
+.streamDot_day   { background: rgba(0, 0, 0, 0.35); }
 .streamDot_night { background: rgba(255, 255, 255, 0.4); }
 
-/* Blinking cursor — shown while tokens are arriving */
 .streamCursor {
   display: inline-block;
   width: 2px;
@@ -387,16 +317,10 @@
   animation: blink 0.8s ease-in-out infinite;
 }
 
-.streamCursor_day  { background: rgba(0, 0, 0, 0.4); }
+.streamCursor_day   { background: rgba(0, 0, 0, 0.4); }
 .streamCursor_night { background: rgba(255, 255, 255, 0.45); }
 
 @keyframes blink {
   0%, 100% { opacity: 1; }
   50%       { opacity: 0; }
-}
-
-/* Disabled input while loading */
-.chatInput:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
 }

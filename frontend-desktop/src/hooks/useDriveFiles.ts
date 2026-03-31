@@ -14,20 +14,34 @@ export interface DriveFile {
 export function useDriveFiles() {
   const [files, setFiles] = useState<DriveFile[]>([]);
 
-  const fetch_ = useCallback(async () => {
+  const fetchFiles = useCallback(async () => {
+    console.log('[useDriveFiles] fetching from', `${API_BASE}/sync/drive`);
     try {
       const res = await fetch(`${API_BASE}/sync/drive`);
-      if (!res.ok) return;
+
+      if (!res.ok) {
+        console.warn('[useDriveFiles] fetch failed — status', res.status);
+        return;
+      }
+
       const data = await res.json() as { files: DriveFile[] };
-      setFiles(data.files ?? []);
-    } catch {
-      // Drive scope may not be authorized yet — fail silently
+      const incoming = data.files ?? [];
+
+      console.log(
+        `[useDriveFiles] received ${incoming.length} file(s)`,
+        incoming.map((f) => ({ title: f.title, type: f.type, eventId: f.eventId ?? 'none' }))
+      );
+
+      setFiles(incoming);
+    } catch (err) {
+      // Drive scope may not be authorized yet
+      console.warn('[useDriveFiles] fetch threw:', err);
     }
   }, []);
 
   useEffect(() => {
-    fetch_();
-  }, [fetch_]);
+    fetchFiles();
+  }, [fetchFiles]);
 
-  return { files };
+  return { files, refetch: fetchFiles };
 }

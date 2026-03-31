@@ -99,3 +99,81 @@
 
 .cardOpen_day  { color: rgba(0, 0, 0, 0.35); }
 .cardOpen_night { color: rgba(255, 255, 255, 0.3); }
+
+/* ── Signal cards — right side ────────────────────────── */
+.signal {
+  position: fixed;
+  right: 280px;   /* clear of agent widget at bottom-right */
+  width: 210px;
+  border-radius: 12px;
+  padding: 10px 14px;
+  pointer-events: all;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  animation: cardIn 300ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.signal_day {
+  background:      rgba(255, 255, 255, 0.78);
+  border:          1px solid rgba(0, 0, 0, 0.07);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow:      0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.signal_night {
+  background:      rgba(28, 28, 28, 0.84);
+  border:          1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.signalBody {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.signalTitle {
+  font-family: 'Outfit', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.signalTitle_day  { color: #0D0D0D; }
+.signalTitle_night { color: #FFFFFF; }
+
+.signalTime {
+  font-family: 'Outfit', sans-serif;
+  font-size: 11px;
+  font-weight: 300;
+}
+
+.signalTime_day  { color: rgba(0, 0, 0, 0.4); }
+.signalTime_night { color: rgba(255, 255, 255, 0.35); }
+
+/* ── Done button ───────────────────────────────────────── */
+.doneBtn {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: opacity 0.12s ease, transform 0.12s ease;
+}
+
+.doneBtn:hover:not(:disabled) { opacity: 0.7; transform: scale(1.1); }
+.doneBtn:disabled              { opacity: 0.3; cursor: default; }
+
+.doneBtn_day  { background: rgba(0, 0, 0, 0.07); color: rgba(0, 0, 0, 0.55); }
+.doneBtn_night { background: rgba(255, 255, 255, 0.1); color: rgba(255, 255, 255, 0.6); }
