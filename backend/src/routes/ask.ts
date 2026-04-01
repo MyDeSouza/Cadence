@@ -44,7 +44,7 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
       const due = e.deadline
         ? ` — due ${new Date(e.deadline).toLocaleString('en-GB', { dateStyle: 'short', timeStyle: 'short' })}`
         : ` — at ${new Date(e.timestamp).toLocaleString('en-GB', { dateStyle: 'short', timeStyle: 'short' })}`;
-      return `${i + 1}. "${e.title}" [${e.cognitive_type ?? 'informational'}]${due}`;
+      return `${i + 1}. [id:${e.id}] "${e.title}" [${e.cognitive_type ?? 'informational'}]${due}`;
     })
     .join('\n');
 
@@ -57,8 +57,9 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
     `Respond in 2-3 sentences maximum. Be direct. No bullet points, no numbered lists, no headers — plain conversational text only.\n` +
     `When you identify a scheduling conflict or want to suggest a schedule change, do not describe it in prose. ` +
     `Instead output a JSON action block in this exact format on its own line: ` +
-    `ACTION:{"type":"reschedule","eventId":"...","newStart":"ISO8601","newEnd":"ISO8601","reason":"one sentence"} ` +
-    `or ACTION:{"type":"move","eventId":"...","newStart":"ISO8601","newEnd":"ISO8601","reason":"one sentence"}. ` +
+    `ACTION:{"type":"reschedule","eventId":"<the exact id value from [id:...] in the context>","newStart":"ISO8601","newEnd":"ISO8601","reason":"one sentence"} ` +
+    `or ACTION:{"type":"move","eventId":"<the exact id value from [id:...] in the context>","newStart":"ISO8601","newEnd":"ISO8601","reason":"one sentence"}. ` +
+    `The eventId MUST be copied exactly from the [id:...] tag — never use the event title or any other value. ` +
     `You may output multiple ACTION blocks, one per line. After the action blocks, output nothing else.\n\n` +
     context +
     `User: ${message.trim()}\nCadence:`;

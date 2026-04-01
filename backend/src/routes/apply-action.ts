@@ -21,6 +21,13 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
     return;
   }
 
+  // Google Calendar event IDs are compact alphanumeric strings (no spaces or colons).
+  // If the model returned a title instead of an ID, reject it immediately.
+  if (/[\s:]/.test(eventId)) {
+    res.status(400).json({ error: 'Invalid eventId — must be a Google Calendar event ID' });
+    return;
+  }
+
   if (type !== 'reschedule' && type !== 'move') {
     res.status(400).json({ error: `Unknown action type: ${type}` });
     return;
