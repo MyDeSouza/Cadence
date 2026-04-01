@@ -66,6 +66,26 @@ function StopIcon() {
   );
 }
 
+const SIGN_OFF_RE = /\b(best regards|kind regards|warm regards|sincerely|yours sincerely|yours truly|best wishes|many thanks|thanks|cheers|regards)\s*[,.]?\s*$/im;
+
+function looksLikeEmail(content: string): boolean {
+  if (!content || content.length < 20) return false;
+  if (/subject:/i.test(content))   return true;
+  if (/\bDear\b/i.test(content))   return true;
+  if (SIGN_OFF_RE.test(content.trim())) return true;
+  return false;
+}
+
+function parseDraft(content: string): { subject: string; body: string } {
+  const match = content.match(/^subject:\s*(.+)/im);
+  if (match) {
+    const subject    = match[1].trim();
+    const afterSubj  = content.slice(content.indexOf(match[0]) + match[0].length).trim();
+    return { subject, body: afterSubj };
+  }
+  return { subject: '', body: content.trim() };
+}
+
 function ComposeIcon() {
   return (
     <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
@@ -201,10 +221,10 @@ export function AgentWidget({ theme }: Props) {
     }
   };
 
-  const openCompose = () => {
+  const openCompose = (prefill?: { subject: string; body: string }) => {
     setComposeTo('');
-    setComposeSubj('');
-    setComposeBody('');
+    setComposeSubj(prefill?.subject ?? '');
+    setComposeBody(prefill?.body ?? '');
     setSendError(null);
     setSendSuccess(false);
     setComposing(true);
@@ -268,21 +288,30 @@ export function AgentWidget({ theme }: Props) {
                   </div>
                 )}
                 {messages.map((msg) => (
-                  <div
-                    key={msg.id}
-                    className={[
-                      styles.message,
-                      msg.role === 'user'
-                        ? styles[`msgUser_${theme}`]
-                        : styles[`msgAssistant_${theme}`],
-                    ].join(' ')}
-                  >
-                    {msg.content}
-                    {msg.streaming && msg.content === '' && (
-                      <span className={`${styles.streamDot} ${styles[`streamDot_${theme}`]}`} />
-                    )}
-                    {msg.streaming && msg.content !== '' && (
-                      <span className={`${styles.streamCursor} ${styles[`streamCursor_${theme}`]}`} />
+                  <div key={msg.id} className={styles.msgWrapper}>
+                    <div
+                      className={[
+                        styles.message,
+                        msg.role === 'user'
+                          ? styles[`msgUser_${theme}`]
+                          : styles[`msgAssistant_${theme}`],
+                      ].join(' ')}
+                    >
+                      {msg.content}
+                      {msg.streaming && msg.content === '' && (
+                        <span className={`${styles.streamDot} ${styles[`streamDot_${theme}`]}`} />
+                      )}
+                      {msg.streaming && msg.content !== '' && (
+                        <span className={`${styles.streamCursor} ${styles[`streamCursor_${theme}`]}`} />
+                      )}
+                    </div>
+                    {msg.role === 'assistant' && !msg.streaming && looksLikeEmail(msg.content) && (
+                      <button
+                        className={`${styles.sendThisBtn} ${styles[`sendThisBtn_${theme}`]}`}
+                        onClick={() => openCompose(parseDraft(msg.content))}
+                      >
+                        → Send this
+                      </button>
                     )}
                   </div>
                 ))}
@@ -313,7 +342,7 @@ export function AgentWidget({ theme }: Props) {
                 />
                 <button
                   className={`${styles.composeBtn} ${styles[`composeBtn_${theme}`]}`}
-                  onClick={openCompose}
+                  onClick={() => openCompose()}
                   aria-label="Compose email"
                   title="Compose email"
                 >

@@ -296,6 +296,30 @@
 .status_needsAction { color: rgba(128, 128, 128, 0.7); }
 .status_declined    { color: #e05c5c; }
 
+/* ── Message wrapper + send-this button ─────────────────── */
+.msgWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sendThisBtn {
+  align-self: flex-start;
+  font-family: 'Outfit', sans-serif;
+  font-size: 11px;
+  font-weight: 400;
+  padding: 3px 10px;
+  border-radius: 100px;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+  white-space: nowrap;
+}
+
+.sendThisBtn:hover { opacity: 0.72; }
+
+.sendThisBtn_day   { background: rgba(0,0,0,0.07);          color: rgba(0,0,0,0.6); }
+.sendThisBtn_night { background: rgba(255,255,255,0.09);    color: rgba(255,255,255,0.55); }
+
 /* ── Compose button (in input row) ──────────────────────── */
 .composeBtn {
   flex-shrink: 0;
