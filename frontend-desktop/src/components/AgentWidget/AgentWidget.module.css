@@ -320,6 +320,80 @@
 .sendThisBtn_day   { background: rgba(0,0,0,0.07);          color: rgba(0,0,0,0.6); }
 .sendThisBtn_night { background: rgba(255,255,255,0.09);    color: rgba(255,255,255,0.55); }
 
+/* ── Action cards ────────────────────────────────────────── */
+.actionCard {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  align-self: flex-start;
+  max-width: 85%;
+  animation: expandPanel 180ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.actionCard_day   { background: rgba(0,0,0,0.05);          border: 1px solid rgba(0,0,0,0.08); }
+.actionCard_night { background: rgba(255,255,255,0.06);    border: 1px solid rgba(255,255,255,0.1); }
+
+.actionType {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.actionType_day   { color: rgba(0,0,0,0.4); }
+.actionType_night { color: rgba(255,255,255,0.35); }
+
+.actionReason {
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.actionReason_day   { color: #0D0D0D; }
+.actionReason_night { color: rgba(255,255,255,0.85); }
+
+.actionTime {
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.actionTime_day   { color: rgba(0,0,0,0.45); }
+.actionTime_night { color: rgba(255,255,255,0.4); }
+
+.actionBtns {
+  display: flex;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.actionApply,
+.actionSkip {
+  font-family: 'Outfit', sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 3px 10px;
+  border-radius: 100px;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.actionApply:hover,
+.actionSkip:hover { opacity: 0.72; }
+
+.actionApply_day   { background: #0D0D0D; color: #FFFFFF; }
+.actionApply_night { background: #FFFFFF; color: #0D0D0D; }
+.actionSkip_day    { background: rgba(0,0,0,0.07);       color: rgba(0,0,0,0.55); }
+.actionSkip_night  { background: rgba(255,255,255,0.09); color: rgba(255,255,255,0.5); }
+
+.actionDone {
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.actionDone_day   { color: #2e7d52; }
+.actionDone_night { color: #4caf7d; }
+
 /* ── Compose button (in input row) ──────────────────────── */
 .composeBtn {
   flex-shrink: 0;

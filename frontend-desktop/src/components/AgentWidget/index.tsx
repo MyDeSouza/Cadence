@@ -13,11 +13,39 @@ interface SearchResult {
   snippet: string;
 }
 
+interface ActionBlock {
+  type:     'reschedule' | 'move';
+  eventId:  string;
+  newStart: string;
+  newEnd:   string;
+  reason:   string;
+}
+
 interface Message {
   id:         string;
   role:       'user' | 'assistant';
   content:    string;
   streaming?: boolean;
+  actions?:   ActionBlock[];
+}
+
+/** Split a completed assistant response into prose text + ACTION blocks. */
+function parseActions(raw: string): { content: string; actions: ActionBlock[] } {
+  const lines:   string[]       = raw.split('\n');
+  const prose:   string[]       = [];
+  const actions: ActionBlock[]  = [];
+
+  for (const line of lines) {
+    if (line.startsWith('ACTION:')) {
+      try {
+        actions.push(JSON.parse(line.slice(7).trim()) as ActionBlock);
+      } catch { /* malformed — skip */ }
+    } else {
+      prose.push(line);
+    }
+  }
+
+  return { content: prose.join('\n').trim(), actions };
 }
 
 function getInitials(attendee: Attendee): string {
@@ -132,6 +160,8 @@ export function AgentWidget({ theme }: Props) {
   const [sendError,     setSendError]     = useState<string | null>(null);
   const [planning,      setPlanning]      = useState(false);
   const [planStatus,    setPlanStatus]    = useState<string | null>(null);
+  // Tracks per-action state: key = `${msgId}-${actionIndex}`, value = 'done' | 'skipped'
+  const [actionStates,  setActionStates]  = useState<Record<string, 'done' | 'skipped'>>({});
   const [calendars,     setCalendars]     = useState<Array<{ id: string; name: string }>>([]);
   const [planCalId,     setPlanCalId]     = useState('primary');
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -215,10 +245,29 @@ export function AgentWidget({ theme }: Props) {
     } finally {
       abortRef.current = null;
       setMessages((prev) =>
-        prev.map((m) => (m.id === asstMsgId ? { ...m, streaming: false } : m))
+        prev.map((m) => {
+          if (m.id !== asstMsgId) return m;
+          const { content, actions } = parseActions(m.content);
+          return { ...m, streaming: false, content, actions };
+        })
       );
       setIsLoading(false);
     }
+  };
+
+  const applyAction = async (key: string, action: ActionBlock) => {
+    setActionStates((prev) => ({ ...prev, [key]: 'done' }));
+    try {
+      await fetch(`${API_BASE}/apply-action`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ type: action.type, eventId: action.eventId, newStart: action.newStart, newEnd: action.newEnd }),
+      });
+    } catch { /* best-effort */ }
+  };
+
+  const skipAction = (key: string) => {
+    setActionStates((prev) => ({ ...prev, [key]: 'skipped' }));
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -367,6 +416,46 @@ export function AgentWidget({ theme }: Props) {
                         → Send this
                       </button>
                     )}
+                    {msg.role === 'assistant' && !msg.streaming && (msg.actions ?? []).map((action, i) => {
+                      const key   = `${msg.id}-${i}`;
+                      const state = actionStates[key];
+                      if (state === 'skipped') return null;
+                      return (
+                        <div key={key} className={`${styles.actionCard} ${styles[`actionCard_${theme}`]}`}>
+                          {state === 'done' ? (
+                            <span className={`${styles.actionDone} ${styles[`actionDone_${theme}`]}`}>✓ Done</span>
+                          ) : (
+                            <>
+                              <span className={`${styles.actionType} ${styles[`actionType_${theme}`]}`}>
+                                {action.type === 'reschedule' ? 'Reschedule' : 'Move'}
+                              </span>
+                              <span className={`${styles.actionReason} ${styles[`actionReason_${theme}`]}`}>
+                                {action.reason}
+                              </span>
+                              <span className={`${styles.actionTime} ${styles[`actionTime_${theme}`]}`}>
+                                {new Date(action.newStart).toLocaleString('en-GB', { dateStyle: 'short', timeStyle: 'short' })}
+                                {' → '}
+                                {new Date(action.newEnd).toLocaleTimeString('en-GB', { timeStyle: 'short' })}
+                              </span>
+                              <div className={styles.actionBtns}>
+                                <button
+                                  className={`${styles.actionApply} ${styles[`actionApply_${theme}`]}`}
+                                  onClick={() => applyAction(key, action)}
+                                >
+                                  ✓ Apply
+                                </button>
+                                <button
+                                  className={`${styles.actionSkip} ${styles[`actionSkip_${theme}`]}`}
+                                  onClick={() => skipAction(key)}
+                                >
+                                  ✗ Skip
+                                </button>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 ))}
                 <div ref={messagesEndRef} />
