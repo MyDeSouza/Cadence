@@ -5,7 +5,13 @@ import { useDigest } from '../../hooks/useDigest';
 import styles from './AgentWidget.module.css';
 import { API_BASE } from '../../constants/api';
 
-type Tab = 'agent' | 'people';
+type Tab = 'agent' | 'people' | 'search';
+
+interface SearchResult {
+  title:   string;
+  link:    string;
+  snippet: string;
+}
 
 interface Message {
   id:         string;
@@ -65,11 +71,15 @@ interface Props {
 }
 
 export function AgentWidget({ theme }: Props) {
-  const [expanded,  setExpanded]  = useState(false);
-  const [tab,       setTab]       = useState<Tab>('agent');
-  const [messages,  setMessages]  = useState<Message[]>([]);
-  const [input,     setInput]     = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [expanded,      setExpanded]      = useState(false);
+  const [tab,           setTab]           = useState<Tab>('agent');
+  const [messages,      setMessages]      = useState<Message[]>([]);
+  const [input,         setInput]         = useState('');
+  const [isLoading,     setIsLoading]     = useState(false);
+  const [searchQuery,   setSearchQuery]   = useState('');
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [searching,     setSearching]     = useState(false);
+  const [searchError,   setSearchError]   = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortRef       = useRef<AbortController | null>(null);
   const { events } = useDigest();
@@ -150,6 +160,31 @@ export function AgentWidget({ theme }: Props) {
     }
   };
 
+  const runSearch = async () => {
+    const q = searchQuery.trim();
+    if (!q || searching) return;
+    setSearching(true);
+    setSearchError(null);
+    setSearchResults([]);
+    try {
+      const res = await fetch(`${API_BASE}/search?q=${encodeURIComponent(q)}`);
+      if (!res.ok) throw new Error('Search failed');
+      const data = await res.json() as { results: SearchResult[] };
+      setSearchResults(data.results ?? []);
+    } catch {
+      setSearchError('Search failed. Check your API key configuration.');
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      runSearch();
+    }
+  };
+
   return (
     <div className={styles.wrapper}>
       {expanded && (
@@ -167,6 +202,12 @@ export function AgentWidget({ theme }: Props) {
               onClick={() => setTab('people')}
             >
               People
+            </button>
+            <button
+              className={`${styles.tabBtn} ${styles[`tabBtn_${theme}`]} ${tab === 'search' ? styles.tabActive : ''}`}
+              onClick={() => setTab('search')}
+            >
+              Search
             </button>
           </div>
 
@@ -268,6 +309,58 @@ export function AgentWidget({ theme }: Props) {
               </div>
             );
           })()}
+
+          {tab === 'search' && (
+            <div className={styles.searchTab}>
+              <div className={`${styles.searchInputRow} ${styles[`searchInputRow_${theme}`]}`}>
+                <input
+                  className={`${styles.searchInput} ${styles[`searchInput_${theme}`]}`}
+                  placeholder="Search the web…"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={handleSearchKeyDown}
+                  disabled={searching}
+                />
+              </div>
+
+              <div className={styles.searchResults}>
+                {searching && (
+                  <div className={`${styles.searchStatus} ${styles[`searchStatus_${theme}`]}`}>
+                    Searching…
+                  </div>
+                )}
+                {searchError && (
+                  <div className={`${styles.searchStatus} ${styles[`searchStatus_${theme}`]}`}>
+                    {searchError}
+                  </div>
+                )}
+                {!searching && !searchError && searchResults.length === 0 && (
+                  <div className={`${styles.searchStatus} ${styles[`searchStatus_${theme}`]}`}>
+                    {searchQuery ? 'No results.' : 'Type and press Enter to search.'}
+                  </div>
+                )}
+                {searchResults.map((r) => (
+                  <a
+                    key={r.link}
+                    href={r.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`${styles.searchCard} ${styles[`searchCard_${theme}`]}`}
+                  >
+                    <span className={`${styles.searchCardTitle} ${styles[`searchCardTitle_${theme}`]}`}>
+                      {r.title}
+                    </span>
+                    <span className={`${styles.searchCardSnippet} ${styles[`searchCardSnippet_${theme}`]}`}>
+                      {r.snippet}
+                    </span>
+                    <span className={`${styles.searchCardLink} ${styles[`searchCardLink_${theme}`]}`}>
+                      {r.link}
+                    </span>
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 

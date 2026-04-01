@@ -293,6 +293,110 @@
 .status_needsAction { color: rgba(128, 128, 128, 0.7); }
 .status_declined    { color: #e05c5c; }
 
+/* ── Search tab ─────────────────────────────────────────── */
+.searchTab {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+}
+
+.searchInputRow {
+  padding: 10px 16px;
+  flex-shrink: 0;
+}
+
+.searchInputRow_day   { border-bottom: 1px solid rgba(0, 0, 0, 0.06); }
+.searchInputRow_night { border-bottom: 1px solid rgba(255, 255, 255, 0.06); }
+
+.searchInput {
+  width: 100%;
+  border: none;
+  background: transparent;
+  font-size: 13px;
+  font-family: 'Outfit', sans-serif;
+  outline: none;
+}
+
+.searchInput_day   { color: #0D0D0D; }
+.searchInput_night { color: #FFFFFF; }
+
+.searchInput_day::placeholder   { color: rgba(0, 0, 0, 0.35); }
+.searchInput_night::placeholder { color: rgba(255, 255, 255, 0.35); }
+
+.searchInput:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.searchResults {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 80px;
+  max-height: 280px;
+}
+
+.searchStatus {
+  font-size: 12px;
+  text-align: center;
+  padding: 20px 0;
+}
+
+.searchStatus_day  { color: rgba(0, 0, 0, 0.4); }
+.searchStatus_night { color: rgba(255, 255, 255, 0.4); }
+
+.searchCard {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  text-decoration: none;
+  transition: background 0.1s ease;
+}
+
+.searchCard_day   { background: rgba(0, 0, 0, 0.04); }
+.searchCard_day:hover { background: rgba(0, 0, 0, 0.08); }
+.searchCard_night { background: rgba(255, 255, 255, 0.05); }
+.searchCard_night:hover { background: rgba(255, 255, 255, 0.09); }
+
+.searchCardTitle {
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.searchCardTitle_day  { color: #0D0D0D; }
+.searchCardTitle_night { color: #FFFFFF; }
+
+.searchCardSnippet {
+  font-size: 11px;
+  font-weight: 300;
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.searchCardSnippet_day  { color: rgba(0, 0, 0, 0.55); }
+.searchCardSnippet_night { color: rgba(255, 255, 255, 0.5); }
+
+.searchCardLink {
+  font-size: 10px;
+  font-weight: 300;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.searchCardLink_day  { color: rgba(0, 0, 0, 0.35); }
+.searchCardLink_night { color: rgba(255, 255, 255, 0.3); }
+
 /* ── Streaming indicators ───────────────────────────────── */
 .streamDot {
   display: inline-block;
