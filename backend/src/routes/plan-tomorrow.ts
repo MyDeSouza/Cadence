@@ -12,6 +12,37 @@ const OLLAMA_MODEL = 'mistral';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+interface Slot { start: Date; end: Date }
+
+/** True if two time intervals overlap (exclusive end boundary). */
+function overlaps(a: Slot, b: Slot): boolean {
+  return a.start < b.end && b.start < a.end;
+}
+
+/**
+ * Given a proposed slot and a list of busy slots, find the earliest available
+ * slot of the same duration. Advances past blocking events one at a time.
+ * Returns null if no slot fits before workDayEnd.
+ */
+function resolveSlot(proposed: Slot, busy: Slot[], workDayEnd: Date): Slot | null {
+  const duration = proposed.end.getTime() - proposed.start.getTime();
+  let candidate: Slot = { start: new Date(proposed.start), end: new Date(proposed.end) };
+
+  // Cap iterations to prevent an infinite loop on pathological input
+  for (let i = 0; i < 48; i++) {
+    if (candidate.end > workDayEnd) return null;
+
+    const blocker = busy.find((b) => overlaps(candidate, b));
+    if (!blocker) return candidate;   // free slot found
+
+    // Advance start to the end of the blocking event
+    const newStart = new Date(blocker.end.getTime());
+    candidate = { start: newStart, end: new Date(newStart.getTime() + duration) };
+  }
+
+  return null;
+}
+
 function callOllama(prompt: string): Promise<string> {
   return new Promise((resolve, reject) => {
     const body = JSON.stringify({ model: OLLAMA_MODEL, prompt, stream: false });
@@ -133,23 +164,48 @@ router.post('/', async (_req: Request, res: Response): Promise<void> => {
       description: string;
     }>;
 
-    // ── 6. Create events in Google Calendar ───────────────────────────────────
+    // ── 6. Conflict-aware scheduling + create in Google Calendar ─────────────
+    // Work day ends at 21:00 tomorrow (allows evening slots up to 9 pm)
+    const workDayEnd = new Date(startOfTomorrow);
+    workDayEnd.setHours(21, 0, 0, 0);
+
+    // Seed busy list from existing calendar events
+    const busy: Slot[] = existingTomorrow
+      .filter((e) => e.start && e.end)
+      .map((e) => ({ start: new Date(e.start), end: new Date(e.end) }));
+
     const created: typeof proposed = [];
+    const skipped: string[]        = [];
 
     for (const evt of proposed) {
+      const proposed_slot: Slot = {
+        start: new Date(evt.startTime),
+        end:   new Date(evt.endTime),
+      };
+
+      const slot = resolveSlot(proposed_slot, busy, workDayEnd);
+
+      if (!slot) {
+        skipped.push(evt.title);
+        continue;
+      }
+
       await calendar.events.insert({
         calendarId:  'primary',
         requestBody: {
           summary:     evt.title,
           description: evt.description ?? '',
-          start: { dateTime: evt.startTime },
-          end:   { dateTime: evt.endTime },
+          start: { dateTime: slot.start.toISOString() },
+          end:   { dateTime: slot.end.toISOString() },
         },
       });
-      created.push(evt);
+
+      // Add the now-committed slot to busy so subsequent events avoid it
+      busy.push(slot);
+      created.push({ ...evt, startTime: slot.start.toISOString(), endTime: slot.end.toISOString() });
     }
 
-    res.json({ created: created.length, events: created });
+    res.json({ created: created.length, skipped, events: created });
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Unknown error';
     console.error('[plan-tomorrow]', msg);
