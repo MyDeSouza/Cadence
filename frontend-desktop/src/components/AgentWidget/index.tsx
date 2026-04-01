@@ -78,10 +78,13 @@ function looksLikeEmail(content: string): boolean {
 
 function parseDraft(content: string): { subject: string; body: string } {
   const match = content.match(/^subject:\s*(.+)/im);
-  if (match) {
-    const subject    = match[1].trim();
-    const afterSubj  = content.slice(content.indexOf(match[0]) + match[0].length).trim();
-    return { subject, body: afterSubj };
+  if (match && match.index !== undefined) {
+    const subject = match[1].trim();
+    // Use match.index (set by the regex engine) to reliably locate the line,
+    // then skip past it and its trailing newline before trimming the body.
+    const afterLine = content.slice(match.index + match[0].length);
+    const body      = afterLine.replace(/^\r?\n/, '').trim();
+    return { subject, body };
   }
   return { subject: '', body: content.trim() };
 }
