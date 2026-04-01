@@ -29,16 +29,30 @@ interface Message {
   actions?:   ActionBlock[];
 }
 
-/** Split a completed assistant response into prose text + ACTION blocks. */
+/** Split a completed assistant response into prose text + ACTION blocks.
+ *  Handles both same-line  ACTION:{"type":...}
+ *  and split-line          ACTION:\n{"type":...}
+ *  with any whitespace between ACTION: and the opening {.
+ */
 function parseActions(raw: string): { content: string; actions: ActionBlock[] } {
-  const lines:   string[]       = raw.split('\n');
-  const prose:   string[]       = [];
-  const actions: ActionBlock[]  = [];
+  const lines:   string[]      = raw.split('\n');
+  const prose:   string[]      = [];
+  const actions: ActionBlock[] = [];
 
-  for (const line of lines) {
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
     if (line.startsWith('ACTION:')) {
+      let json = line.slice(7).trim();
+      // JSON may be on the next line — look ahead once
+      if (!json.startsWith('{') && i + 1 < lines.length) {
+        const next = lines[i + 1].trim();
+        if (next.startsWith('{')) {
+          json = next;
+          i++;  // consume the next line so it doesn't land in prose
+        }
+      }
       try {
-        actions.push(JSON.parse(line.slice(7).trim()) as ActionBlock);
+        actions.push(JSON.parse(json) as ActionBlock);
       } catch { /* malformed — skip */ }
     } else {
       prose.push(line);
