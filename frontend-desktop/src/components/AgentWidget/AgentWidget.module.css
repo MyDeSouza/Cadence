@@ -174,6 +174,9 @@
 /* ── Chat input ─────────────────────────────────────────── */
 .inputRow {
   padding: 10px 16px 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .inputRow_day   { border-top: 1px solid rgba(0, 0, 0, 0.06); }
@@ -292,6 +295,149 @@
 .status_tentative   { color: #c8a84b; }
 .status_needsAction { color: rgba(128, 128, 128, 0.7); }
 .status_declined    { color: #e05c5c; }
+
+/* ── Compose button (in input row) ──────────────────────── */
+.composeBtn {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.composeBtn_day   { color: rgba(0,0,0,0.4);   background: transparent; }
+.composeBtn_night { color: rgba(255,255,255,0.4); background: transparent; }
+.composeBtn_day:hover   { background: rgba(0,0,0,0.07);          color: #0D0D0D; }
+.composeBtn_night:hover { background: rgba(255,255,255,0.09);    color: #FFFFFF; }
+
+/* ── Compose panel ───────────────────────────────────────── */
+.composePanel {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border-radius: 14px;
+  margin: 0 12px 12px;
+  overflow: hidden;
+  animation: expandPanel 200ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.composePanel_day   { background: rgba(245,245,245,0.98); border: 1px solid rgba(0,0,0,0.09); }
+.composePanel_night { background: rgba(28,28,28,0.98);    border: 1px solid rgba(255,255,255,0.1); }
+
+.composeHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 12px 8px;
+}
+
+.composeHeader_day   { border-bottom: 1px solid rgba(0,0,0,0.06); }
+.composeHeader_night { border-bottom: 1px solid rgba(255,255,255,0.06); }
+
+.composeTitle {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+.composeDismiss {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  font-size: 14px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.1s ease;
+}
+
+.composeDismiss_day   { color: rgba(0,0,0,0.45);   background: rgba(0,0,0,0.06); }
+.composeDismiss_night { color: rgba(255,255,255,0.45); background: rgba(255,255,255,0.08); }
+.composeDismiss_day:hover   { background: rgba(0,0,0,0.12); }
+.composeDismiss_night:hover { background: rgba(255,255,255,0.14); }
+
+.composeField {
+  width: 100%;
+  border: none;
+  background: transparent;
+  font-family: 'Outfit', sans-serif;
+  font-size: 12px;
+  outline: none;
+  padding: 7px 12px;
+  box-sizing: border-box;
+}
+
+.composeField_day   { color: #0D0D0D; border-bottom: 1px solid rgba(0,0,0,0.06); }
+.composeField_night { color: #FFFFFF; border-bottom: 1px solid rgba(255,255,255,0.06); }
+.composeField_day::placeholder   { color: rgba(0,0,0,0.32); }
+.composeField_night::placeholder { color: rgba(255,255,255,0.3); }
+
+.composeBody {
+  width: 100%;
+  border: none;
+  background: transparent;
+  font-family: 'Outfit', sans-serif;
+  font-size: 12px;
+  line-height: 1.5;
+  outline: none;
+  padding: 8px 12px;
+  box-sizing: border-box;
+  resize: none;
+}
+
+.composeBody_day   { color: #0D0D0D; }
+.composeBody_night { color: #FFFFFF; }
+.composeBody_day::placeholder   { color: rgba(0,0,0,0.32); }
+.composeBody_night::placeholder { color: rgba(255,255,255,0.3); }
+
+.composeError {
+  font-size: 11px;
+  padding: 4px 12px;
+}
+
+.composeError_day   { color: #c0392b; }
+.composeError_night { color: #e07070; }
+
+.composeSendRow {
+  padding: 8px 12px 10px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.composeSendRow_day   { border-top: 1px solid rgba(0,0,0,0.06); }
+.composeSendRow_night { border-top: 1px solid rgba(255,255,255,0.06); }
+
+.composeSendBtn {
+  font-family: 'Outfit', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 5px 16px;
+  border-radius: 100px;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.composeSendBtn:disabled { opacity: 0.4; cursor: not-allowed; }
+.composeSendBtn_day   { background: #0D0D0D; color: #FFFFFF; }
+.composeSendBtn_night { background: #FFFFFF; color: #0D0D0D; }
+.composeSendBtn_day:not(:disabled):hover   { opacity: 0.82; }
+.composeSendBtn_night:not(:disabled):hover { opacity: 0.82; }
+
+.composeSuccess {
+  font-size: 13px;
+  font-weight: 500;
+  text-align: center;
+  padding: 18px 0;
+}
+
+.composeSuccess_day   { color: #2e7d52; }
+.composeSuccess_night { color: #4caf7d; }
 
 /* ── Search tab ─────────────────────────────────────────── */
 .searchTab {

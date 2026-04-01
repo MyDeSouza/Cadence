@@ -13,7 +13,7 @@ import { API_BASE } from './constants/api';
 export default function App() {
   const { session, beginSession, endSession } = useSession();
   const theme = useAdaptiveTheme();
-  const [calendarOpen, setCalendarOpen] = useState(false);
+  const [calendarOpen, setCalendarOpen] = useState(true);
 
   const [bgPos,      setBgPos]      = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);

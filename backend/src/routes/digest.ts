@@ -12,14 +12,17 @@ router.get('/', async (_req: Request, res: Response): Promise<void> => {
   const prefs = await getPreferences();
 
   const now = new Date();
-  const windowStart = new Date(now.getTime() - 12 * 60 * 60 * 1000);
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const windowEnd = new Date(now.getTime() + 36 * 60 * 60 * 1000);
 
   const events = await prisma.cadenceEvent.findMany({
     where: {
       score: { gte: prefs.surface_threshold },
       user_actioned: null,
-      timestamp: { gte: windowStart, lte: windowEnd },
+      OR: [
+        { timestamp: { gte: startOfToday, lte: windowEnd } },
+        { deadline:  { gte: startOfToday } },
+      ],
     },
     orderBy: { score: 'desc' },
     take: prefs.max_foreground_signals,

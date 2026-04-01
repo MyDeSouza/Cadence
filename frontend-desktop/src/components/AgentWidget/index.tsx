@@ -66,6 +66,15 @@ function StopIcon() {
   );
 }
 
+function ComposeIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
+      <path d="M9.5 1.5L11.5 3.5L4.5 10.5H2.5V8.5L9.5 1.5Z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
+      <path d="M1.5 11.5H11.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 interface Props {
   theme: Theme;
 }
@@ -80,6 +89,13 @@ export function AgentWidget({ theme }: Props) {
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [searching,     setSearching]     = useState(false);
   const [searchError,   setSearchError]   = useState<string | null>(null);
+  const [composing,     setComposing]     = useState(false);
+  const [composeTo,     setComposeTo]     = useState('');
+  const [composeSubj,   setComposeSubj]   = useState('');
+  const [composeBody,   setComposeBody]   = useState('');
+  const [sending,       setSending]       = useState(false);
+  const [sendSuccess,   setSendSuccess]   = useState(false);
+  const [sendError,     setSendError]     = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortRef       = useRef<AbortController | null>(null);
   const { events } = useDigest();
@@ -185,6 +201,42 @@ export function AgentWidget({ theme }: Props) {
     }
   };
 
+  const openCompose = () => {
+    setComposeTo('');
+    setComposeSubj('');
+    setComposeBody('');
+    setSendError(null);
+    setSendSuccess(false);
+    setComposing(true);
+  };
+
+  const closeCompose = () => {
+    setComposing(false);
+    setSendSuccess(false);
+    setSendError(null);
+  };
+
+  const sendEmail = async () => {
+    if (!composeTo.trim() || !composeSubj.trim() || !composeBody.trim() || sending) return;
+    setSending(true);
+    setSendError(null);
+    try {
+      const res = await fetch(`${API_BASE}/send-email`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ to: composeTo.trim(), subject: composeSubj.trim(), body: composeBody.trim() }),
+      });
+      const data = await res.json() as { success?: boolean; error?: string };
+      if (!res.ok || !data.success) throw new Error(data.error ?? 'Send failed');
+      setSendSuccess(true);
+      setTimeout(() => closeCompose(), 1800);
+    } catch (err) {
+      setSendError(err instanceof Error ? err.message : 'Failed to send');
+    } finally {
+      setSending(false);
+    }
+  };
+
   return (
     <div className={styles.wrapper}>
       {expanded && (
@@ -203,17 +255,13 @@ export function AgentWidget({ theme }: Props) {
             >
               People
             </button>
-            <button
-              className={`${styles.tabBtn} ${styles[`tabBtn_${theme}`]} ${tab === 'search' ? styles.tabActive : ''}`}
-              onClick={() => setTab('search')}
-            >
-              Search
-            </button>
           </div>
 
           {tab === 'agent' && (
             <>
-              <div className={styles.messages}>
+              <div className={styles.messages}
+                style={composing ? { pointerEvents: 'none', opacity: 0.4 } : undefined}
+              >
                 {messages.length === 0 && (
                   <div className={`${styles.emptyChat} ${styles[`emptyChat_${theme}`]}`}>
                     Ask anything about your day.
@@ -259,11 +307,81 @@ export function AgentWidget({ theme }: Props) {
                   className={`${styles.chatInput} ${styles[`chatInput_${theme}`]}`}
                   placeholder={isLoading ? 'Thinking…' : 'Message…'}
                   value={input}
-                  disabled={isLoading}
+                  disabled={isLoading || composing}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
                 />
+                <button
+                  className={`${styles.composeBtn} ${styles[`composeBtn_${theme}`]}`}
+                  onClick={openCompose}
+                  aria-label="Compose email"
+                  title="Compose email"
+                >
+                  <ComposeIcon />
+                </button>
               </div>
+
+              {composing && (
+                <div className={`${styles.composePanel} ${styles[`composePanel_${theme}`]}`}>
+                  {sendSuccess ? (
+                    <div className={`${styles.composeSuccess} ${styles[`composeSuccess_${theme}`]}`}>
+                      ✓ Sent
+                    </div>
+                  ) : (
+                    <>
+                      <div className={`${styles.composeHeader} ${styles[`composeHeader_${theme}`]}`}>
+                        <span className={styles.composeTitle}>New message</span>
+                        <button
+                          className={`${styles.composeDismiss} ${styles[`composeDismiss_${theme}`]}`}
+                          onClick={closeCompose}
+                          aria-label="Close compose"
+                        >
+                          ×
+                        </button>
+                      </div>
+
+                      <input
+                        className={`${styles.composeField} ${styles[`composeField_${theme}`]}`}
+                        placeholder="To"
+                        value={composeTo}
+                        onChange={(e) => setComposeTo(e.target.value)}
+                        disabled={sending}
+                      />
+                      <input
+                        className={`${styles.composeField} ${styles[`composeField_${theme}`]}`}
+                        placeholder="Subject"
+                        value={composeSubj}
+                        onChange={(e) => setComposeSubj(e.target.value)}
+                        disabled={sending}
+                      />
+                      <textarea
+                        className={`${styles.composeBody} ${styles[`composeBody_${theme}`]}`}
+                        placeholder="Message"
+                        value={composeBody}
+                        onChange={(e) => setComposeBody(e.target.value)}
+                        disabled={sending}
+                        rows={4}
+                      />
+
+                      {sendError && (
+                        <div className={`${styles.composeError} ${styles[`composeError_${theme}`]}`}>
+                          {sendError}
+                        </div>
+                      )}
+
+                      <div className={`${styles.composeSendRow} ${styles[`composeSendRow_${theme}`]}`}>
+                        <button
+                          className={`${styles.composeSendBtn} ${styles[`composeSendBtn_${theme}`]}`}
+                          onClick={sendEmail}
+                          disabled={sending || !composeTo.trim() || !composeSubj.trim() || !composeBody.trim()}
+                        >
+                          {sending ? 'Sending…' : 'Send'}
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
             </>
           )}
 
@@ -310,7 +428,8 @@ export function AgentWidget({ theme }: Props) {
             );
           })()}
 
-          {tab === 'search' && (
+          {/* Search tab hidden from UI — restore by changing false to: tab === 'search' */}
+          {false && tab === 'search' && (
             <div className={styles.searchTab}>
               <div className={`${styles.searchInputRow} ${styles[`searchInputRow_${theme}`]}`}>
                 <input
