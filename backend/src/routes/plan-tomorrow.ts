@@ -83,6 +83,7 @@ function callOllama(prompt: string): Promise<string> {
 
 router.post('/', async (_req: Request, res: Response): Promise<void> => {
   try {
+    const { calendarId = 'primary' } = _req.body as { calendarId?: string };
     const now           = new Date();
     const startOfToday  = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const startOfTomorrow = new Date(startOfToday.getTime() + 24 * 60 * 60 * 1000);
@@ -107,7 +108,7 @@ router.post('/', async (_req: Request, res: Response): Promise<void> => {
     const calendar = google.calendar({ version: 'v3', auth });
 
     const tomorrowResp = await calendar.events.list({
-      calendarId:   'primary',
+      calendarId,
       timeMin:      startOfTomorrow.toISOString(),
       timeMax:      endOfTomorrow.toISOString(),
       singleEvents: true,
@@ -191,7 +192,7 @@ router.post('/', async (_req: Request, res: Response): Promise<void> => {
       }
 
       await calendar.events.insert({
-        calendarId:  'primary',
+        calendarId,
         requestBody: {
           summary:     evt.title,
           description: evt.description ?? '',

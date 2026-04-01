@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { google } from 'googleapis';
+import { google, calendar_v3 } from 'googleapis';
 import { Prisma } from '@prisma/client';
 import prisma from '../db';
 import { adaptGoogleCalendarEvent } from '../adapters/google-calendar.adapter';
@@ -38,19 +38,37 @@ router.get('/google', async (_req: Request, res: Response): Promise<void> => {
   const auth = await getAuthorizedClient();
   const calendar = google.calendar({ version: 'v3', auth });
 
-  const now         = new Date();
-  const sevenDaysOut = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+  const now            = new Date();
+  const twentyOneDaysOut = new Date(now.getTime() + 21 * 24 * 60 * 60 * 1000);
 
-  const response = await calendar.events.list({
-    calendarId:   'primary',
-    timeMin:      now.toISOString(),
-    timeMax:      sevenDaysOut.toISOString(),
-    singleEvents: true,
-    orderBy:      'startTime',
-    maxResults:   50,
-  });
+  // Fetch all calendars the user has access to
+  const calListResp = await calendar.calendarList.list({ maxResults: 50 });
+  const calList     = calListResp.data.items ?? [];
 
-  const gcEvents = response.data.items ?? [];
+  // Collect events from every calendar, deduplicate by event ID
+  type TaggedEvent = { event: calendar_v3.Schema$Event; calendarName: string };
+  // (calendar_v3 is imported at the top for this type)
+  const seenIds = new Set<string>();
+  const taggedEvents: TaggedEvent[] = [];
+
+  for (const cal of calList) {
+    if (!cal.id) continue;
+    const resp = await calendar.events.list({
+      calendarId:   cal.id,
+      timeMin:      now.toISOString(),
+      timeMax:      twentyOneDaysOut.toISOString(),
+      singleEvents: true,
+      orderBy:      'startTime',
+      maxResults:   100,
+    });
+    for (const evt of resp.data.items ?? []) {
+      if (!evt.id || seenIds.has(evt.id)) continue;
+      seenIds.add(evt.id);
+      taggedEvents.push({ event: evt, calendarName: cal.summary ?? 'Calendar' });
+    }
+  }
+
+  const gcEvents = taggedEvents;
   const prefs    = await getPreferences();
 
   // Load existing events once for conflict detection
@@ -69,10 +87,10 @@ router.get('/google', async (_req: Request, res: Response): Promise<void> => {
 
   const upsertedIds: string[] = [];
 
-  for (const gcEvent of gcEvents) {
+  for (const { event: gcEvent, calendarName } of gcEvents) {
     if (!gcEvent.id) continue;
 
-    const normalized     = adaptGoogleCalendarEvent(gcEvent);
+    const normalized     = adaptGoogleCalendarEvent(gcEvent, calendarName);
     const score          = scoreEvent(normalized, prefs);
     const cognitive_type = classifyEvent(
       { score, type: normalized.type, timestamp: normalized.timestamp, deadline: normalized.deadline },
@@ -121,6 +139,22 @@ router.get('/google', async (_req: Request, res: Response): Promise<void> => {
   });
 
   res.json({ synced: upsertedIds.length, event_ids: upsertedIds });
+});
+
+// ─── GET /sync/google/calendars — list all calendars the user has access to ───
+
+router.get('/google/calendars', async (_req: Request, res: Response): Promise<void> => {
+  const auth     = await getAuthorizedClient();
+  const calendar = google.calendar({ version: 'v3', auth });
+
+  const resp      = await calendar.calendarList.list({ maxResults: 50 });
+  const calendars = (resp.data.items ?? []).map((c) => ({
+    id:    c.id   ?? '',
+    name:  c.summary ?? 'Untitled',
+    color: c.backgroundColor ?? null,
+  }));
+
+  res.json({ calendars });
 });
 
 // ─── POST /sync/google/events — create an event in Google Calendar ────────────

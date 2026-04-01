@@ -132,9 +132,25 @@ export function AgentWidget({ theme }: Props) {
   const [sendError,     setSendError]     = useState<string | null>(null);
   const [planning,      setPlanning]      = useState(false);
   const [planStatus,    setPlanStatus]    = useState<string | null>(null);
+  const [calendars,     setCalendars]     = useState<Array<{ id: string; name: string }>>([]);
+  const [planCalId,     setPlanCalId]     = useState('primary');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortRef       = useRef<AbortController | null>(null);
   const { events } = useDigest();
+
+  // Fetch calendar list once when the panel opens
+  useEffect(() => {
+    if (!expanded) return;
+    fetch(`${API_BASE}/sync/google/calendars`)
+      .then((r) => r.json())
+      .then((d: { calendars?: Array<{ id: string; name: string }> }) => {
+        if (d.calendars?.length) {
+          setCalendars(d.calendars);
+          setPlanCalId(d.calendars[0].id);
+        }
+      })
+      .catch(() => {});
+  }, [expanded]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -242,7 +258,11 @@ export function AgentWidget({ theme }: Props) {
     setPlanning(true);
     setPlanStatus('Planning your tomorrow…');
     try {
-      const res  = await fetch(`${API_BASE}/plan-tomorrow`, { method: 'POST' });
+      const res  = await fetch(`${API_BASE}/plan-tomorrow`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ calendarId: planCalId }),
+      });
       const data = await res.json() as { created?: number; error?: string };
       if (!res.ok || data.error) throw new Error(data.error ?? 'Failed');
       setPlanStatus(`✓ Added ${data.created} event${data.created === 1 ? '' : 's'} to your calendar for tomorrow.`);
@@ -382,6 +402,18 @@ export function AgentWidget({ theme }: Props) {
                 >
                   <ComposeIcon />
                 </button>
+                {calendars.length > 1 && (
+                  <select
+                    className={`${styles.calPicker} ${styles[`calPicker_${theme}`]}`}
+                    value={planCalId}
+                    onChange={(e) => setPlanCalId(e.target.value)}
+                    title="Calendar for planned events"
+                  >
+                    {calendars.map((c) => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
+                )}
                 <button
                   className={`${styles.composeBtn} ${styles[`composeBtn_${theme}`]}`}
                   onClick={planTomorrow}

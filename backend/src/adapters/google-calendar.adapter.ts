@@ -7,7 +7,8 @@ import { AttendeeRecord, CadenceEvent } from '../types';
 // Score and cognitive_type are assigned by the engine after normalization.
 
 export function adaptGoogleCalendarEvent(
-  event: calendar_v3.Schema$Event
+  event: calendar_v3.Schema$Event,
+  calendarName?: string
 ): Omit<CadenceEvent, 'score' | 'cognitive_type'> {
   const startRaw = event.start?.dateTime ?? event.start?.date ?? new Date().toISOString();
   const endRaw   = event.end?.dateTime   ?? event.end?.date;
@@ -36,7 +37,7 @@ export function adaptGoogleCalendarEvent(
     timestamp:       new Date(startRaw).toISOString(),
     deadline:        endRaw ? new Date(endRaw).toISOString() : undefined,
     raw_content:     event.description?.trim() ?? undefined,
-    tags:            [],
+    tags:            calendarName ? [`cal:${calendarName}`] : [],
     user_actioned:   null,
     created_at:      new Date().toISOString(),
     location:        event.location?.trim() ?? null,

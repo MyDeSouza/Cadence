@@ -53,7 +53,7 @@ function getDayLabel(selectedDay: Date, now: Date): string {
   if (diff === 0)  return 'Today';
   if (diff === 1)  return 'Tomorrow';
   if (diff === -1) return 'Yesterday';
-  if (diff > 1 && diff <= 14) return `In ${diff} days`;
+  if (diff > 1 && diff <= 21) return `In ${diff} days`;
   return '';
 }
 
@@ -387,7 +387,7 @@ function DayTimeline({
   const scrollRef       = useRef<HTMLDivElement>(null);
   const isSelectedToday = isToday(selectedDay);
   const daysAhead       = daysBetween(now, selectedDay);
-  const isBeyondRange   = daysAhead > 14;
+  const isBeyondRange   = daysAhead > 21;
 
   const dayEvents = events.filter((e) => isSameDay(parseISO(e.timestamp), selectedDay));
   const laid      = layoutDayEvents(dayEvents);
@@ -416,7 +416,7 @@ function DayTimeline({
 
       {isBeyondRange ? (
         <div className={styles.tlBeyondRange}>
-          Sync extends 14 days ahead
+          Sync extends 21 days ahead
         </div>
       ) : (
         <div className={styles.tlScroll} ref={scrollRef}>

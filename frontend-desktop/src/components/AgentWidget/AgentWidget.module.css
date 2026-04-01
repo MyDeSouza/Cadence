@@ -338,6 +338,26 @@
 .composeBtn_day:hover   { background: rgba(0,0,0,0.07);          color: #0D0D0D; }
 .composeBtn_night:hover { background: rgba(255,255,255,0.09);    color: #FFFFFF; }
 
+/* ── Calendar picker (plan tomorrow) ────────────────────── */
+.calPicker {
+  font-family: 'Outfit', sans-serif;
+  font-size: 11px;
+  border: none;
+  border-radius: 7px;
+  padding: 3px 6px;
+  cursor: pointer;
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  outline: none;
+  transition: background 0.12s ease;
+}
+
+.calPicker_day   { background: rgba(0,0,0,0.06);       color: rgba(0,0,0,0.6); }
+.calPicker_night { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.55); }
+.calPicker_day:hover   { background: rgba(0,0,0,0.10); }
+.calPicker_night:hover { background: rgba(255,255,255,0.13); }
+
 /* ── Plan status ─────────────────────────────────────────── */
 .planStatus {
   font-size: 11px;
