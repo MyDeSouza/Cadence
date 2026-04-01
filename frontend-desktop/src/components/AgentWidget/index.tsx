@@ -98,6 +98,17 @@ function ComposeIcon() {
   );
 }
 
+function PlanIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
+      <rect x="1" y="2.5" width="11" height="9.5" rx="2" stroke="currentColor" strokeWidth="1.4" />
+      <path d="M1 5.5H12" stroke="currentColor" strokeWidth="1.4" />
+      <path d="M4 1V4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+      <path d="M9 1V4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 interface Props {
   theme: Theme;
 }
@@ -119,6 +130,8 @@ export function AgentWidget({ theme }: Props) {
   const [sending,       setSending]       = useState(false);
   const [sendSuccess,   setSendSuccess]   = useState(false);
   const [sendError,     setSendError]     = useState<string | null>(null);
+  const [planning,      setPlanning]      = useState(false);
+  const [planStatus,    setPlanStatus]    = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortRef       = useRef<AbortController | null>(null);
   const { events } = useDigest();
@@ -221,6 +234,24 @@ export function AgentWidget({ theme }: Props) {
     if (e.key === 'Enter') {
       e.preventDefault();
       runSearch();
+    }
+  };
+
+  const planTomorrow = async () => {
+    if (planning) return;
+    setPlanning(true);
+    setPlanStatus('Planning your tomorrow…');
+    try {
+      const res  = await fetch(`${API_BASE}/plan-tomorrow`, { method: 'POST' });
+      const data = await res.json() as { created?: number; error?: string };
+      if (!res.ok || data.error) throw new Error(data.error ?? 'Failed');
+      setPlanStatus(`✓ Added ${data.created} event${data.created === 1 ? '' : 's'} to your calendar for tomorrow.`);
+      setTimeout(() => setPlanStatus(null), 4000);
+    } catch (err) {
+      setPlanStatus(err instanceof Error ? err.message : 'Could not plan tomorrow.');
+      setTimeout(() => setPlanStatus(null), 4000);
+    } finally {
+      setPlanning(false);
     }
   };
 
@@ -351,7 +382,22 @@ export function AgentWidget({ theme }: Props) {
                 >
                   <ComposeIcon />
                 </button>
+                <button
+                  className={`${styles.composeBtn} ${styles[`composeBtn_${theme}`]}`}
+                  onClick={planTomorrow}
+                  disabled={planning}
+                  aria-label="Plan tomorrow"
+                  title="Plan tomorrow"
+                >
+                  <PlanIcon />
+                </button>
               </div>
+
+              {planStatus && (
+                <div className={`${styles.planStatus} ${styles[`planStatus_${theme}`]}`}>
+                  {planStatus}
+                </div>
+              )}
 
               {composing && (
                 <div className={`${styles.composePanel} ${styles[`composePanel_${theme}`]}`}>

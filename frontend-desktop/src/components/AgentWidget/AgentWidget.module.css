@@ -338,6 +338,16 @@
 .composeBtn_day:hover   { background: rgba(0,0,0,0.07);          color: #0D0D0D; }
 .composeBtn_night:hover { background: rgba(255,255,255,0.09);    color: #FFFFFF; }
 
+/* ── Plan status ─────────────────────────────────────────── */
+.planStatus {
+  font-size: 11px;
+  padding: 4px 16px 8px;
+  line-height: 1.4;
+}
+
+.planStatus_day   { color: rgba(0, 0, 0, 0.5); }
+.planStatus_night { color: rgba(255, 255, 255, 0.45); }
+
 /* ── Compose panel ───────────────────────────────────────── */
 .composePanel {
   display: flex;

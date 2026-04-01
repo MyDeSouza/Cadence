@@ -11,6 +11,7 @@ import askRouter from './routes/ask';
 import searchRouter from './routes/search';
 import sendEmailRouter from './routes/send-email';
 import authRouter from './routes/auth';
+import planTomorrowRouter from './routes/plan-tomorrow';
 
 const app = express();
 const PORT = process.env.PORT ?? 3001;
@@ -32,6 +33,7 @@ app.use('/ask', askRouter);
 app.use('/search', searchRouter);
 app.use('/send-email', sendEmailRouter);
 app.use('/auth', authRouter);
+app.use('/plan-tomorrow', planTomorrowRouter);
 
 // ─── Health check ─────────────────────────────────────────────────────────────
 
