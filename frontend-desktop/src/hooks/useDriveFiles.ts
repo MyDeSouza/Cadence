@@ -4,11 +4,16 @@ import { API_BASE } from '../constants/api';
 export type DriveFileType = 'doc' | 'slides' | 'sheet' | 'pdf';
 
 export interface DriveFile {
-  title:    string;
-  url:      string;
-  type:     DriveFileType;
-  modified: string;
-  eventId?: string;
+  title:          string;
+  url:            string;
+  type:           DriveFileType;
+  modified:       string;
+  createdTime:    string;
+  ownerName:      string;
+  lastModifiedBy: string;
+  size:           number | null;
+  thumbnailLink:  string | null;
+  eventId?:       string;
 }
 
 export function useDriveFiles() {
@@ -24,8 +29,8 @@ export function useDriveFiles() {
         return;
       }
 
-      const data = await res.json() as { files: DriveFile[] };
-      const incoming = data.files ?? [];
+      const data      = await res.json() as { files: DriveFile[] };
+      const incoming  = data.files ?? [];
 
       console.log(
         `[useDriveFiles] received ${incoming.length} file(s)`,
@@ -34,7 +39,6 @@ export function useDriveFiles() {
 
       setFiles(incoming);
     } catch (err) {
-      // Drive scope may not be authorized yet
       console.warn('[useDriveFiles] fetch threw:', err);
     }
   }, []);

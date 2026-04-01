@@ -232,10 +232,15 @@ router.get('/drive', async (_req: Request, res: Response): Promise<void> => {
     }
 
     return {
-      title:    file.title,
-      url:      file.url,
-      type:     file.type,
-      modified: file.modified,
+      title:          file.title,
+      url:            file.url,
+      type:           file.type,
+      modified:       file.modified,
+      createdTime:    file.createdTime,
+      ownerName:      file.ownerName,
+      lastModifiedBy: file.lastModifiedBy,
+      size:           file.size,
+      thumbnailLink:  file.thumbnailLink,
       ...(eventId ? { eventId } : {}),
     };
   });

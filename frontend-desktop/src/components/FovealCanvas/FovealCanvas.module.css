@@ -16,6 +16,12 @@
   flex-direction: column;
   gap: 10px;
   animation: cardIn 300ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  cursor: pointer;
+  user-select: none;
+}
+
+.cardExpanded {
+  width: 260px;
 }
 
 @keyframes cardIn {
@@ -99,6 +105,55 @@
 
 .cardOpen_day  { color: rgba(0, 0, 0, 0.35); }
 .cardOpen_night { color: rgba(255, 255, 255, 0.3); }
+
+/* ── Expanded metadata dropdown ───────────────────────── */
+.cardDropdown {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding-top: 10px;
+  cursor: default;
+}
+
+.cardDropdown_day  { border-top: 1px solid rgba(0, 0, 0, 0.07); }
+.cardDropdown_night { border-top: 1px solid rgba(255, 255, 255, 0.08); }
+
+.cardThumb {
+  width: 100%;
+  border-radius: 6px;
+  object-fit: cover;
+  max-height: 100px;
+  margin-bottom: 2px;
+}
+
+.cardDetail {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 11px;
+  font-weight: 300;
+}
+
+.cardDetail_day  { color: rgba(0, 0, 0, 0.55); }
+.cardDetail_night { color: rgba(255, 255, 255, 0.5); }
+
+.cardDetailLabel {
+  font-weight: 400;
+  flex-shrink: 0;
+}
+
+.cardDetail_day  .cardDetailLabel { color: rgba(0, 0, 0, 0.35); }
+.cardDetail_night .cardDetailLabel { color: rgba(255, 255, 255, 0.3); }
+
+/* value truncates if long (e.g. long display names) */
+.cardDetail span:last-child {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: right;
+}
 
 /* ── Signal cards — right side ────────────────────────── */
 .signal {

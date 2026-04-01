@@ -93,8 +93,22 @@ function fmtEventTime(event: CadenceEvent): string {
   return format(start, 'h:mmaaa');
 }
 
+// ── Size formatting ────────────────────────────────────────
+function formatBytes(bytes: number): string {
+  if (bytes < 1024)        return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function fmtCreated(iso: string): string {
+  const d = new Date(iso);
+  return format(d, d.getFullYear() === new Date().getFullYear() ? 'd MMM' : 'd MMM yyyy');
+}
+
 // ── Drive file card ────────────────────────────────────────
 function DriveCard({ file, index, theme }: { file: DriveFile; index: number; theme: Theme }) {
+  const [expanded, setExpanded] = useState(false);
+
   const col  = index % 3;
   const row  = Math.floor(index / 3);
   const top  = 100 + row * 90;
@@ -102,9 +116,11 @@ function DriveCard({ file, index, theme }: { file: DriveFile; index: number; the
 
   return (
     <div
-      className={`${styles.card} ${styles[`card_${theme}`]}`}
+      className={`${styles.card} ${styles[`card_${theme}`]} ${expanded ? styles.cardExpanded : ''}`}
       style={{ top, left, animationDelay: `${index * 80}ms` }}
+      onClick={() => setExpanded((v) => !v)}
     >
+      {/* ── Always-visible header row ── */}
       <div className={styles.cardHeader}>
         <span className={`${styles.cardIcon} ${styles[`cardIcon_${theme}`]}`}>
           {FILE_ICONS[file.type]}
@@ -113,6 +129,7 @@ function DriveCard({ file, index, theme }: { file: DriveFile; index: number; the
           {file.title}
         </span>
       </div>
+
       <div className={styles.cardMeta}>
         <span className={`${styles.cardModified} ${styles[`cardModified_${theme}`]}`}>
           {relativeTime(file.modified)}
@@ -127,6 +144,50 @@ function DriveCard({ file, index, theme }: { file: DriveFile; index: number; the
           → Open
         </a>
       </div>
+
+      {/* ── Expanded metadata dropdown ── */}
+      {expanded && (
+        <div
+          className={`${styles.cardDropdown} ${styles[`cardDropdown_${theme}`]}`}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {file.thumbnailLink && (
+            <img
+              src={file.thumbnailLink}
+              alt=""
+              className={styles.cardThumb}
+            />
+          )}
+
+          {file.size != null && (
+            <div className={`${styles.cardDetail} ${styles[`cardDetail_${theme}`]}`}>
+              <span className={styles.cardDetailLabel}>Size</span>
+              <span>{formatBytes(file.size)}</span>
+            </div>
+          )}
+
+          {file.ownerName && (
+            <div className={`${styles.cardDetail} ${styles[`cardDetail_${theme}`]}`}>
+              <span className={styles.cardDetailLabel}>Owner</span>
+              <span>{file.ownerName}</span>
+            </div>
+          )}
+
+          {file.lastModifiedBy && (
+            <div className={`${styles.cardDetail} ${styles[`cardDetail_${theme}`]}`}>
+              <span className={styles.cardDetailLabel}>Modified by</span>
+              <span>{file.lastModifiedBy}</span>
+            </div>
+          )}
+
+          {file.createdTime && (
+            <div className={`${styles.cardDetail} ${styles[`cardDetail_${theme}`]}`}>
+              <span className={styles.cardDetailLabel}>Created</span>
+              <span>{fmtCreated(file.createdTime)}</span>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
