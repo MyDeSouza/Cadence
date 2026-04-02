@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { CalendarWidget } from './components/CalendarWidget';
 import { AgentWidget } from './components/AgentWidget';
 import { FovealCanvas } from './components/FovealCanvas';
@@ -26,9 +26,6 @@ export default function App() {
   const [isDragging, setIsDragging] = useState(false);
   const dragRef = useRef<{ startX: number; startY: number; originX: number; originY: number } | null>(null);
 
-  useEffect(() => {
-    fetch(`${API_BASE}/sync/google`).catch(() => {});
-  }, []);
 
   const handleBeginSession = (event: CadenceEvent) => {
     beginSession(event);

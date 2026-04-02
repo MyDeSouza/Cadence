@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { CadenceEvent } from '../types';
 import { API_BASE } from '../constants/api';
-const REFRESH_INTERVAL = 5_000; // 5 seconds — keeps calendar live after agent actions
+const REFRESH_INTERVAL = 30_000; // 30 seconds — each poll triggers a Google sync, so keep it reasonable
 const SCORE_THRESHOLD = 65;
 const FOURTEEN_DAYS_MS = 14 * 24 * 60 * 60 * 1000;
 
@@ -12,6 +12,9 @@ export function useDigest() {
 
   const fetchDigest = useCallback(async () => {
     try {
+      // Sync from Google Calendar first so the DB reflects any recent changes.
+      await fetch(`${API_BASE}/sync/google`).catch(() => {});
+
       // Lower bound = today midnight (excludes stale seed data from previous days).
       // Upper bound = now + 14 days. ?from= is passed for future backend support.
       const now = new Date();

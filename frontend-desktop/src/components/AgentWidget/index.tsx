@@ -331,6 +331,7 @@ export function AgentWidget({ theme, events, onActionApplied }: Props) {
       const data = await res.json() as { created?: number; error?: string };
       if (!res.ok || data.error) throw new Error(data.error ?? 'Failed');
       setPlanStatus(`✓ Added ${data.created} event${data.created === 1 ? '' : 's'} to your calendar for tomorrow.`);
+      onActionApplied();
       setTimeout(() => setPlanStatus(null), 4000);
     } catch (err) {
       setPlanStatus(err instanceof Error ? err.message : 'Could not plan tomorrow.');
