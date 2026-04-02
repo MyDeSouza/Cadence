@@ -6,6 +6,7 @@ import { EventStrip } from './components/EventStrip';
 import { DateDisplay } from './components/DateDisplay';
 import { useSession } from './hooks/useSession';
 import { useAdaptiveTheme } from './hooks/useAdaptiveTheme';
+import { useDigest } from './hooks/useDigest';
 import type { CadenceEvent } from './types';
 import styles from './App.module.css';
 import { API_BASE } from './constants/api';
@@ -13,6 +14,7 @@ import { API_BASE } from './constants/api';
 export default function App() {
   const { session, beginSession, endSession } = useSession();
   const theme = useAdaptiveTheme();
+  const { events, refetch: refetchEvents } = useDigest();
   const [calendarOpen, setCalendarOpen] = useState(true);
 
   const [bgPos,      setBgPos]      = useState({ x: 0, y: 0 });
@@ -74,12 +76,13 @@ export default function App() {
       {calendarOpen && (
         <CalendarWidget
           theme={theme}
+          events={events}
           onClose={() => setCalendarOpen(false)}
           onBeginSession={handleBeginSession}
         />
       )}
       <FovealCanvas session={session} onEndSession={handleEndSession} theme={theme} />
-      <AgentWidget theme={theme} />
+      <AgentWidget theme={theme} events={events} onActionApplied={refetchEvents} />
     </div>
   );
 }

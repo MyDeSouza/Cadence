@@ -5,12 +5,12 @@ import {
 } from 'date-fns';
 import type { Attendee, CadenceEvent } from '../../types';
 import type { Theme } from '../../hooks/useAdaptiveTheme';
-import { useDigest } from '../../hooks/useDigest';
 import { useDriveFiles } from '../../hooks/useDriveFiles';
 import styles from './CalendarWidget.module.css';
 
 interface Props {
   theme: Theme;
+  events: CadenceEvent[];
   onClose: () => void;
   onBeginSession: (event: CadenceEvent) => void;
 }
@@ -458,12 +458,11 @@ function DayTimeline({
   );
 }
 
-export function CalendarWidget({ theme, onClose, onBeginSession }: Props) {
+export function CalendarWidget({ theme, events, onClose, onBeginSession }: Props) {
   const [viewMonth,     setViewMonth]     = useState(() => new Date());
   const [selectedDay,   setSelectedDay]   = useState(() => new Date());
   const [now,           setNow]           = useState(() => new Date());
   const [selectedEvent, setSelectedEvent] = useState<CadenceEvent | null>(null);
-  const { events }     = useDigest();
   const { files: driveFiles } = useDriveFiles();
 
   useEffect(() => {

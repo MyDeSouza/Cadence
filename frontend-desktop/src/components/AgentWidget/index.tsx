@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import type { Attendee, CadenceEvent } from '../../types';
 import type { Theme } from '../../hooks/useAdaptiveTheme';
-import { useDigest } from '../../hooks/useDigest';
 import styles from './AgentWidget.module.css';
 import { API_BASE } from '../../constants/api';
 
@@ -152,10 +151,12 @@ function PlanIcon() {
 }
 
 interface Props {
-  theme: Theme;
+  theme:            Theme;
+  events:           CadenceEvent[];
+  onActionApplied:  () => void;
 }
 
-export function AgentWidget({ theme }: Props) {
+export function AgentWidget({ theme, events, onActionApplied }: Props) {
   const [expanded,      setExpanded]      = useState(false);
   const [tab,           setTab]           = useState<Tab>('agent');
   const [messages,      setMessages]      = useState<Message[]>([]);
@@ -180,7 +181,6 @@ export function AgentWidget({ theme }: Props) {
   const [planCalId,     setPlanCalId]     = useState('primary');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortRef       = useRef<AbortController | null>(null);
-  const { events } = useDigest();
 
   // Fetch calendar list once when the panel opens
   useEffect(() => {
@@ -277,6 +277,7 @@ export function AgentWidget({ theme }: Props) {
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({ type: action.type, eventId: action.eventId, newStart: action.newStart, newEnd: action.newEnd }),
       });
+      onActionApplied();
     } catch { /* best-effort */ }
   };
 
