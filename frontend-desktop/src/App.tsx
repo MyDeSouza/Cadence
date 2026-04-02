@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { CalendarWidget } from './components/CalendarWidget';
 import { AgentWidget } from './components/AgentWidget';
 import { FovealCanvas } from './components/FovealCanvas';
@@ -15,6 +15,11 @@ export default function App() {
   const { session, beginSession, endSession } = useSession();
   const theme = useAdaptiveTheme();
   const { events, refetch: refetchEvents } = useDigest();
+
+  const syncAndRefetch = useCallback(async () => {
+    await fetch(`${API_BASE}/sync/google`).catch(() => {});
+    refetchEvents();
+  }, [refetchEvents]);
   const [calendarOpen, setCalendarOpen] = useState(true);
 
   const [bgPos,      setBgPos]      = useState({ x: 0, y: 0 });
@@ -82,7 +87,7 @@ export default function App() {
         />
       )}
       <FovealCanvas session={session} onEndSession={handleEndSession} theme={theme} />
-      <AgentWidget theme={theme} events={events} onActionApplied={refetchEvents} />
+      <AgentWidget theme={theme} events={events} onActionApplied={syncAndRefetch} />
     </div>
   );
 }
