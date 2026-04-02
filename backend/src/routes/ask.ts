@@ -25,14 +25,18 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
   const prefs = await getPreferences();
   const now   = new Date();
 
+  // Scope conflict context to tomorrow only — the full window causes the model
+  // to flag non-issues on empty days far in the future.
+  const startOfTomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+  const endOfTomorrow   = new Date(startOfTomorrow.getTime() + 24 * 60 * 60 * 1000);
+
   const events = await prisma.cadenceEvent.findMany({
     where: {
       score:         { gte: prefs.surface_threshold },
       user_actioned: null,
-      // Only future events — past signals have no bearing on what's next
       OR: [
-        { deadline:  { gte: now } },
-        { timestamp: { gte: now } },
+        { timestamp: { gte: startOfTomorrow, lt: endOfTomorrow } },
+        { deadline:  { gte: startOfTomorrow, lt: endOfTomorrow } },
       ],
     },
     orderBy: { timestamp: 'asc' },

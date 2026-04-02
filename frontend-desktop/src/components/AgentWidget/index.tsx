@@ -29,36 +29,25 @@ interface Message {
 }
 
 /** Split a completed assistant response into prose text + ACTION blocks.
- *  Handles both same-line  ACTION:{"type":...}
- *  and split-line          ACTION:\n{"type":...}
- *  with any whitespace between ACTION: and the opening {.
+ *  Uses a regex scan of the full string so it catches ACTION blocks regardless
+ *  of whether the JSON is on the same line, the next line, or mid-paragraph.
+ *  Matched ACTION:... tokens are stripped from the prose before returning.
  */
 function parseActions(raw: string): { content: string; actions: ActionBlock[] } {
-  const lines:   string[]      = raw.split('\n');
-  const prose:   string[]      = [];
   const actions: ActionBlock[] = [];
+  // Match ACTION: + optional whitespace + JSON object (non-greedy, no nested {})
+  const ACTION_RE = /ACTION:\s*(\{[\s\S]*?\})/g;
+  let prose = raw;
+  let match: RegExpExecArray | null;
 
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    if (line.startsWith('ACTION:')) {
-      let json = line.slice(7).trim();
-      // JSON may be on the next line — look ahead once
-      if (!json.startsWith('{') && i + 1 < lines.length) {
-        const next = lines[i + 1].trim();
-        if (next.startsWith('{')) {
-          json = next;
-          i++;  // consume the next line so it doesn't land in prose
-        }
-      }
-      try {
-        actions.push(JSON.parse(json) as ActionBlock);
-      } catch { /* malformed — skip */ }
-    } else {
-      prose.push(line);
-    }
+  while ((match = ACTION_RE.exec(raw)) !== null) {
+    try {
+      actions.push(JSON.parse(match[1]) as ActionBlock);
+      prose = prose.replace(match[0], '');
+    } catch { /* malformed — skip */ }
   }
 
-  return { content: prose.join('\n').trim(), actions };
+  return { content: prose.trim(), actions };
 }
 
 function getInitials(attendee: Attendee): string {
