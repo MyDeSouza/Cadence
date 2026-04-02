@@ -28,6 +28,12 @@ interface Message {
   actions?:   ActionBlock[];
 }
 
+// Strips ACTION:{...} tokens from any string before display
+const ACTION_DISPLAY_RE = /ACTION:\s*\{[^}]*\}/g;
+function stripActions(text: string): string {
+  return text.replace(ACTION_DISPLAY_RE, '').replace(/\n{3,}/g, '\n\n').trim();
+}
+
 /** Split a completed assistant response into prose text + ACTION blocks.
  *  Uses a regex scan of the full string so it catches ACTION blocks regardless
  *  of whether the JSON is on the same line, the next line, or mid-paragraph.
@@ -404,7 +410,7 @@ export function AgentWidget({ theme, events, onActionApplied }: Props) {
                           : styles[`msgAssistant_${theme}`],
                       ].join(' ')}
                     >
-                      {msg.content}
+                      {stripActions(msg.content)}
                       {msg.streaming && msg.content === '' && (
                         <span className={`${styles.streamDot} ${styles[`streamDot_${theme}`]}`} />
                       )}
@@ -420,46 +426,58 @@ export function AgentWidget({ theme, events, onActionApplied }: Props) {
                         → Send this
                       </button>
                     )}
-                    {msg.role === 'assistant' && !msg.streaming && (msg.actions ?? []).map((action, i) => {
-                      const key   = `${msg.id}-${i}`;
-                      const state = actionStates[key];
-                      if (state === 'skipped') return null;
-                      return (
-                        <div key={key} className={`${styles.actionCard} ${styles[`actionCard_${theme}`]}`}>
-                          {state === 'done' ? (
-                            <span className={`${styles.actionDone} ${styles[`actionDone_${theme}`]}`}>✓ Done</span>
-                          ) : (
-                            <>
-                              <span className={`${styles.actionType} ${styles[`actionType_${theme}`]}`}>
-                                {action.type === 'reschedule' ? 'Reschedule' : 'Move'}
-                              </span>
-                              <span className={`${styles.actionReason} ${styles[`actionReason_${theme}`]}`}>
-                                {action.reason}
-                              </span>
-                              <span className={`${styles.actionTime} ${styles[`actionTime_${theme}`]}`}>
-                                {new Date(action.newStart).toLocaleString('en-GB', { dateStyle: 'short', timeStyle: 'short' })}
-                                {' → '}
-                                {new Date(action.newEnd).toLocaleTimeString('en-GB', { timeStyle: 'short' })}
-                              </span>
-                              <div className={styles.actionBtns}>
-                                <button
-                                  className={`${styles.actionApply} ${styles[`actionApply_${theme}`]}`}
-                                  onClick={() => applyAction(key, action)}
-                                >
-                                  ✓ Apply
-                                </button>
-                                <button
-                                  className={`${styles.actionSkip} ${styles[`actionSkip_${theme}`]}`}
-                                  onClick={() => skipAction(key)}
-                                >
-                                  ✗ Skip
-                                </button>
-                              </div>
-                            </>
-                          )}
-                        </div>
-                      );
-                    })}
+                    {msg.role === 'assistant' && !msg.streaming && (() => {
+                      const acts = msg.actions ?? [];
+                      if (acts.length === 0) return null;
+
+                      // All resolved = every action is done or skipped
+                      const allResolved = acts.every((_, i) => actionStates[`${msg.id}-${i}`] !== undefined);
+                      if (allResolved) {
+                        const doneCount = acts.filter((_, i) => actionStates[`${msg.id}-${i}`] === 'done').length;
+                        if (doneCount === 0) return null; // all skipped — show nothing
+                        return (
+                          <span className={`${styles.actionDone} ${styles[`actionDone_${theme}`]}`}>
+                            ✓ {doneCount === 1 ? 'Change applied' : `${doneCount} changes applied`}
+                          </span>
+                        );
+                      }
+
+                      // Still pending — show only unresolved cards
+                      return acts.map((action, i) => {
+                        const key   = `${msg.id}-${i}`;
+                        const state = actionStates[key];
+                        if (state !== undefined) return null; // hide resolved cards
+                        return (
+                          <div key={key} className={`${styles.actionCard} ${styles[`actionCard_${theme}`]}`}>
+                            <span className={`${styles.actionType} ${styles[`actionType_${theme}`]}`}>
+                              {action.type === 'reschedule' ? 'Reschedule' : 'Move'}
+                            </span>
+                            <span className={`${styles.actionReason} ${styles[`actionReason_${theme}`]}`}>
+                              {action.reason}
+                            </span>
+                            <span className={`${styles.actionTime} ${styles[`actionTime_${theme}`]}`}>
+                              {new Date(action.newStart).toLocaleString('en-GB', { dateStyle: 'short', timeStyle: 'short' })}
+                              {' → '}
+                              {new Date(action.newEnd).toLocaleTimeString('en-GB', { timeStyle: 'short' })}
+                            </span>
+                            <div className={styles.actionBtns}>
+                              <button
+                                className={`${styles.actionApply} ${styles[`actionApply_${theme}`]}`}
+                                onClick={() => applyAction(key, action)}
+                              >
+                                ✓ Apply
+                              </button>
+                              <button
+                                className={`${styles.actionSkip} ${styles[`actionSkip_${theme}`]}`}
+                                onClick={() => skipAction(key)}
+                              >
+                                ✗ Skip
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      });
+                    })()}
                   </div>
                 ))}
                 <div ref={messagesEndRef} />

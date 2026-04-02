@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { CadenceEvent } from '../types';
 import { API_BASE } from '../constants/api';
-const REFRESH_INTERVAL = 5 * 60 * 1000; // 5 minutes
+const REFRESH_INTERVAL = 5_000; // 5 seconds — keeps calendar live after agent actions
 const SCORE_THRESHOLD = 65;
 const FOURTEEN_DAYS_MS = 14 * 24 * 60 * 60 * 1000;
 
