@@ -28,10 +28,16 @@ interface Message {
   actions?:   ActionBlock[];
 }
 
-// Strips ACTION:{...} tokens from any string before display
+// Strips complete ACTION:{...} tokens from a finished response
 const ACTION_DISPLAY_RE = /ACTION:\s*\{[^}]*\}/g;
 function stripActions(text: string): string {
   return text.replace(ACTION_DISPLAY_RE, '').replace(/\n{3,}/g, '\n\n').trim();
+}
+
+// During streaming the JSON is incomplete (no closing }) so the regex above
+// never matches.  Cut everything from the first ACTION: to end-of-string instead.
+function stripActionsStreaming(text: string): string {
+  return text.replace(/ACTION:[\s\S]*$/, '').replace(/\n{3,}/g, '\n\n').trim();
 }
 
 /** Split a completed assistant response into prose text + ACTION blocks.
@@ -410,7 +416,7 @@ export function AgentWidget({ theme, events, onActionApplied }: Props) {
                           : styles[`msgAssistant_${theme}`],
                       ].join(' ')}
                     >
-                      {stripActions(msg.content)}
+                      {msg.streaming ? stripActionsStreaming(msg.content) : stripActions(msg.content)}
                       {msg.streaming && msg.content === '' && (
                         <span className={`${styles.streamDot} ${styles[`streamDot_${theme}`]}`} />
                       )}
