@@ -9,17 +9,13 @@ import { useAdaptiveTheme } from './hooks/useAdaptiveTheme';
 import { useDigest } from './hooks/useDigest';
 import type { CadenceEvent } from './types';
 import styles from './App.module.css';
-import { API_BASE } from './constants/api';
 
 export default function App() {
   const { session, beginSession, endSession } = useSession();
   const theme = useAdaptiveTheme();
   const { events, refetch: refetchEvents } = useDigest();
 
-  const syncAndRefetch = useCallback(async () => {
-    await fetch(`${API_BASE}/sync/google`).catch(() => {});
-    refetchEvents();
-  }, [refetchEvents]);
+  const syncAndRefetch = useCallback(() => { refetchEvents(); }, [refetchEvents]);
   const [calendarOpen, setCalendarOpen] = useState(true);
 
   const [bgPos,      setBgPos]      = useState({ x: 0, y: 0 });

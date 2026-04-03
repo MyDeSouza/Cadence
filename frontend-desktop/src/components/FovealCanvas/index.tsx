@@ -93,101 +93,59 @@ function fmtEventTime(event: CadenceEvent): string {
   return format(start, 'h:mmaaa');
 }
 
-// ── Size formatting ────────────────────────────────────────
-function formatBytes(bytes: number): string {
-  if (bytes < 1024)        return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-function fmtCreated(iso: string): string {
-  const d = new Date(iso);
-  return format(d, d.getFullYear() === new Date().getFullYear() ? 'd MMM' : 'd MMM yyyy');
-}
+const CARD_GRADIENTS: Record<DriveFileType, string> = {
+  slides: 'linear-gradient(180deg, rgba(255,166,0,0.16) 50.25%, rgba(31,15,0,0.61) 100%)',
+  doc:    'linear-gradient(180deg, rgba(7,65,151,0.31) 50.25%, rgba(33,46,64,0.61) 100%)',
+  sheet:  'linear-gradient(180deg, rgba(7,65,151,0.31) 50.25%, rgba(33,46,64,0.61) 100%)',
+  pdf:    'linear-gradient(180deg, rgba(7,65,151,0.31) 50.25%, rgba(33,46,64,0.61) 100%)',
+};
 
 // ── Drive file card ────────────────────────────────────────
-function DriveCard({ file, index, theme }: { file: DriveFile; index: number; theme: Theme }) {
-  const [expanded, setExpanded] = useState(false);
+function DriveCard({ file, index }: { file: DriveFile; index: number }) {
+  const col  = index % 2;
+  const row  = Math.floor(index / 2);
+  const top  = 260 + row * (201 + 24);
+  const left = 160 + col * (332 + 36);
 
-  const col  = index % 3;
-  const row  = Math.floor(index / 3);
-  const top  = 100 + row * 90;
-  const left = 40 + col * 240;
+  const gradient = CARD_GRADIENTS[file.type];
 
   return (
     <div
-      className={`${styles.card} ${styles[`card_${theme}`]} ${expanded ? styles.cardExpanded : ''}`}
+      className={styles.card}
       style={{ top, left, animationDelay: `${index * 80}ms` }}
-      onClick={() => setExpanded((v) => !v)}
     >
-      {/* ── Always-visible header row ── */}
+      {/* Background thumbnail */}
+      {file.thumbnailLink && (
+        <img src={file.thumbnailLink} alt="" className={styles.cardBg} />
+      )}
+      <div className={styles.cardOverlay} style={{ background: gradient }} />
+
+      {/* Top row: timestamp pill + type icon */}
       <div className={styles.cardHeader}>
-        <span className={`${styles.cardIcon} ${styles[`cardIcon_${theme}`]}`}>
+        <div className={styles.cardTimePill}>
+          {relativeTime(file.modified)}
+        </div>
+        <div className={styles.cardTypeIcon}>
           {FILE_ICONS[file.type]}
-        </span>
-        <span className={`${styles.cardTitle} ${styles[`cardTitle_${theme}`]}`}>
-          {file.title}
-        </span>
+        </div>
       </div>
 
-      <div className={styles.cardMeta}>
-        <span className={`${styles.cardModified} ${styles[`cardModified_${theme}`]}`}>
-          {relativeTime(file.modified)}
-        </span>
+      {/* Bottom row: title + open button */}
+      <div className={styles.cardFooter}>
+        <div className={styles.cardTitleBlock}>
+          <span className={styles.cardTitle}>{file.title}</span>
+        </div>
         <a
           href={file.url}
           target="_blank"
           rel="noopener noreferrer"
-          className={`${styles.cardOpen} ${styles[`cardOpen_${theme}`]}`}
+          className={styles.cardOpenBtn}
           onClick={(e) => e.stopPropagation()}
+          aria-label="Open file"
         >
-          → Open
+          →
         </a>
       </div>
-
-      {/* ── Expanded metadata dropdown ── */}
-      {expanded && (
-        <div
-          className={`${styles.cardDropdown} ${styles[`cardDropdown_${theme}`]}`}
-          onClick={(e) => e.stopPropagation()}
-        >
-          {file.thumbnailLink && (
-            <img
-              src={file.thumbnailLink}
-              alt=""
-              className={styles.cardThumb}
-            />
-          )}
-
-          {file.size != null && (
-            <div className={`${styles.cardDetail} ${styles[`cardDetail_${theme}`]}`}>
-              <span className={styles.cardDetailLabel}>Size</span>
-              <span>{formatBytes(file.size)}</span>
-            </div>
-          )}
-
-          {file.ownerName && (
-            <div className={`${styles.cardDetail} ${styles[`cardDetail_${theme}`]}`}>
-              <span className={styles.cardDetailLabel}>Owner</span>
-              <span>{file.ownerName}</span>
-            </div>
-          )}
-
-          {file.lastModifiedBy && (
-            <div className={`${styles.cardDetail} ${styles[`cardDetail_${theme}`]}`}>
-              <span className={styles.cardDetailLabel}>Modified by</span>
-              <span>{file.lastModifiedBy}</span>
-            </div>
-          )}
-
-          {file.createdTime && (
-            <div className={`${styles.cardDetail} ${styles[`cardDetail_${theme}`]}`}>
-              <span className={styles.cardDetailLabel}>Created</span>
-              <span>{fmtCreated(file.createdTime)}</span>
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 }
@@ -278,7 +236,7 @@ export function FovealCanvas({ theme }: Props) {
     <div className={styles.canvas}>
       {/* Drive file cards — top-left area */}
       {matchedFiles.map((file, i) => (
-        <DriveCard key={file.url} file={file} index={i} theme={theme} />
+        <DriveCard key={file.url} file={file} index={i} />
       ))}
 
       {/* Signal cards — right side, stacked vertically */}

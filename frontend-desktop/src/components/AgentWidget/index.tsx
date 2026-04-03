@@ -93,9 +93,9 @@ function getActiveFocusEvent(events: CadenceEvent[]): CadenceEvent | null {
 function MicIcon() {
   return (
     <svg width="14" height="18" viewBox="0 0 14 18" fill="none" aria-hidden="true">
-      <rect x="4" y="1" width="6" height="9" rx="3" stroke="white" strokeWidth="1.5" strokeOpacity="0.8" />
-      <path d="M1 8c0 3.314 2.686 6 6 6s6-2.686 6-6" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeOpacity="0.8" />
-      <line x1="7" y1="14" x2="7" y2="17" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeOpacity="0.8" />
+      <rect x="4" y="1" width="6" height="9" rx="3" stroke="#161717" strokeWidth="1.5" strokeOpacity="0.8" />
+      <path d="M1 8c0 3.314 2.686 6 6 6s6-2.686 6-6" stroke="#161717" strokeWidth="1.5" strokeLinecap="round" strokeOpacity="0.8" />
+      <line x1="7" y1="14" x2="7" y2="17" stroke="#161717" strokeWidth="1.5" strokeLinecap="round" strokeOpacity="0.8" />
     </svg>
   );
 }

@@ -55,9 +55,9 @@
 
 .title {
   font-family: 'Outfit', sans-serif;
-  font-size: 17px;
-  font-weight: 600;
-  letter-spacing: -0.3px;
+  font-size: 24px;
+  font-weight: 400;
+  line-height: 1.25;
   white-space: nowrap;
 }
 
@@ -66,34 +66,39 @@
 
 .timeRange {
   font-family: 'Outfit', sans-serif;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 400;
   white-space: nowrap;
+  text-align: right;
+  line-height: 1.25;
 }
 
-.timeRange_day  { color: rgba(0, 0, 0, 0.4); }
-.timeRange_night { color: rgba(255, 255, 255, 0.4); }
+.timeRange_day  { color: rgba(0, 0, 0, 0.6); }
+.timeRange_night { color: #FFFFFF; }
 
 .subtitle {
   font-family: 'Outfit', sans-serif;
   font-size: 12px;
-  font-weight: 300;
+  font-weight: 400;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   min-width: 0;
+  line-height: 1.25;
 }
 
-.subtitle_day  { color: rgba(0, 0, 0, 0.38); }
-.subtitle_night { color: rgba(255, 255, 255, 0.32); }
+.subtitle_day  { color: rgba(0, 0, 0, 0.5); }
+.subtitle_night { color: #FFFFFF; }
 
 .duration {
   font-family: 'Outfit', sans-serif;
   font-size: 12px;
-  font-weight: 300;
+  font-weight: 400;
   white-space: nowrap;
   flex-shrink: 0;
+  text-align: right;
+  line-height: 1.25;
 }
 
-.duration_day  { color: rgba(0, 0, 0, 0.28); }
-.duration_night { color: rgba(255, 255, 255, 0.22); }
+.duration_day  { color: rgba(0, 0, 0, 0.5); }
+.duration_night { color: #FFFFFF; }
