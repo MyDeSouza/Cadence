@@ -47,5 +47,11 @@ export function useCardPositions() {
     [positions],
   );
 
-  return { getPos, moveCard, dropCard };
+  /** Clears all stored positions and removes the localStorage entry */
+  const clearPositions = useCallback(() => {
+    try { localStorage.removeItem(STORAGE_KEY); } catch { /* quota */ }
+    setPositions({});
+  }, []);
+
+  return { getPos, moveCard, dropCard, clearPositions };
 }

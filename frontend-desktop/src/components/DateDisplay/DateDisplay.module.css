@@ -60,6 +60,24 @@
   display: block;
 }
 
+/* Recenter button */
+.recenterBtn {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.10);
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s ease;
+}
+
+.recenterBtn:hover  { background: rgba(255, 255, 255, 0.20); }
+.recenterBtn:active { background: rgba(255, 255, 255, 0.28); }
+
 /* Date widget */
 .dateWidget {
   display: flex;

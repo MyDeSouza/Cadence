@@ -7,6 +7,7 @@ import { DateDisplay } from './components/DateDisplay';
 import { useSession } from './hooks/useSession';
 import { useAdaptiveTheme } from './hooks/useAdaptiveTheme';
 import { useDigest } from './hooks/useDigest';
+import { useCardPositions } from './hooks/useCardPositions';
 import type { CadenceEvent } from './types';
 import styles from './App.module.css';
 
@@ -14,6 +15,7 @@ export default function App() {
   const { session, beginSession, endSession } = useSession();
   const theme = useAdaptiveTheme();
   const { events, refetch: refetchEvents } = useDigest();
+  const { getPos, moveCard, dropCard, clearPositions } = useCardPositions();
 
   const syncAndRefetch = useCallback(() => { refetchEvents(); }, [refetchEvents]);
   const [calendarOpen, setCalendarOpen] = useState(true);
@@ -24,6 +26,11 @@ export default function App() {
 
   const handleBeginSession = (event: CadenceEvent) => { beginSession(event); };
   const handleEndSession   = () => { endSession(); setBgPos({ x: 0, y: 0 }); };
+
+  const handleRecenter = useCallback(() => {
+    setBgPos({ x: 0, y: 0 });
+    clearPositions();
+  }, [clearPositions]);
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.target !== e.currentTarget) return;
@@ -50,25 +57,18 @@ export default function App() {
       {/* ── Fixed sky backdrop (day only) ───────────────────── */}
       {theme === 'day' && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none' }}>
-          {/* Sky gradient */}
           <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, #485e80 0%, #cadaf6 100%)' }} />
 
-          {/* Cloud blobs — left cluster */}
           <div className={`${styles.cloud} ${styles.cloud1}`} style={{ width: 430, height: 430, left: -5,   top: 20  }} />
           <div className={`${styles.cloud} ${styles.cloud2}`} style={{ width: 340, height: 250, left: 80,   top: 80  }} />
           <div className={`${styles.cloud} ${styles.cloud3}`} style={{ width: 340, height: 220, left: 80,   top: 200 }} />
-
-          {/* Cloud blobs — mid-left cluster */}
           <div className={`${styles.cloud} ${styles.cloud4}`} style={{ width: 430, height: 430, left: 175,  top: 60  }} />
           <div className={`${styles.cloud} ${styles.cloud5}`} style={{ width: 280, height: 240, left: 430,  top: 110 }} />
           <div className={`${styles.cloud} ${styles.cloud6}`} style={{ width: 280, height: 240, left: 430,  top: 260 }} />
-
-          {/* Cloud blobs — mid-right cluster */}
           <div className={`${styles.cloud} ${styles.cloud7}`} style={{ width: 430, height: 430, left: 794,  top: 15  }} />
           <div className={`${styles.cloud} ${styles.cloud8}`} style={{ width: 280, height: 240, left: 1058, top: 55  }} />
           <div className={`${styles.cloud} ${styles.cloud9}`} style={{ width: 280, height: 240, left: 1058, top: 214 }} />
 
-          {/* Vignette */}
           <div style={{ position: 'absolute', inset: 0, boxShadow: 'inset 0 0 69px 12px rgba(0,0,0,0.08)' }} />
         </div>
       )}
@@ -86,7 +86,11 @@ export default function App() {
         onMouseLeave={handleMouseUp}
       >
         <EventStrip theme={theme} />
-        <DateDisplay theme={theme} onToggle={() => setCalendarOpen((v) => !v)} />
+        <DateDisplay
+          theme={theme}
+          onToggle={() => setCalendarOpen((v) => !v)}
+          onRecenter={handleRecenter}
+        />
         {calendarOpen && (
           <CalendarWidget
             theme={theme}
@@ -95,7 +99,15 @@ export default function App() {
             onBeginSession={handleBeginSession}
           />
         )}
-        <FovealCanvas session={session} onEndSession={handleEndSession} theme={theme} canvasOffset={bgPos} />
+        <FovealCanvas
+          session={session}
+          onEndSession={handleEndSession}
+          theme={theme}
+          canvasOffset={bgPos}
+          getPos={getPos}
+          moveCard={moveCard}
+          dropCard={dropCard}
+        />
         <AgentWidget theme={theme} events={events} onActionApplied={syncAndRefetch} />
       </div>
     </>

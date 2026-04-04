@@ -5,7 +5,7 @@ import type { Theme } from '../../hooks/useAdaptiveTheme';
 import type { DriveFile, DriveFileType } from '../../hooks/useDriveFiles';
 import { useDriveFiles } from '../../hooks/useDriveFiles';
 import { useDigest } from '../../hooks/useDigest';
-import { useCardPositions, type Pos } from '../../hooks/useCardPositions';
+import type { Pos } from '../../hooks/useCardPositions';
 import { API_BASE } from '../../constants/api';
 import styles from './FovealCanvas.module.css';
 
@@ -14,6 +14,9 @@ interface Props {
   onEndSession: () => void;
   theme:        Theme;
   canvasOffset: Pos;
+  getPos:       (url: string, index: number) => Pos;
+  moveCard:     (url: string, pos: Pos) => void;
+  dropCard:     (url: string, pos: Pos) => void;
 }
 
 // ── File type SVG icons ────────────────────────────────────
@@ -280,10 +283,9 @@ function SignalCard({
 }
 
 // ── FovealCanvas ───────────────────────────────────────────
-export function FovealCanvas({ theme, canvasOffset }: Props) {
+export function FovealCanvas({ theme, canvasOffset, getPos, moveCard, dropCard }: Props) {
   const { events }          = useDigest();
   const { files: allFiles } = useDriveFiles();
-  const { getPos, moveCard, dropCard } = useCardPositions();
 
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
   const dismiss = (id: string) => setDismissed((prev) => new Set(prev).add(id));
