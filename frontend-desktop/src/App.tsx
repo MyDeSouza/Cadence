@@ -95,7 +95,7 @@ export default function App() {
             onBeginSession={handleBeginSession}
           />
         )}
-        <FovealCanvas session={session} onEndSession={handleEndSession} theme={theme} />
+        <FovealCanvas session={session} onEndSession={handleEndSession} theme={theme} canvasOffset={bgPos} />
         <AgentWidget theme={theme} events={events} onActionApplied={syncAndRefetch} />
       </div>
     </>

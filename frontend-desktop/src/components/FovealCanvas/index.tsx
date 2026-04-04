@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { format, parseISO } from 'date-fns';
 import type { ActiveSession, CadenceEvent } from '../../types';
 import type { Theme } from '../../hooks/useAdaptiveTheme';
 import type { DriveFile, DriveFileType } from '../../hooks/useDriveFiles';
 import { useDriveFiles } from '../../hooks/useDriveFiles';
 import { useDigest } from '../../hooks/useDigest';
+import { useCardPositions, type Pos } from '../../hooks/useCardPositions';
 import { API_BASE } from '../../constants/api';
 import styles from './FovealCanvas.module.css';
 
@@ -12,6 +13,7 @@ interface Props {
   session:      ActiveSession | null;
   onEndSession: () => void;
   theme:        Theme;
+  canvasOffset: Pos;
 }
 
 // ── File type SVG icons ────────────────────────────────────
@@ -108,24 +110,84 @@ const ARROW_COLORS: Record<DriveFileType, string> = {
 };
 
 // ── Drive file card ────────────────────────────────────────
-function DriveCard({ file, index }: { file: DriveFile; index: number }) {
-  const col  = index % 2;
-  const row  = Math.floor(index / 2);
-  const top  = 260 + row * (201 + 24);
-  const left = 160 + col * (332 + 36);
+function DriveCard({
+  file, index, canvasOffset, pos, onDrag, onDragEnd,
+}: {
+  file:         DriveFile;
+  index:        number;
+  canvasOffset: Pos;
+  pos:          Pos;
+  onDrag:       (url: string, pos: Pos) => void;
+  onDragEnd:    (url: string, pos: Pos) => void;
+}) {
+  const dragRef = useRef<{
+    startMX: number; startMY: number;
+    startCX: number; startCY: number;
+    onMove:  (e: MouseEvent) => void;
+    onUp:    (e: MouseEvent) => void;
+  } | null>(null);
 
-  const gradient = CARD_GRADIENTS[file.type];
+  // Cleanup if the card unmounts mid-drag
+  useEffect(() => {
+    return () => {
+      if (dragRef.current) {
+        window.removeEventListener('mousemove', dragRef.current.onMove);
+        window.removeEventListener('mouseup',   dragRef.current.onUp);
+        document.body.style.cursor    = '';
+        document.body.style.userSelect = '';
+      }
+    };
+  }, []);
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    // Let clicks on the open-link button pass through normally
+    if ((e.target as HTMLElement).closest('a')) return;
+    e.stopPropagation();
+
+    const startMX = e.clientX, startMY = e.clientY;
+    const startCX = pos.x,    startCY = pos.y;
+
+    const onMove = (ev: MouseEvent) => {
+      onDrag(file.url, {
+        x: startCX + (ev.clientX - startMX),
+        y: startCY + (ev.clientY - startMY),
+      });
+    };
+
+    const onUp = (ev: MouseEvent) => {
+      onDragEnd(file.url, {
+        x: startCX + (ev.clientX - startMX),
+        y: startCY + (ev.clientY - startMY),
+      });
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup',   onUp);
+      dragRef.current = null;
+      document.body.style.cursor    = '';
+      document.body.style.userSelect = '';
+    };
+
+    dragRef.current = { startMX, startMY, startCX, startCY, onMove, onUp };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup',   onUp);
+    document.body.style.cursor    = 'grabbing';
+    document.body.style.userSelect = 'none';
+  };
 
   return (
     <div
       className={styles.card}
-      style={{ top, left, animationDelay: `${index * 80}ms` }}
+      style={{
+        top:            canvasOffset.y + pos.y,
+        left:           canvasOffset.x + pos.x,
+        animationDelay: `${index * 80}ms`,
+      }}
+      onMouseDown={handleMouseDown}
     >
       {/* Background thumbnail */}
       {file.thumbnailLink && (
         <img src={file.thumbnailLink} alt="" className={styles.cardBg} />
       )}
-      <div className={styles.cardOverlay} style={{ background: gradient }} />
+      <div className={styles.cardOverlay} style={{ background: CARD_GRADIENTS[file.type] }} />
 
       {/* Top row: timestamp + type icon */}
       <div className={styles.cardHeader}>
@@ -152,7 +214,13 @@ function DriveCard({ file, index }: { file: DriveFile; index: number }) {
           aria-label="Open file"
         >
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <path d="M3 13L13 3M13 3H6M13 3V10" stroke={ARROW_COLORS[file.type]} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <path
+              d="M3 13L13 3M13 3H6M13 3V10"
+              stroke={ARROW_COLORS[file.type]}
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
           </svg>
         </a>
       </div>
@@ -212,44 +280,45 @@ function SignalCard({
 }
 
 // ── FovealCanvas ───────────────────────────────────────────
-export function FovealCanvas({ theme }: Props) {
+export function FovealCanvas({ theme, canvasOffset }: Props) {
   const { events }          = useDigest();
   const { files: allFiles } = useDriveFiles();
+  const { getPos, moveCard, dropCard } = useCardPositions();
 
-  // Local state so dismissed cards disappear immediately
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
   const dismiss = (id: string) => setDismissed((prev) => new Set(prev).add(id));
 
-  const focusEvent   = getFocusEvent(events);
-  // Show files matched to the active event, files matched to any event,
-  // and unmatched files ("none") — up to 4 total.
+  const focusEvent  = getFocusEvent(events);
   const matchedFiles = allFiles
     .sort((a, b) => {
-      // Prioritise files matched to the current focus event
       const aMatch = focusEvent && a.eventId === focusEvent.id ? 0 : a.eventId && a.eventId !== 'none' ? 1 : 2;
       const bMatch = focusEvent && b.eventId === focusEvent.id ? 0 : b.eventId && b.eventId !== 'none' ? 1 : 2;
       return aMatch - bMatch;
     })
     .slice(0, 4);
 
-  // Show up to 4 upcoming/active surfaced signals (Cowan's limit)
-  const now           = new Date();
-  const signalEvents  = events
+  const now          = new Date();
+  const signalEvents = events
     .filter((e) => {
       if (dismissed.has(e.id)) return false;
       const end = e.deadline ? new Date(e.deadline) : new Date(new Date(e.timestamp).getTime() + 3_600_000);
-      return end >= now; // active or upcoming
+      return end >= now;
     })
     .slice(0, 4);
 
   return (
     <div className={styles.canvas}>
-      {/* Drive file cards — top-left area */}
       {matchedFiles.map((file, i) => (
-        <DriveCard key={file.url} file={file} index={i} />
+        <DriveCard
+          key={file.url}
+          file={file}
+          index={i}
+          canvasOffset={canvasOffset}
+          pos={getPos(file.url, i)}
+          onDrag={moveCard}
+          onDragEnd={dropCard}
+        />
       ))}
-
-      {/* Signal cards — right side, stacked vertically */}
       {signalEvents.map((event, i) => (
         <SignalCard
           key={event.id}
