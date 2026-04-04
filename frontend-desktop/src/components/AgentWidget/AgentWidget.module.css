@@ -13,9 +13,12 @@
 /* ── Collapsed pill ─────────────────────────────────────── */
 .collapsedRow {
   width: 245px;
+  height: 52px;
   padding: 8px;
   border-radius: 20px;
   background: rgba(0, 0, 0, 0.16);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   box-shadow: 0 4px 18.1px 0 rgba(0, 0, 0, 0.12);
   display: flex;
   align-items: center;
@@ -25,7 +28,7 @@
 .askPill {
   padding: 8px 12px;
   font-family: 'Outfit', sans-serif;
-  font-size: 12px;
+  font-size: 16px;
   font-weight: 400;
   color: rgba(255, 255, 255, 0.64);
   background: transparent;

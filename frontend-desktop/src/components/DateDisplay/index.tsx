@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import type { Theme } from '../../hooks/useAdaptiveTheme';
+import logoSrc from '../../assets/Logo.svg';
 import styles from './DateDisplay.module.css';
 
 interface Props {
@@ -17,20 +18,38 @@ export function DateDisplay({ theme, onToggle }: Props) {
   }, []);
 
   const monthText = format(now, 'MMM') + '.';
-  const dayText = format(now, 'd');
+  const dayText   = format(now, 'd');
 
   return (
     <button
-      className={styles.wrapper}
+      className={styles.notch}
       onClick={onToggle}
       aria-label="Toggle calendar"
     >
-      <span className={`${styles.month} ${styles[`month_${theme}`]}`}>
-        {monthText}
-      </span>
-      <span className={`${styles.day} ${styles[`day_${theme}`]}`}>
-        {dayText}
-      </span>
+      {/* Backing strip — seals the left screen edge */}
+      <div className={styles.backingStrip} />
+
+      {/* Top cap — concave transition */}
+      <div className={`${styles.cap} ${styles.capTop} ${styles[`capTop_${theme}`]}`} />
+
+      {/* Body pill */}
+      <div className={styles.body}>
+        {/* App icon */}
+        <div className={styles.iconWrap}>
+          <img src={logoSrc} alt="Cadence" className={styles.iconImg} />
+        </div>
+
+        {/* Date widget */}
+        <div className={styles.dateWidget}>
+          <span className={styles.month}>{monthText}</span>
+          <div className={styles.dayPill}>
+            <span className={styles.day}>{dayText}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom cap */}
+      <div className={`${styles.cap} ${styles.capBottom} ${styles[`capBottom_${theme}`]}`} />
     </button>
   );
 }

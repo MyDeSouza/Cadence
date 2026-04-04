@@ -100,6 +100,13 @@ const CARD_GRADIENTS: Record<DriveFileType, string> = {
   pdf:    'linear-gradient(180deg, rgba(7,65,151,0.31) 50.25%, rgba(33,46,64,0.61) 100%)',
 };
 
+const ARROW_COLORS: Record<DriveFileType, string> = {
+  slides: '#f59e0b',
+  doc:    '#3b82f6',
+  sheet:  '#3b82f6',
+  pdf:    '#3b82f6',
+};
+
 // ── Drive file card ────────────────────────────────────────
 function DriveCard({ file, index }: { file: DriveFile; index: number }) {
   const col  = index % 2;
@@ -120,9 +127,10 @@ function DriveCard({ file, index }: { file: DriveFile; index: number }) {
       )}
       <div className={styles.cardOverlay} style={{ background: gradient }} />
 
-      {/* Top row: timestamp pill + type icon */}
+      {/* Top row: timestamp + type icon */}
       <div className={styles.cardHeader}>
         <div className={styles.cardTimePill}>
+          <div className={styles.clockIcon} />
           {relativeTime(file.modified)}
         </div>
         <div className={styles.cardTypeIcon}>
@@ -143,7 +151,9 @@ function DriveCard({ file, index }: { file: DriveFile; index: number }) {
           onClick={(e) => e.stopPropagation()}
           aria-label="Open file"
         >
-          →
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M3 13L13 3M13 3H6M13 3V10" stroke={ARROW_COLORS[file.type]} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
         </a>
       </div>
     </div>

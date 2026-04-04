@@ -69,6 +69,20 @@ export default function App() {
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
     >
+      {/* Cloud blobs — day theme only */}
+      {theme === 'day' && <>
+        <div style={{ position:'absolute', width:430, height:430, left:-5,   top:20,  borderRadius:'50%', background:'radial-gradient(circle, rgba(180,200,230,0.55) 0%, rgba(180,200,230,0) 70%)', filter:'blur(28px)', pointerEvents:'none' }} />
+        <div style={{ position:'absolute', width:340, height:250, left:80,   top:80,  borderRadius:'50%', background:'radial-gradient(circle, rgba(180,200,230,0.55) 0%, rgba(180,200,230,0) 70%)', filter:'blur(28px)', pointerEvents:'none' }} />
+        <div style={{ position:'absolute', width:340, height:220, left:80,   top:200, borderRadius:'50%', background:'radial-gradient(circle, rgba(180,200,230,0.55) 0%, rgba(180,200,230,0) 70%)', filter:'blur(28px)', pointerEvents:'none' }} />
+        <div style={{ position:'absolute', width:430, height:430, left:175,  top:60,  borderRadius:'50%', background:'radial-gradient(circle, rgba(180,200,230,0.55) 0%, rgba(180,200,230,0) 70%)', filter:'blur(28px)', pointerEvents:'none' }} />
+        <div style={{ position:'absolute', width:280, height:240, left:430,  top:110, borderRadius:'50%', background:'radial-gradient(circle, rgba(180,200,230,0.55) 0%, rgba(180,200,230,0) 70%)', filter:'blur(28px)', pointerEvents:'none' }} />
+        <div style={{ position:'absolute', width:280, height:240, left:430,  top:260, borderRadius:'50%', background:'radial-gradient(circle, rgba(180,200,230,0.55) 0%, rgba(180,200,230,0) 70%)', filter:'blur(28px)', pointerEvents:'none' }} />
+        <div style={{ position:'absolute', width:430, height:430, left:794,  top:15,  borderRadius:'50%', background:'radial-gradient(circle, rgba(180,200,230,0.55) 0%, rgba(180,200,230,0) 70%)', filter:'blur(28px)', pointerEvents:'none' }} />
+        <div style={{ position:'absolute', width:280, height:240, left:1058, top:55,  borderRadius:'50%', background:'radial-gradient(circle, rgba(180,200,230,0.55) 0%, rgba(180,200,230,0) 70%)', filter:'blur(28px)', pointerEvents:'none' }} />
+        <div style={{ position:'absolute', width:280, height:240, left:1058, top:214, borderRadius:'50%', background:'radial-gradient(circle, rgba(180,200,230,0.55) 0%, rgba(180,200,230,0) 70%)', filter:'blur(28px)', pointerEvents:'none' }} />
+        {/* Vignette */}
+        <div style={{ position:'absolute', inset:0, pointerEvents:'none', boxShadow:'inset 0 0 69px 12px rgba(0,0,0,0.08)' }} />
+      </>}
       <EventStrip theme={theme} onToggle={() => setCalendarOpen((v) => !v)} />
       <DateDisplay theme={theme} onToggle={() => setCalendarOpen((v) => !v)} />
       {calendarOpen && (

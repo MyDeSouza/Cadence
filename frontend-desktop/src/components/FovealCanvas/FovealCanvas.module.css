@@ -55,14 +55,23 @@
 }
 
 .cardTimePill {
-  background: rgba(0, 0, 0, 0.16);
-  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
   padding: 8px 12px;
   color: #fff;
   font-family: 'Outfit', sans-serif;
   font-size: 12px;
   font-weight: 400;
   line-height: 1.25;
+}
+
+.clockIcon {
+  width: 11px;
+  height: 11px;
+  border: 1.5px solid white;
+  border-radius: 50%;
+  flex-shrink: 0;
 }
 
 .cardTypeIcon {
@@ -105,16 +114,14 @@
 }
 
 .cardOpenBtn {
-  width: 40px;
-  height: 40px;
+  width: 46px;
+  height: 46px;
   border-radius: 12px;
   background: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
   text-decoration: none;
-  color: #161717;
-  font-size: 18px;
   flex-shrink: 0;
   transition: opacity 0.15s ease;
 }
