@@ -22,24 +22,12 @@ export default function App() {
   const [isDragging, setIsDragging] = useState(false);
   const dragRef = useRef<{ startX: number; startY: number; originX: number; originY: number } | null>(null);
 
-
-  const handleBeginSession = (event: CadenceEvent) => {
-    beginSession(event);
-  };
-
-  const handleEndSession = () => {
-    endSession();
-    setBgPos({ x: 0, y: 0 });
-  };
+  const handleBeginSession = (event: CadenceEvent) => { beginSession(event); };
+  const handleEndSession   = () => { endSession(); setBgPos({ x: 0, y: 0 }); };
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.target !== e.currentTarget) return;
-    dragRef.current = {
-      startX:  e.clientX,
-      startY:  e.clientY,
-      originX: bgPos.x,
-      originY: bgPos.y,
-    };
+    dragRef.current = { startX: e.clientX, startY: e.clientY, originX: bgPos.x, originY: bgPos.y };
     setIsDragging(true);
   };
 
@@ -58,43 +46,58 @@ export default function App() {
   };
 
   return (
-    <div
-      className={`${styles.workspace} ${styles[`workspace_${theme}`]}`}
-      style={{
-        backgroundPosition: `${bgPos.x}px ${bgPos.y}px`,
-        cursor: isDragging ? 'grabbing' : 'grab',
-      }}
-      onMouseDown={handleMouseDown}
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseUp}
-    >
-      {/* Cloud blobs — day theme only */}
-      {theme === 'day' && <>
-        <div style={{ position:'absolute', width:430, height:430, left:-5,   top:20,  borderRadius:'50%', background:'radial-gradient(circle, rgba(180,200,230,0.55) 0%, rgba(180,200,230,0) 70%)', filter:'blur(28px)', pointerEvents:'none' }} />
-        <div style={{ position:'absolute', width:340, height:250, left:80,   top:80,  borderRadius:'50%', background:'radial-gradient(circle, rgba(180,200,230,0.55) 0%, rgba(180,200,230,0) 70%)', filter:'blur(28px)', pointerEvents:'none' }} />
-        <div style={{ position:'absolute', width:340, height:220, left:80,   top:200, borderRadius:'50%', background:'radial-gradient(circle, rgba(180,200,230,0.55) 0%, rgba(180,200,230,0) 70%)', filter:'blur(28px)', pointerEvents:'none' }} />
-        <div style={{ position:'absolute', width:430, height:430, left:175,  top:60,  borderRadius:'50%', background:'radial-gradient(circle, rgba(180,200,230,0.55) 0%, rgba(180,200,230,0) 70%)', filter:'blur(28px)', pointerEvents:'none' }} />
-        <div style={{ position:'absolute', width:280, height:240, left:430,  top:110, borderRadius:'50%', background:'radial-gradient(circle, rgba(180,200,230,0.55) 0%, rgba(180,200,230,0) 70%)', filter:'blur(28px)', pointerEvents:'none' }} />
-        <div style={{ position:'absolute', width:280, height:240, left:430,  top:260, borderRadius:'50%', background:'radial-gradient(circle, rgba(180,200,230,0.55) 0%, rgba(180,200,230,0) 70%)', filter:'blur(28px)', pointerEvents:'none' }} />
-        <div style={{ position:'absolute', width:430, height:430, left:794,  top:15,  borderRadius:'50%', background:'radial-gradient(circle, rgba(180,200,230,0.55) 0%, rgba(180,200,230,0) 70%)', filter:'blur(28px)', pointerEvents:'none' }} />
-        <div style={{ position:'absolute', width:280, height:240, left:1058, top:55,  borderRadius:'50%', background:'radial-gradient(circle, rgba(180,200,230,0.55) 0%, rgba(180,200,230,0) 70%)', filter:'blur(28px)', pointerEvents:'none' }} />
-        <div style={{ position:'absolute', width:280, height:240, left:1058, top:214, borderRadius:'50%', background:'radial-gradient(circle, rgba(180,200,230,0.55) 0%, rgba(180,200,230,0) 70%)', filter:'blur(28px)', pointerEvents:'none' }} />
-        {/* Vignette */}
-        <div style={{ position:'absolute', inset:0, pointerEvents:'none', boxShadow:'inset 0 0 69px 12px rgba(0,0,0,0.08)' }} />
-      </>}
-      <EventStrip theme={theme} onToggle={() => setCalendarOpen((v) => !v)} />
-      <DateDisplay theme={theme} onToggle={() => setCalendarOpen((v) => !v)} />
-      {calendarOpen && (
-        <CalendarWidget
-          theme={theme}
-          events={events}
-          onClose={() => setCalendarOpen(false)}
-          onBeginSession={handleBeginSession}
-        />
+    <>
+      {/* ── Fixed sky backdrop (day only) ───────────────────── */}
+      {theme === 'day' && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none' }}>
+          {/* Sky gradient */}
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, #485e80 0%, #cadaf6 100%)' }} />
+
+          {/* Cloud blobs — left cluster */}
+          <div className={`${styles.cloud} ${styles.cloud1}`} style={{ width: 430, height: 430, left: -5,   top: 20  }} />
+          <div className={`${styles.cloud} ${styles.cloud2}`} style={{ width: 340, height: 250, left: 80,   top: 80  }} />
+          <div className={`${styles.cloud} ${styles.cloud3}`} style={{ width: 340, height: 220, left: 80,   top: 200 }} />
+
+          {/* Cloud blobs — mid-left cluster */}
+          <div className={`${styles.cloud} ${styles.cloud4}`} style={{ width: 430, height: 430, left: 175,  top: 60  }} />
+          <div className={`${styles.cloud} ${styles.cloud5}`} style={{ width: 280, height: 240, left: 430,  top: 110 }} />
+          <div className={`${styles.cloud} ${styles.cloud6}`} style={{ width: 280, height: 240, left: 430,  top: 260 }} />
+
+          {/* Cloud blobs — mid-right cluster */}
+          <div className={`${styles.cloud} ${styles.cloud7}`} style={{ width: 430, height: 430, left: 794,  top: 15  }} />
+          <div className={`${styles.cloud} ${styles.cloud8}`} style={{ width: 280, height: 240, left: 1058, top: 55  }} />
+          <div className={`${styles.cloud} ${styles.cloud9}`} style={{ width: 280, height: 240, left: 1058, top: 214 }} />
+
+          {/* Vignette */}
+          <div style={{ position: 'absolute', inset: 0, boxShadow: 'inset 0 0 69px 12px rgba(0,0,0,0.08)' }} />
+        </div>
       )}
-      <FovealCanvas session={session} onEndSession={handleEndSession} theme={theme} />
-      <AgentWidget theme={theme} events={events} onActionApplied={syncAndRefetch} />
-    </div>
+
+      {/* ── Draggable workspace (dot-grid canvas) ───────────── */}
+      <div
+        className={`${styles.workspace} ${styles[`workspace_${theme}`]}`}
+        style={{
+          backgroundPosition: `${bgPos.x}px ${bgPos.y}px`,
+          cursor: isDragging ? 'grabbing' : 'grab',
+        }}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+      >
+        <EventStrip theme={theme} />
+        <DateDisplay theme={theme} onToggle={() => setCalendarOpen((v) => !v)} />
+        {calendarOpen && (
+          <CalendarWidget
+            theme={theme}
+            events={events}
+            onClose={() => setCalendarOpen(false)}
+            onBeginSession={handleBeginSession}
+          />
+        )}
+        <FovealCanvas session={session} onEndSession={handleEndSession} theme={theme} />
+        <AgentWidget theme={theme} events={events} onActionApplied={syncAndRefetch} />
+      </div>
+    </>
   );
 }

@@ -1,3 +1,4 @@
+/* ── Workspace ───────────────────────────────────────────── */
 .workspace {
   position: relative;
   width: 100%;
@@ -6,11 +7,10 @@
   overflow: hidden;
 }
 
+/* Day: dot grid only — sky gradient lives in a separate fixed layer */
 .workspace_day {
-  background:
-    radial-gradient(circle, rgba(255,255,255,0.18) 1px, transparent 1px),
-    linear-gradient(to bottom, #485e80 0%, #cadaf6 100%);
-  background-size: 28px 28px, 100% 100%;
+  background-image: radial-gradient(circle, rgba(255,255,255,0.18) 1px, transparent 1px);
+  background-size: 28px 28px;
 }
 
 .workspace_night {
@@ -18,3 +18,50 @@
   background-image: radial-gradient(circle, rgba(234,238,242,0.12) 1.5px, transparent 1.5px);
   background-size: 28px 28px;
 }
+
+/* ── Cloud blobs (children of fixed sky wrapper) ──────────── */
+.cloud {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(180,200,230,0.55) 0%, rgba(180,200,230,0) 70%);
+  filter: blur(28px);
+  pointer-events: none;
+  will-change: transform;
+}
+
+/* Drift keyframes — 6 unique directions, low amplitude */
+@keyframes driftA {
+  from { transform: translate(0,     0);     }
+  to   { transform: translate(22px,  -16px); }
+}
+@keyframes driftB {
+  from { transform: translate(0,     0);     }
+  to   { transform: translate(-18px, -20px); }
+}
+@keyframes driftC {
+  from { transform: translate(0,     0);    }
+  to   { transform: translate(16px,  24px); }
+}
+@keyframes driftD {
+  from { transform: translate(0,     0);    }
+  to   { transform: translate(-24px, 14px); }
+}
+@keyframes driftE {
+  from { transform: translate(0,     0);    }
+  to   { transform: translate(20px,  18px); }
+}
+@keyframes driftF {
+  from { transform: translate(0,     0);     }
+  to   { transform: translate(-14px, -22px); }
+}
+
+/* Each blob gets a unique timing + direction assignment */
+.cloud1 { animation: driftA 45s ease-in-out infinite alternate; }
+.cloud2 { animation: driftB 52s ease-in-out infinite alternate; }
+.cloud3 { animation: driftC 38s ease-in-out infinite alternate; }
+.cloud4 { animation: driftD 57s ease-in-out infinite alternate; }
+.cloud5 { animation: driftE 44s ease-in-out infinite alternate; }
+.cloud6 { animation: driftF 61s ease-in-out infinite alternate; }
+.cloud7 { animation: driftA 49s ease-in-out infinite alternate-reverse; }
+.cloud8 { animation: driftC 36s ease-in-out infinite alternate; }
+.cloud9 { animation: driftE 54s ease-in-out infinite alternate-reverse; }

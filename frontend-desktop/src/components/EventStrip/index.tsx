@@ -5,19 +5,6 @@ import type { Theme } from '../../hooks/useAdaptiveTheme';
 import type { CadenceEvent } from '../../types';
 import styles from './EventStrip.module.css';
 
-function PersonIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-      <circle cx="10" cy="7" r="3.5" stroke="white" strokeWidth="1.5" />
-      <path
-        d="M3 17c0-3.866 3.134-7 7-7s7 3.134 7 7"
-        stroke="white"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
 
 function isActive(event: CadenceEvent, now: Date): boolean {
   const start = new Date(event.timestamp);
@@ -55,10 +42,9 @@ function fmtDuration(event: CadenceEvent): string {
 
 interface Props {
   theme: Theme;
-  onToggle: () => void;
 }
 
-export function EventStrip({ theme, onToggle }: Props) {
+export function EventStrip({ theme }: Props) {
   const [now, setNow] = useState(() => new Date());
   const { events } = useDigest();
 
@@ -73,14 +59,6 @@ export function EventStrip({ theme, onToggle }: Props) {
 
   return (
     <div className={styles.strip}>
-      <button
-        className={`${styles.mark} ${styles[`mark_${theme}`]}`}
-        onClick={onToggle}
-        aria-label="Toggle calendar"
-      >
-        <PersonIcon />
-      </button>
-
       {event && (
         <div className={styles.info}>
           <div className={styles.row1}>
