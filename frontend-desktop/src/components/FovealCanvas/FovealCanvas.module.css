@@ -232,3 +232,83 @@
 
 .doneBtn_day  { background: rgba(0, 0, 0, 0.07); color: rgba(0, 0, 0, 0.55); }
 .doneBtn_night { background: rgba(255, 255, 255, 0.1); color: rgba(255, 255, 255, 0.6); }
+
+/* ── Figma card ─────────────────────────────────────────── */
+.figmaImgWrap {
+  min-height: 160px;
+  background: #1a1a2e;
+}
+
+.figmaFallback {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, #1e1040 0%, #4b2f88 50%, #7c3aed 100%);
+}
+
+.figmaBadge {
+  background: #fff !important;
+  padding: 4px !important;
+  width: 28px !important;
+  height: 28px !important;
+}
+
+/* ── Notion card ─────────────────────────────────────────── */
+.notionImgWrap {
+  min-height: 160px;
+  background: #191919;
+}
+
+.notionFallback {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(160deg, #191919 0%, #2d2d2d 100%);
+}
+
+.notionBadge {
+  background: #fff !important;
+  width: 28px !important;
+  height: 28px !important;
+  padding: 4px !important;
+}
+
+.notionIcon {
+  font-size: 14px;
+  line-height: 1;
+}
+
+/* ── YouTube card ────────────────────────────────────────── */
+.youtubeImgWrap {
+  min-height: 160px;
+  background: #0f0f0f;
+}
+
+.youtubeFallback {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, #1a0000 0%, #3d0000 100%);
+}
+
+.youtubeBadge {
+  background: transparent !important;
+  border: none !important;
+  width: auto !important;
+  padding: 0 !important;
+}
+
+/* ── Gmail signal card ───────────────────────────────────── */
+.signalGmail {
+  border-left: 3px solid #f59e0b !important;
+}
+
+.gmailDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #f59e0b;
+  flex-shrink: 0;
+}
+
+.doneBtnGmail {
+  font-size: 18px !important;
+  line-height: 1 !important;
+}
