@@ -186,46 +186,48 @@ function DriveCard({
       }}
       onMouseDown={handleMouseDown}
     >
-      {/* Background thumbnail */}
-      {file.thumbnailLink && (
-        <img src={file.thumbnailLink} alt="" className={styles.cardBg} />
-      )}
-      <div className={styles.cardOverlay} style={{ background: CARD_GRADIENTS[file.type] }} />
+      <div className={styles.cardImgWrap}>
+        {/* Background thumbnail */}
+        {file.thumbnailLink && (
+          <img src={file.thumbnailLink} alt="" className={styles.cardBg} />
+        )}
+        <div className={styles.cardOverlay} style={{ background: CARD_GRADIENTS[file.type] }} />
 
-      {/* Top row: timestamp + type icon */}
-      <div className={styles.cardHeader}>
-        <div className={styles.cardTimePill}>
-          <div className={styles.clockIcon} />
-          {relativeTime(file.modified)}
+        {/* Top row: timestamp + type icon */}
+        <div className={styles.cardHeader}>
+          <div className={styles.cardTimePill}>
+            <div className={styles.clockIcon} />
+            {relativeTime(file.modified)}
+          </div>
+          <div className={styles.cardTypeIcon}>
+            {FILE_ICONS[file.type]}
+          </div>
         </div>
-        <div className={styles.cardTypeIcon}>
-          {FILE_ICONS[file.type]}
-        </div>
-      </div>
 
-      {/* Bottom row: title + open button */}
-      <div className={styles.cardFooter}>
-        <div className={styles.cardTitleBlock}>
-          <span className={styles.cardTitle}>{file.title}</span>
+        {/* Bottom row: title + open button */}
+        <div className={styles.cardFooter}>
+          <div className={styles.cardTitleBlock}>
+            <span className={styles.cardTitle}>{file.title}</span>
+          </div>
+          <a
+            href={file.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={styles.cardOpenBtn}
+            onClick={(e) => e.stopPropagation()}
+            aria-label="Open file"
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path
+                d="M3 13L13 3M13 3H6M13 3V10"
+                stroke={ARROW_COLORS[file.type]}
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </a>
         </div>
-        <a
-          href={file.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={styles.cardOpenBtn}
-          onClick={(e) => e.stopPropagation()}
-          aria-label="Open file"
-        >
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <path
-              d="M3 13L13 3M13 3H6M13 3V10"
-              stroke={ARROW_COLORS[file.type]}
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </a>
       </div>
     </div>
   );
