@@ -10,8 +10,8 @@ function defaultPos(index: number): Pos {
   const col = index % 2;
   const row = Math.floor(index / 2);
   return {
-    x: 160 + col * (332 + 36),
-    y: 260 + row * (201 + 24),
+    x: 160 + col * (332 + 80),
+    y: 260 + row * (201 + 64),
   };
 }
 

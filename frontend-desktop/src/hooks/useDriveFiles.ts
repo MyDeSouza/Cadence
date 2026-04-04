@@ -13,6 +13,7 @@ export interface DriveFile {
   lastModifiedBy: string;
   size:           number | null;
   thumbnailLink:  string | null;
+  folderName:     string | null;
   eventId?:       string;
 }
 

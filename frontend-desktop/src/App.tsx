@@ -4,6 +4,7 @@ import { AgentWidget } from './components/AgentWidget';
 import { FovealCanvas } from './components/FovealCanvas';
 import { EventStrip } from './components/EventStrip';
 import { DateDisplay } from './components/DateDisplay';
+import { DraftingTable } from './components/DraftingTable';
 import { useSession } from './hooks/useSession';
 import { useAdaptiveTheme } from './hooks/useAdaptiveTheme';
 import { useDigest } from './hooks/useDigest';
@@ -18,7 +19,8 @@ export default function App() {
   const { getPos, moveCard, dropCard, clearPositions } = useCardPositions();
 
   const syncAndRefetch = useCallback(() => { refetchEvents(); }, [refetchEvents]);
-  const [calendarOpen, setCalendarOpen] = useState(true);
+  const [calendarOpen,  setCalendarOpen]  = useState(true);
+  const [draftingOpen,  setDraftingOpen]  = useState(false);
 
   const [bgPos,      setBgPos]      = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
@@ -90,7 +92,15 @@ export default function App() {
           theme={theme}
           onToggle={() => setCalendarOpen((v) => !v)}
           onRecenter={handleRecenter}
+          onDraftToggle={() => setDraftingOpen((v) => !v)}
+          draftOpen={draftingOpen}
         />
+        {draftingOpen && (
+          <DraftingTable
+            theme={theme}
+            onClose={() => setDraftingOpen(false)}
+          />
+        )}
         {calendarOpen && (
           <CalendarWidget
             theme={theme}

@@ -5,9 +5,11 @@ import logoSrc from '../../assets/Logo.svg';
 import styles from './DateDisplay.module.css';
 
 interface Props {
-  theme:      Theme;
-  onToggle:   () => void;
-  onRecenter: () => void;
+  theme:          Theme;
+  onToggle:       () => void;
+  onRecenter:     () => void;
+  onDraftToggle:  () => void;
+  draftOpen:      boolean;
 }
 
 function RecenterIcon() {
@@ -22,7 +24,16 @@ function RecenterIcon() {
   );
 }
 
-export function DateDisplay({ theme, onToggle, onRecenter }: Props) {
+function DraftIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path d="M11 2L14 5L5.5 13.5H2.5V10.5L11 2Z" stroke="white" strokeWidth="1.5" strokeLinejoin="round" />
+      <line x1="9" y1="4" x2="12" y2="7" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function DateDisplay({ theme, onToggle, onRecenter, onDraftToggle, draftOpen }: Props) {
   const [now, setNow] = useState(() => new Date());
 
   useEffect(() => {
@@ -60,6 +71,16 @@ export function DateDisplay({ theme, onToggle, onRecenter }: Props) {
           title="Reset card layout"
         >
           <RecenterIcon />
+        </button>
+
+        {/* Drafting table button */}
+        <button
+          className={`${styles.recenterBtn}${draftOpen ? ` ${styles.recenterBtnActive}` : ''}`}
+          onClick={(e) => { e.stopPropagation(); onDraftToggle(); }}
+          aria-label="Open drafting table"
+          title="Drafting table"
+        >
+          <DraftIcon />
         </button>
 
         {/* Date widget */}

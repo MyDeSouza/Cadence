@@ -9,18 +9,17 @@
 .card {
   position: fixed;
   width: 332px;
-  height: 201px;
   border-radius: 20px;
-  padding: 8px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  box-shadow: 0 4px 32px 0 rgba(0, 0, 0, 0.32);
   overflow: hidden;
+  box-shadow: 0 4px 32px 0 rgba(0, 0, 0, 0.32);
   pointer-events: all;
   cursor: grab;
   user-select: none;
   animation: cardIn 300ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.cardSm {
+  width: 230px;
 }
 
 @keyframes cardIn {
@@ -28,14 +27,19 @@
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* Background thumbnail image */
-.cardBg {
-  position: absolute;
-  inset: 0;
+/* Positioned container — height set by the image's natural proportions */
+.cardImgWrap {
+  position: relative;
   width: 100%;
-  height: 221.59%;
-  top: -41.44%;
-  object-fit: cover;
+  min-height: 180px;
+  background: #1c2a3a; /* fallback when no thumbnail */
+}
+
+/* Background thumbnail — natural aspect ratio, full width */
+.cardBg {
+  display: block;
+  width: 100%;
+  height: auto;
   pointer-events: none;
 }
 
@@ -43,16 +47,19 @@
 .cardOverlay {
   position: absolute;
   inset: 0;
-  border-radius: 20px;
   pointer-events: none;
 }
 
 /* Top row: timestamp pill + type icon */
 .cardHeader {
-  position: relative;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
+  padding: 8px;
   z-index: 1;
 }
 
@@ -90,10 +97,14 @@
 
 /* Bottom row: title + open button */
 .cardFooter {
-  position: relative;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
   display: flex;
   align-items: flex-end;
   gap: 12px;
+  padding: 8px;
   z-index: 1;
 }
 
@@ -101,6 +112,20 @@
   flex: 1;
   padding: 8px 12px;
   min-width: 0;
+}
+
+.cardFolder {
+  font-family: 'Outfit', sans-serif;
+  font-size: 10px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.55);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+  margin-bottom: 2px;
 }
 
 .cardTitle {

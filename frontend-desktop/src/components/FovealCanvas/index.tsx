@@ -98,11 +98,13 @@ function fmtEventTime(event: CadenceEvent): string {
   return format(start, 'h:mmaaa');
 }
 
+const NEUTRAL_OVERLAY = 'linear-gradient(to bottom, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.55) 100%)';
+
 const CARD_GRADIENTS: Record<DriveFileType, string> = {
-  slides: 'linear-gradient(180deg, rgba(255,166,0,0.16) 50.25%, rgba(31,15,0,0.61) 100%)',
-  doc:    'linear-gradient(180deg, rgba(7,65,151,0.31) 50.25%, rgba(33,46,64,0.61) 100%)',
-  sheet:  'linear-gradient(180deg, rgba(7,65,151,0.31) 50.25%, rgba(33,46,64,0.61) 100%)',
-  pdf:    'linear-gradient(180deg, rgba(7,65,151,0.31) 50.25%, rgba(33,46,64,0.61) 100%)',
+  slides: NEUTRAL_OVERLAY,
+  doc:    NEUTRAL_OVERLAY,
+  sheet:  NEUTRAL_OVERLAY,
+  pdf:    NEUTRAL_OVERLAY,
 };
 
 const ARROW_COLORS: Record<DriveFileType, string> = {
@@ -178,7 +180,7 @@ function DriveCard({
 
   return (
     <div
-      className={styles.card}
+      className={`${styles.card}${file.type === 'doc' || file.type === 'pdf' ? ` ${styles.cardSm}` : ''}`}
       style={{
         top:            canvasOffset.y + pos.y,
         left:           canvasOffset.x + pos.x,
@@ -207,6 +209,9 @@ function DriveCard({
         {/* Bottom row: title + open button */}
         <div className={styles.cardFooter}>
           <div className={styles.cardTitleBlock}>
+            {file.folderName && (
+              <span className={styles.cardFolder}>{file.folderName}</span>
+            )}
             <span className={styles.cardTitle}>{file.title}</span>
           </div>
           <a
@@ -298,8 +303,7 @@ export function FovealCanvas({ theme, canvasOffset, getPos, moveCard, dropCard }
       const aMatch = focusEvent && a.eventId === focusEvent.id ? 0 : a.eventId && a.eventId !== 'none' ? 1 : 2;
       const bMatch = focusEvent && b.eventId === focusEvent.id ? 0 : b.eventId && b.eventId !== 'none' ? 1 : 2;
       return aMatch - bMatch;
-    })
-    .slice(0, 4);
+    });
 
   const now          = new Date();
   const signalEvents = events

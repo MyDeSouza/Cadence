@@ -15,6 +15,7 @@ export interface DriveFile {
   lastModifiedBy: string; // display name of lastModifyingUser
   size: number | null; // bytes; null for native Google formats
   thumbnailLink: string | null;
+  folderName: string | null; // display name of the immediate parent folder
 }
 
 const MIME_MAP: Record<string, DriveFileType> = {
@@ -49,14 +50,28 @@ export async function fetchRecentDriveFiles(
   const response = await drive.files.list({
     q: `modifiedTime > '${sevenDaysAgo}' and (${MIME_QUERY}) and trashed = false`,
     fields:
-      "files(id, name, mimeType, modifiedTime, createdTime, webViewLink, owners, lastModifyingUser, size, quotaBytesUsed, thumbnailLink)",
+      "files(id, name, mimeType, modifiedTime, createdTime, webViewLink, owners, lastModifyingUser, size, quotaBytesUsed, thumbnailLink, parents)",
     orderBy: "modifiedTime desc",
-    pageSize: 50,
+    pageSize: 1000,
   });
 
-  const files = response.data.files ?? [];
+  const rawFiles = response.data.files ?? [];
 
-  return files
+  // Resolve unique parent folder IDs → display names in parallel
+  const parentIds = [...new Set(rawFiles.flatMap((f) => f.parents ?? []))];
+  const folderEntries = await Promise.all(
+    parentIds.map(async (id) => {
+      try {
+        const folder = await drive.files.get({ fileId: id, fields: "id,name" });
+        return [id, folder.data.name ?? null] as const;
+      } catch {
+        return [id, null] as const;
+      }
+    }),
+  );
+  const folderMap = new Map(folderEntries);
+
+  return rawFiles
     .filter((f) => f.id && f.name && f.mimeType && f.webViewLink)
     .map((f) => {
       // Native Google formats report quotaBytesUsed instead of size
@@ -76,6 +91,7 @@ export async function fetchRecentDriveFiles(
         thumbnailLink: f.thumbnailLink
           ? upgradeThumbnail(f.thumbnailLink)
           : null,
+        folderName: f.parents?.[0] ? (folderMap.get(f.parents[0]) ?? null) : null,
       };
     });
 }

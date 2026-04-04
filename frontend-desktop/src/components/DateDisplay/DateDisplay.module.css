@@ -75,8 +75,10 @@
   transition: background 0.15s ease;
 }
 
-.recenterBtn:hover  { background: rgba(255, 255, 255, 0.20); }
-.recenterBtn:active { background: rgba(255, 255, 255, 0.28); }
+.recenterBtn:hover      { background: rgba(255, 255, 255, 0.20); }
+.recenterBtn:active     { background: rgba(255, 255, 255, 0.28); }
+.recenterBtnActive      { background: rgba(255, 255, 255, 0.22) !important; }
+.recenterBtnActive:hover { background: rgba(255, 255, 255, 0.30) !important; }
 
 /* Date widget */
 .dateWidget {
