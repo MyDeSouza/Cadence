@@ -26,8 +26,11 @@ export default function App() {
   const handleBeginSession = (event: CadenceEvent) => { beginSession(event); };
   const handleEndSession   = () => { endSession(); setBgPos({ x: 0, y: 0 }); };
 
+  const [resetLayoutKey, setResetLayoutKey] = useState(0);
+
   const handleRecenter = useCallback(() => {
     setBgPos({ x: 0, y: 0 });
+    setResetLayoutKey((k) => k + 1);
   }, []);
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -109,6 +112,7 @@ export default function App() {
           session={session}
           onEndSession={handleEndSession}
           theme={theme}
+          resetLayoutKey={resetLayoutKey}
         />
         <AgentWidget theme={theme} events={events} onActionApplied={syncAndRefetch} />
       </div>

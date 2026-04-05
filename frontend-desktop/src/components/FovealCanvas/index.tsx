@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { format, parseISO } from 'date-fns';
 import type { ActiveSession, CadenceEvent } from '../../types';
 import type { Theme } from '../../hooks/useAdaptiveTheme';
@@ -17,9 +17,10 @@ import { API_BASE } from '../../constants/api';
 import styles from './FovealCanvas.module.css';
 
 interface Props {
-  session:      ActiveSession | null;
-  onEndSession: () => void;
-  theme:        Theme;
+  session:        ActiveSession | null;
+  onEndSession:   () => void;
+  theme:          Theme;
+  resetLayoutKey?: number;
 }
 
 // ── Persistent card positions ──────────────────────────────
@@ -218,8 +219,10 @@ function ArrowIcon({ color }: { color: string }) {
 
 // ── Card inner content components (no outer div) ───────────
 function DriveCardInner({ file }: { file: DriveFile }) {
+  // docs/sheets are tall; slides/pdf use default
+  const ratioClass = (file.type === 'doc' || file.type === 'sheet') ? styles.cardImgWrapTall : '';
   return (
-    <div className={styles.cardImgWrap}>
+    <div className={`${styles.cardImgWrap} ${ratioClass}`}>
       {file.thumbnailLink && <img src={file.thumbnailLink} alt="" className={styles.cardBg} />}
       <div className={styles.cardOverlay} style={{ background: CARD_GRADIENTS[file.type] }} />
       <div className={styles.cardHeader}>
@@ -273,7 +276,7 @@ function FigmaCardInner({ file }: { file: FigmaFile }) {
 
 function NotionCardInner({ page }: { page: NotionPage }) {
   return (
-    <div className={`${styles.cardImgWrap} ${styles.notionImgWrap}`}>
+    <div className={`${styles.cardImgWrap} ${styles.notionImgWrap} ${styles.cardImgWrapTall}`}>
       <div className={styles.notionFallback} />
       <div className={styles.cardOverlay} style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0.72) 100%)' }} />
       <div className={styles.cardHeader}>
@@ -301,7 +304,7 @@ function NotionCardInner({ page }: { page: NotionPage }) {
 
 function YouTubeCardInner({ video }: { video: YouTubeVideo }) {
   return (
-    <div className={`${styles.cardImgWrap} ${styles.youtubeImgWrap}`}>
+    <div className={`${styles.cardImgWrap} ${styles.youtubeImgWrap} ${styles.cardImgWrapWide}`}>
       {video.thumbnailUrl
         ? <img src={video.thumbnailUrl} alt="" className={styles.cardBg} />
         : <div className={styles.youtubeFallback} />}
@@ -406,7 +409,7 @@ function YouTubeLogo() {
 }
 
 // ── FovealCanvas ───────────────────────────────────────────
-export function FovealCanvas({ theme }: Props) {
+export function FovealCanvas({ theme, resetLayoutKey }: Props) {
   const { events }             = useDigest();
   const { files: allFiles }    = useDriveFiles();
   const { files: figmaFiles }  = useFigmaFiles();
@@ -418,6 +421,13 @@ export function FovealCanvas({ theme }: Props) {
   const [dismissed,      setDismissed]      = useState<Set<string>>(new Set());
   const [gmailDismissed, setGmailDismissed] = useState<Set<string>>(new Set());
   const [savedPos,       setSavedPos]       = useState<Record<string, Pos>>(loadPositions);
+
+  // Recenter button: clear all detached positions and animate cards back into grid
+  useEffect(() => {
+    if (!resetLayoutKey) return;
+    localStorage.removeItem(LS_KEY);
+    setSavedPos({});
+  }, [resetLayoutKey]);
 
   const dismiss      = (id: string) => setDismissed((p) => new Set(p).add(id));
   const dismissGmail = (id: string) => setGmailDismissed((p) => new Set(p).add(id));
