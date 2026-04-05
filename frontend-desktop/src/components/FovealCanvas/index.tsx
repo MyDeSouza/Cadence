@@ -17,10 +17,13 @@ import { API_BASE } from '../../constants/api';
 import styles from './FovealCanvas.module.css';
 
 interface Props {
-  session:        ActiveSession | null;
-  onEndSession:   () => void;
-  theme:          Theme;
+  session:         ActiveSession | null;
+  onEndSession:    () => void;
+  theme:           Theme;
   resetLayoutKey?: number;
+  isPinned?:       boolean;
+  bgPos?:          { x: number; y: number };
+  isRecentering?:  boolean;
 }
 
 // ── Persistent card positions ──────────────────────────────
@@ -219,10 +222,11 @@ function ArrowIcon({ color }: { color: string }) {
 
 // ── Card inner content components (no outer div) ───────────
 function DriveCardInner({ file }: { file: DriveFile }) {
-  // docs/sheets are tall; slides/pdf use default
-  const ratioClass = (file.type === 'doc' || file.type === 'sheet') ? styles.cardImgWrapTall : '';
+  const hClass = (file.type === 'doc' || file.type === 'sheet' || file.type === 'pdf')
+    ? styles.cardImgH300
+    : styles.cardImgH180; // slides
   return (
-    <div className={`${styles.cardImgWrap} ${ratioClass}`}>
+    <div className={`${styles.cardImgWrap} ${hClass}`}>
       {file.thumbnailLink && <img src={file.thumbnailLink} alt="" className={styles.cardBg} />}
       <div className={styles.cardOverlay} style={{ background: CARD_GRADIENTS[file.type] }} />
       <div className={styles.cardHeader}>
@@ -248,7 +252,7 @@ function DriveCardInner({ file }: { file: DriveFile }) {
 
 function FigmaCardInner({ file }: { file: FigmaFile }) {
   return (
-    <div className={`${styles.cardImgWrap} ${styles.figmaImgWrap}`}>
+    <div className={`${styles.cardImgWrap} ${styles.figmaImgWrap} ${styles.cardImgH180}`}>
       {file.thumbnailUrl
         ? <img src={file.thumbnailUrl} alt="" className={styles.cardBg} />
         : <div className={styles.figmaFallback} />}
@@ -276,7 +280,7 @@ function FigmaCardInner({ file }: { file: FigmaFile }) {
 
 function NotionCardInner({ page }: { page: NotionPage }) {
   return (
-    <div className={`${styles.cardImgWrap} ${styles.notionImgWrap} ${styles.cardImgWrapTall}`}>
+    <div className={`${styles.cardImgWrap} ${styles.notionImgWrap} ${styles.cardImgH100}`}>
       <div className={styles.notionFallback} />
       <div className={styles.cardOverlay} style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0.72) 100%)' }} />
       <div className={styles.cardHeader}>
@@ -304,7 +308,7 @@ function NotionCardInner({ page }: { page: NotionPage }) {
 
 function YouTubeCardInner({ video }: { video: YouTubeVideo }) {
   return (
-    <div className={`${styles.cardImgWrap} ${styles.youtubeImgWrap} ${styles.cardImgWrapWide}`}>
+    <div className={`${styles.cardImgWrap} ${styles.youtubeImgWrap} ${styles.cardImgH160}`}>
       {video.thumbnailUrl
         ? <img src={video.thumbnailUrl} alt="" className={styles.cardBg} />
         : <div className={styles.youtubeFallback} />}
@@ -409,7 +413,7 @@ function YouTubeLogo() {
 }
 
 // ── FovealCanvas ───────────────────────────────────────────
-export function FovealCanvas({ theme, resetLayoutKey }: Props) {
+export function FovealCanvas({ theme, resetLayoutKey, isPinned, bgPos, isRecentering }: Props) {
   const { events }             = useDigest();
   const { files: allFiles }    = useDriveFiles();
   const { files: figmaFiles }  = useFigmaFiles();
@@ -467,27 +471,46 @@ export function FovealCanvas({ theme, resetLayoutKey }: Props) {
     .slice(0, 3);
   const gmailSignals = gmailRaw.filter((s) => !gmailDismissed.has(s.id)).slice(0, 3);
 
-  // Build a flat card list with stable IDs and stagger indices
+  // Per-type CSS width classes
+  const driveExtraClass = (f: DriveFile) =>
+    (f.type === 'slides') ? styles.cardSlides : styles.cardDoc;
+
+  // Build a flat card list with stable IDs, stagger indices, and width classes
   const driveOffset  = 0;
   const figmaOffset  = matchedFiles.length;
   const notionOffset = figmaOffset  + figmaFiles.length;
   const ytOffset     = notionOffset + notionPages.length;
 
-  type CardItem = { id: string; index: number; extraClass?: string; inner: React.ReactNode };
+  type CardItem = { id: string; index: number; extraClass: string; inner: React.ReactNode };
   const allCards: CardItem[] = [
-    ...matchedFiles.map((f, i) => ({ id: f.url, index: driveOffset + i,  inner: <DriveCardInner   file={f} /> })),
-    ...figmaFiles  .map((f, i) => ({ id: f.url, index: figmaOffset  + i, inner: <FigmaCardInner   file={f} /> })),
-    ...notionPages .map((p, i) => ({ id: p.url, index: notionOffset + i, inner: <NotionCardInner  page={p} /> })),
-    ...ytVideos    .map((v, i) => ({ id: v.url, index: ytOffset     + i, inner: <YouTubeCardInner video={v} /> })),
+    ...matchedFiles.map((f, i) => ({ id: f.url, index: driveOffset + i,  extraClass: driveExtraClass(f),  inner: <DriveCardInner   file={f} /> })),
+    ...figmaFiles  .map((f, i) => ({ id: f.url, index: figmaOffset  + i, extraClass: styles.cardSlides,   inner: <FigmaCardInner   file={f} /> })),
+    ...notionPages .map((p, i) => ({ id: p.url, index: notionOffset + i, extraClass: `${styles.cardNotion} ${styles.cardCompact}`, inner: <NotionCardInner  page={p} /> })),
+    ...ytVideos    .map((v, i) => ({ id: v.url, index: ytOffset     + i, extraClass: styles.cardVideo,    inner: <YouTubeCardInner video={v} /> })),
   ];
 
   const gridCards     = allCards.filter((c) => !(c.id in savedPos));
   const detachedCards = allCards.filter((c) =>   c.id in savedPos);
 
+  // Grid positioning — unpinned moves with canvas pan, pinned stays fixed
+  const gridClassName = [
+    styles.grid,
+    isPinned      ? styles.gridPinned     : '',
+    isRecentering ? styles.gridRecentering : '',
+  ].filter(Boolean).join(' ');
+
+  const gridStyle: React.CSSProperties = isPinned
+    ? {}
+    : {
+        top:  `calc(40vh + ${bgPos?.y ?? 0}px)`,
+        left: `${80 + (bgPos?.x ?? 0)}px`,
+        transition: isRecentering ? 'top 300ms ease, left 300ms ease' : undefined,
+      };
+
   return (
     <div className={styles.canvas}>
-      {/* ── Bento grid: cards without a saved position ── */}
-      <div className={styles.grid}>
+      {/* ── Card grid: cards without a saved position ── */}
+      <div className={gridClassName} style={gridStyle}>
         {gridCards.map((c) => (
           <DraggableCard key={c.id} id={c.id} isDetached={false}
             index={c.index} onDetach={handleDetach} onDrop={handleDrop}>

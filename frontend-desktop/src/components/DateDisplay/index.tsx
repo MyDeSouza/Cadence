@@ -10,6 +10,8 @@ interface Props {
   onRecenter:     () => void;
   onDraftToggle:  () => void;
   draftOpen:      boolean;
+  isPinned:       boolean;
+  onPinToggle:    () => void;
 }
 
 function RecenterIcon() {
@@ -33,7 +35,20 @@ function DraftIcon() {
   );
 }
 
-export function DateDisplay({ theme, onToggle, onRecenter, onDraftToggle, draftOpen }: Props) {
+function PinIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      {/* Thumbtack pin shape */}
+      <path
+        d="M12.5 3L17 7.5L13.5 11L14 15L10 13L6 15L6.5 11L3 7.5L7.5 3L10 5.5L12.5 3Z"
+        stroke="white" strokeWidth="1.4" strokeLinejoin="round" fill="none"
+      />
+      <line x1="10" y1="13" x2="10" y2="18" stroke="white" strokeWidth="1.4" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function DateDisplay({ theme, onToggle, onRecenter, onDraftToggle, draftOpen, isPinned, onPinToggle }: Props) {
   const [now, setNow] = useState(() => new Date());
 
   useEffect(() => {
@@ -71,6 +86,16 @@ export function DateDisplay({ theme, onToggle, onRecenter, onDraftToggle, draftO
           title="Reset card layout"
         >
           <RecenterIcon />
+        </button>
+
+        {/* Pin toggle button */}
+        <button
+          className={`${styles.recenterBtn} ${isPinned ? styles.pinBtnActive : styles.pinBtn}`}
+          onClick={(e) => { e.stopPropagation(); onPinToggle(); }}
+          aria-label={isPinned ? 'Unpin cards' : 'Pin cards to screen'}
+          title={isPinned ? 'Unpin cards (cards follow canvas)' : 'Pin cards to screen'}
+        >
+          <PinIcon />
         </button>
 
         {/* Drafting table button */}

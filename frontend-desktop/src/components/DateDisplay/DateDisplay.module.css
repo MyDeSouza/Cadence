@@ -4,7 +4,7 @@
   left: 0;
   top: 70px;
   width: 61px;
-  height: 334px;
+  height: 376px;   /* expanded to fit pin button */
   z-index: 50;
   cursor: pointer;
   padding: 0;
@@ -29,7 +29,7 @@
   left: 0;
   top: 16px;
   width: 61px;
-  height: 302px;
+  height: 344px;   /* expanded */
   background: linear-gradient(89.76deg, #161717 50.18%, rgba(22,23,23,0.64) 176.66%);
   border-radius: 0 20px 20px 0;
   display: flex;
@@ -60,7 +60,7 @@
   display: block;
 }
 
-/* Recenter button */
+/* Recenter / action buttons */
 .recenterBtn {
   width: 36px;
   height: 36px;
@@ -79,6 +79,19 @@
 .recenterBtn:active     { background: rgba(255, 255, 255, 0.28); }
 .recenterBtnActive      { background: rgba(255, 255, 255, 0.22) !important; }
 .recenterBtnActive:hover { background: rgba(255, 255, 255, 0.30) !important; }
+
+/* Pin button — unpinned: faint */
+.pinBtn {
+  opacity: 0.4;
+}
+.pinBtn:hover { opacity: 0.65; }
+
+/* Pin button — pinned: bright + glow */
+.pinBtnActive {
+  opacity: 1.0;
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.30);
+}
+.pinBtnActive:hover { opacity: 0.88; }
 
 /* Date widget */
 .dateWidget {
@@ -115,9 +128,6 @@
 }
 
 /* ── Corner caps ─────────────────────────────────────────── */
-/* Use background-attachment: fixed with the identical sky gradient so the
-   cap renders the exact same colour as the viewport sky behind it at that
-   vertical position — making it appear invisible (seamless concave edge). */
 .cap {
   position: absolute;
   width: 61px;
