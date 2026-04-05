@@ -7,10 +7,14 @@
 
 /* ── Bento grid ─────────────────────────────────────────── */
 .grid {
+  position: absolute;
+  top: 45vh;
+  left: 80px;
+  right: 40px;
+  transform: translateY(-20%);
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 20px;
-  padding: 40px;
   pointer-events: none; /* cards opt in individually */
   align-items: start;
 }
