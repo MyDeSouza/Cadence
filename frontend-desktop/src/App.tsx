@@ -79,16 +79,20 @@ export default function App() {
       {/* ── Draggable workspace (dot-grid canvas) ───────────── */}
       <div
         className={`${styles.workspace} ${styles[`workspace_${theme}`]}`}
-        style={{
-          backgroundPosition: `${bgPos.x}px ${bgPos.y}px`,
-          transition: isRecentering ? 'background-position 300ms ease' : undefined,
-          cursor: isDragging ? 'grabbing' : 'grab',
-        }}
+        style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
       >
+        {/* Dot grid layer — background-position tracks pan; transform provides drift */}
+        <div
+          className={`${styles.dotGrid} ${styles[`dotGrid_${theme}`]}`}
+          style={{
+            backgroundPosition: `${bgPos.x}px ${bgPos.y}px`,
+            transition: isRecentering ? 'background-position 300ms ease' : undefined,
+          }}
+        />
         <EventStrip theme={theme} />
         <DateDisplay
           theme={theme}

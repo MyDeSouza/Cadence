@@ -33,7 +33,9 @@ export function adaptGoogleCalendarEvent(
   const startRaw = event.start?.dateTime ?? event.start?.date ?? new Date().toISOString();
   const endRaw   = event.end?.dateTime   ?? event.end?.date;
 
-  console.log(`[GCal sync] "${event.summary}" — raw attendees: ${JSON.stringify(event.attendees ?? null)}`);
+  if (event.attendees) {
+    console.log(`[GCal sync] "${event.summary}" — raw attendees: ${JSON.stringify(event.attendees)}`);
+  }
 
   const attendees: AttendeeRecord[] = (event.attendees ?? []).map((a) => ({
     email:     a.email ?? '',

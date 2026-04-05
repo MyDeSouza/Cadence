@@ -26,7 +26,10 @@ interface Props {
 }
 
 // ── Persistent card positions ──────────────────────────────
-const LS_KEY = 'cadence:card-positions';
+// Stored as WORLD coordinates (relative to canvas origin at bgPos = 0).
+// canvas origin in viewport = (CANVAS_LEFT + bgPos.x,  0.4*vh + bgPos.y)
+const LS_KEY = 'cadence:card-positions-v2';
+const CANVAS_LEFT = 80;
 type Pos = { x: number; y: number };
 
 function loadPositions(): Record<string, Pos> {
@@ -34,57 +37,19 @@ function loadPositions(): Record<string, Pos> {
   catch { return {}; }
 }
 
-// ── Per-card rAF state ─────────────────────────────────────
-interface CardEntry {
-  outerEl:     HTMLDivElement | null;
-  innerEl:     HTMLDivElement | null;
-  nudgeX:      number;
-  nudgeY:      number;
-  targetHover: number;   // 1.0 or 1.04
-  hoverScale:  number;   // current lerped value
-  rotDeg:      number;   // fixed random –1° to +1°
-  phaseX:      number;   // random phase offset for X sine
-  phaseY:      number;   // random phase offset for Y sine
-  freqX:       number;   // cycles/sec for X sway
-  freqY:       number;   // cycles/sec for Y sway (slightly different)
-}
-
-// Creates entry with stable random params on first call for a given id
-function ensureEntry(id: string, map: Map<string, CardEntry>): CardEntry {
-  if (!map.has(id)) {
-    const dur = 5 + Math.random() * 4; // 5–9 s
-    map.set(id, {
-      outerEl: null, innerEl: null,
-      nudgeX: 0, nudgeY: 0,
-      targetHover: 1.0, hoverScale: 1.0,
-      rotDeg:  Math.random() * 2 - 1,
-      phaseX:  Math.random() * Math.PI * 2,
-      phaseY:  Math.random() * Math.PI * 2,
-      freqX:   1 / dur,
-      freqY:   1 / (dur * (1.1 + Math.random() * 0.4)),
-    });
-  }
-  return map.get(id)!;
-}
-
 // ── DraggableCard wrapper ──────────────────────────────────
-// Outer div: absolute position when detached, bounds for nudge proximity.
-// Inner .card div: visual styles + cardIn entrance. rAF writes combined
-// transform (scale + rotate + swayX/Y + nudgeX/Y) directly to innerEl.
+// Cards are completely still unless hovered. CSS :hover handles scale + shadow.
+// Drag threshold detection happens here; FovealCanvas owns the full drag loop.
 function DraggableCard({
-  id, isDetached, pos, index, extraClass, onDetach, onDrop,
-  onOuterRef, onInnerRef, onHover, children,
+  id, isDetached, pos, index, extraClass, onDragStart, onOuterRef, children,
 }: {
   id:          string;
   isDetached:  boolean;
-  pos?:        Pos;
+  pos?:        Pos;       // viewport coords (computed from world coords + bgPos)
   index:       number;
   extraClass?: string;
-  onDetach:    (id: string, pos: Pos) => void;
-  onDrop:      (id: string, pos: Pos) => void;
+  onDragStart: (id: string, rect: DOMRect, mx: number, my: number) => void;
   onOuterRef:  (id: string, el: HTMLDivElement | null) => void;
-  onInnerRef:  (id: string, el: HTMLDivElement | null) => void;
-  onHover:     (id: string, hovering: boolean) => void;
   children:    React.ReactNode;
 }) {
   const outerRef = useRef<HTMLDivElement | null>(null);
@@ -94,68 +59,37 @@ function DraggableCard({
     onOuterRef(id, el);
   }, [id, onOuterRef]);
 
-  const setInnerRef = useCallback((el: HTMLDivElement | null) => {
-    onInnerRef(id, el);
-  }, [id, onInnerRef]);
-
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest('a')) return;
     e.stopPropagation();
 
     const startMX = e.clientX;
     const startMY = e.clientY;
-    let active = isDetached;
-    let baseX  = pos?.x ?? 0;
-    let baseY  = pos?.y ?? 0;
 
-    if (active) {
-      document.body.style.cursor     = 'grabbing';
-      document.body.style.userSelect = 'none';
-    }
-
+    // Watch for 5px drag threshold, then hand control to FovealCanvas
     const onMove = (ev: MouseEvent) => {
-      const dx = ev.clientX - startMX;
-      const dy = ev.clientY - startMY;
-
-      if (!active) {
-        if (Math.hypot(dx, dy) <= 5) return;
-        active = true;
-        const rect = outerRef.current?.getBoundingClientRect();
-        if (rect) { baseX = rect.left; baseY = rect.top; }
-        onDetach(id, { x: baseX + dx, y: baseY + dy });
-        document.body.style.cursor     = 'grabbing';
-        document.body.style.userSelect = 'none';
-        return;
-      }
-
-      // Direct DOM update for smooth 60fps dragging
-      if (outerRef.current) {
-        outerRef.current.style.left = `${baseX + dx}px`;
-        outerRef.current.style.top  = `${baseY + dy}px`;
-      }
+      if (Math.hypot(ev.clientX - startMX, ev.clientY - startMY) <= 5) return;
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup',   onCancel);
+      const rect = outerRef.current?.getBoundingClientRect();
+      if (rect) onDragStart(id, rect, ev.clientX, ev.clientY);
     };
 
-    const onUp = (ev: MouseEvent) => {
-      const dx = ev.clientX - startMX;
-      const dy = ev.clientY - startMY;
-      if (active) onDrop(id, { x: baseX + dx, y: baseY + dy });
+    const onCancel = () => {
       window.removeEventListener('mousemove', onMove);
-      window.removeEventListener('mouseup',   onUp);
-      document.body.style.cursor     = '';
-      document.body.style.userSelect = '';
+      window.removeEventListener('mouseup',   onCancel);
     };
 
     window.addEventListener('mousemove', onMove);
-    window.addEventListener('mouseup',   onUp);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id, isDetached, pos?.x, pos?.y, onDetach, onDrop]);
+    window.addEventListener('mouseup',   onCancel);
+  }, [id, onDragStart]);
 
   const entranceMs = index * 80;
 
   const innerCls = [styles.card, isDetached ? styles.cardDetached : '', extraClass ?? '']
     .filter(Boolean).join(' ');
 
-  // Outer wrapper: absolute position only when detached
+  // Outer wrapper: absolute within .canvas when detached (viewport coords)
   const outerStyle: React.CSSProperties = isDetached && pos
     ? { position: 'absolute' as const, left: pos.x, top: pos.y, zIndex: 10 }
     : {};
@@ -163,12 +97,9 @@ function DraggableCard({
   return (
     <div ref={setOuterRef} style={outerStyle}>
       <div
-        ref={setInnerRef}
         className={innerCls}
         style={{ animation: `cardIn 300ms cubic-bezier(0.16, 1, 0.3, 1) ${entranceMs}ms both` }}
         onMouseDown={handleMouseDown}
-        onMouseEnter={() => onHover(id, true)}
-        onMouseLeave={() => onHover(id, false)}
       >
         {children}
       </div>
@@ -277,11 +208,11 @@ function ArrowIcon({ color }: { color: string }) {
   );
 }
 
-// ── Card inner content components (no outer div) ───────────
+// ── Card inner content components ──────────────────────────
 function DriveCardInner({ file }: { file: DriveFile }) {
   const hClass = (file.type === 'doc' || file.type === 'sheet' || file.type === 'pdf')
     ? styles.cardImgH300
-    : styles.cardImgH180; // slides
+    : styles.cardImgH180;
   return (
     <div className={`${styles.cardImgWrap} ${hClass}`}>
       {file.thumbnailLink && <img src={file.thumbnailLink} alt="" className={styles.cardBg} />}
@@ -481,102 +412,98 @@ export function FovealCanvas({ theme, resetLayoutKey, bgPos, isRecentering }: Pr
 
   const [dismissed,      setDismissed]      = useState<Set<string>>(new Set());
   const [gmailDismissed, setGmailDismissed] = useState<Set<string>>(new Set());
+  // savedPos stores WORLD coordinates (viewport-independent)
   const [savedPos,       setSavedPos]       = useState<Record<string, Pos>>(loadPositions);
 
-  // Recenter button: clear all detached positions and animate cards back into grid
   useEffect(() => {
     if (!resetLayoutKey) return;
     localStorage.removeItem(LS_KEY);
     setSavedPos({});
   }, [resetLayoutKey]);
 
-  // ── Per-card rAF state (sway, nudge, hover) ────────────────
-  const cardEntries = useRef<Map<string, CardEntry>>(new Map());
+  // ── bgPos ref: always current without stale-closure issues ──
+  const bgPosRef = useRef(bgPos ?? { x: 0, y: 0 });
+  useEffect(() => { bgPosRef.current = bgPos ?? { x: 0, y: 0 }; }, [bgPos]);
 
+  // ── Coord helpers ──────────────────────────────────────────
+  // World coords are relative to canvas origin at bgPos = {0, 0}.
+  // Canvas origin (viewport) = (CANVAS_LEFT + bgPos.x,  0.4*vh + bgPos.y)
+  const viewportToWorld = (vx: number, vy: number): Pos => ({
+    x: vx - CANVAS_LEFT - bgPosRef.current.x,
+    y: vy - window.innerHeight * 0.4 - bgPosRef.current.y,
+  });
+
+  const worldToViewport = (wx: number, wy: number): Pos => ({
+    x: wx + CANVAS_LEFT + (bgPos?.x ?? 0),
+    y: wy + window.innerHeight * 0.4 + (bgPos?.y ?? 0),
+  });
+
+  // ── Outer element refs — needed by handleDragStart's onMove ──
+  const cardOuterRefs = useRef<Map<string, HTMLDivElement | null>>(new Map());
   const handleOuterRef = useCallback((id: string, el: HTMLDivElement | null) => {
-    ensureEntry(id, cardEntries.current).outerEl = el;
+    if (el) cardOuterRefs.current.set(id, el);
+    else    cardOuterRefs.current.delete(id);
   }, []);
 
-  const handleInnerRef = useCallback((id: string, el: HTMLDivElement | null) => {
-    ensureEntry(id, cardEntries.current).innerEl = el;
-  }, []);
+  // ── Centralised drag handler ───────────────────────────────
+  // Owns the global mousemove/mouseup loop so the card always follows the
+  // cursor smoothly — even when it transitions from grid to detached.
+  const handleDragStart = useCallback((
+    id: string,
+    cardRect: DOMRect,
+    mx: number,
+    my: number,
+  ) => {
+    // How far the mouse was from the card's top-left when the drag started
+    const offsetX = mx - cardRect.left;
+    const offsetY = my - cardRect.top;
 
-  const handleHover = useCallback((id: string, hovering: boolean) => {
-    const entry = cardEntries.current.get(id);
-    if (entry) entry.targetHover = hovering ? 1.04 : 1.0;
-  }, []);
-
-  // ── rAF loop: combines sway + hover scale + nudge into one transform ──
-  useEffect(() => {
-    let raf: number;
-    const loop = (t: number) => {
-      const time = t / 1000; // seconds
-      cardEntries.current.forEach((entry) => {
-        if (!entry.innerEl) return;
-        // Lerp hover scale (~12% per frame → smooth ~200ms rise, ~300ms fall)
-        entry.hoverScale += (entry.targetHover - entry.hoverScale) * 0.12;
-        // Sine-wave sway: ±6px X, ±4px Y, 5–9 s cycle
-        const swayX = Math.sin(time * entry.freqX * Math.PI * 2 + entry.phaseX) * 6;
-        const swayY = Math.sin(time * entry.freqY * Math.PI * 2 + entry.phaseY) * 4;
-        // Single combined transform — no separate transforms that could override each other
-        entry.innerEl.style.transform =
-          `scale(${entry.hoverScale.toFixed(4)}) ` +
-          `rotate(${entry.rotDeg.toFixed(3)}deg) ` +
-          `translateX(${(swayX + entry.nudgeX).toFixed(2)}px) ` +
-          `translateY(${(swayY + entry.nudgeY).toFixed(2)}px)`;
-      });
-      raf = requestAnimationFrame(loop);
-    };
-    raf = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(raf);
-  }, []);
-
-  // ── Proximity nudge: stored in CardEntry, applied by rAF ───
-  useEffect(() => {
-    const onMove = (e: MouseEvent) => {
-      cardEntries.current.forEach((entry) => {
-        if (!entry.outerEl) return;
-        const rect = entry.outerEl.getBoundingClientRect();
-        const cx = rect.left + rect.width  / 2;
-        const cy = rect.top  + rect.height / 2;
-        const dx = e.clientX - cx;
-        const dy = e.clientY - cy;
-        const dist = Math.hypot(dx, dy);
-        if (dist < 120 && dist > 0.5) {
-          const factor = 1 - dist / 120;
-          entry.nudgeX = (dx / dist) * factor * 6;
-          entry.nudgeY = (dy / dist) * factor * 6;
-        } else {
-          entry.nudgeX = 0;
-          entry.nudgeY = 0;
-        }
-      });
-    };
-    document.addEventListener('mousemove', onMove);
-    return () => document.removeEventListener('mousemove', onMove);
-  }, []);
-
-  const dismiss      = (id: string) => setDismissed((p) => new Set(p).add(id));
-  const dismissGmail = (id: string) => setGmailDismissed((p) => new Set(p).add(id));
-
-  // Called once when a grid card crosses the drag threshold
-  const handleDetach = useCallback((id: string, pos: Pos) => {
-    setSavedPos((prev) => ({ ...prev, [id]: pos }));
-  }, []);
-
-  // Called on mouseup — persists final position to localStorage
-  const handleDrop = useCallback((id: string, pos: Pos) => {
+    // Detach if not already (no-op if already detached — avoids re-render)
     setSavedPos((prev) => {
-      const next = { ...prev, [id]: pos };
-      localStorage.setItem(LS_KEY, JSON.stringify(next));
-      return next;
+      if (id in prev) return prev;
+      const worldPos = viewportToWorld(cardRect.left, cardRect.top);
+      return { ...prev, [id]: worldPos };
     });
-  }, []);
+
+    document.body.style.cursor     = 'grabbing';
+    document.body.style.userSelect = 'none';
+
+    const onMove = (ev: MouseEvent) => {
+      const el = cardOuterRefs.current.get(id);
+      if (el) {
+        el.style.left = `${ev.clientX - offsetX}px`;
+        el.style.top  = `${ev.clientY - offsetY}px`;
+      }
+    };
+
+    const onUp = (ev: MouseEvent) => {
+      const finalVX = ev.clientX - offsetX;
+      const finalVY = ev.clientY - offsetY;
+      // Convert to world coords so the card pans with the canvas going forward
+      const worldPos = viewportToWorld(finalVX, finalVY);
+      setSavedPos((prev) => {
+        const next = { ...prev, [id]: worldPos };
+        localStorage.setItem(LS_KEY, JSON.stringify(next));
+        return next;
+      });
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup',   onUp);
+      document.body.style.cursor     = '';
+      document.body.style.userSelect = '';
+    };
+
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup',   onUp);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // stable — uses refs for bgPos and cardOuterRefs
 
   const resetLayout = useCallback(() => {
     localStorage.removeItem(LS_KEY);
     window.location.reload();
   }, []);
+
+  const dismiss      = (id: string) => setDismissed((p) => new Set(p).add(id));
+  const dismissGmail = (id: string) => setGmailDismissed((p) => new Set(p).add(id));
 
   const matchedFiles = allFiles.sort((a, b) => {
     const aM = focusEvent && a.eventId === focusEvent.id ? 0 : a.eventId && a.eventId !== 'none' ? 1 : 2;
@@ -602,7 +529,6 @@ export function FovealCanvas({ theme, resetLayoutKey, bgPos, isRecentering }: Pr
   const notionOffset = figmaOffset  + figmaFiles.length;
   const ytOffset     = notionOffset + notionPages.length;
 
-  // cardWidth/cardHeight used for ghost placeholders that preserve grid slots
   type CardItem = {
     id: string; index: number; extraClass: string;
     cardWidth: number; cardHeight: number; inner: React.ReactNode;
@@ -641,17 +567,16 @@ export function FovealCanvas({ theme, resetLayoutKey, bgPos, isRecentering }: Pr
 
   const gridStyle: React.CSSProperties = {
     top:  `calc(40vh + ${bgPos?.y ?? 0}px)`,
-    left: `${80 + (bgPos?.x ?? 0)}px`,
+    left: `${CANVAS_LEFT + (bgPos?.x ?? 0)}px`,
     transition: isRecentering ? 'top 300ms ease, left 300ms ease' : undefined,
   };
 
   return (
     <div className={styles.canvas}>
-      {/* ── Card grid: real cards + ghost placeholders for detached slots ── */}
+      {/* ── Card grid: in-flow cards + ghost placeholders for detached slots ── */}
       <div className={gridClassName} style={gridStyle}>
         {allCards.map((c) => {
           if (c.id in savedPos) {
-            // Ghost placeholder: preserves the grid slot so remaining cards never reflow
             return (
               <div key={c.id}
                    style={{ width: c.cardWidth, height: c.cardHeight, borderRadius: 16, flexShrink: 0 }}
@@ -661,23 +586,24 @@ export function FovealCanvas({ theme, resetLayoutKey, bgPos, isRecentering }: Pr
           return (
             <DraggableCard key={c.id} id={c.id} isDetached={false}
               index={c.index} extraClass={c.extraClass}
-              onDetach={handleDetach} onDrop={handleDrop}
-              onOuterRef={handleOuterRef} onInnerRef={handleInnerRef} onHover={handleHover}>
+              onDragStart={handleDragStart} onOuterRef={handleOuterRef}>
               {c.inner}
             </DraggableCard>
           );
         })}
       </div>
 
-      {/* ── Detached cards: freely positioned on the canvas ── */}
-      {detachedCards.map((c) => (
-        <DraggableCard key={c.id} id={c.id} isDetached pos={savedPos[c.id]}
-          index={c.index} extraClass={c.extraClass}
-          onDetach={handleDetach} onDrop={handleDrop}
-          onOuterRef={handleOuterRef} onInnerRef={handleInnerRef} onHover={handleHover}>
-          {c.inner}
-        </DraggableCard>
-      ))}
+      {/* ── Detached cards: world-anchored, move with canvas pan ── */}
+      {detachedCards.map((c) => {
+        const vp = worldToViewport(savedPos[c.id].x, savedPos[c.id].y);
+        return (
+          <DraggableCard key={c.id} id={c.id} isDetached pos={vp}
+            index={c.index} extraClass={c.extraClass}
+            onDragStart={handleDragStart} onOuterRef={handleOuterRef}>
+            {c.inner}
+          </DraggableCard>
+        );
+      })}
 
       {/* ── Signal strip — fixed right ── */}
       {signalEvents.map((event, i) => (

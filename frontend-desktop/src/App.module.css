@@ -7,16 +7,35 @@
   overflow: hidden;
 }
 
-/* Day: dot grid only — sky gradient lives in a separate fixed layer */
-.workspace_day {
+/* Day/night workspace backgrounds — dot pattern lives in .dotGrid child */
+.workspace_day  { /* sky gradient handled by fixed backdrop layer */ }
+.workspace_night { background-color: #161717; }
+
+/* ── Dot grid layer ───────────────────────────────────────── */
+/* Separate child div so background-position (panning) and
+   transform (drift animation) can coexist without conflict.    */
+.dotGrid {
+  position: absolute;
+  inset: -12px; /* slightly larger than viewport to hide drift edges */
+  pointer-events: none;
+  z-index: 0;
+  animation: dotGridDrift 20s ease-in-out infinite alternate;
+}
+
+.dotGrid_day {
   background-image: radial-gradient(circle, rgba(255,255,255,0.18) 1px, transparent 1px);
   background-size: 28px 28px;
 }
 
-.workspace_night {
-  background-color: #161717;
+.dotGrid_night {
   background-image: radial-gradient(circle, rgba(234,238,242,0.12) 1.5px, transparent 1.5px);
   background-size: 28px 28px;
+}
+
+/* Very slow, barely perceptible ambient breathing of the dot texture */
+@keyframes dotGridDrift {
+  from { transform: translate(-4px, -3px); }
+  to   { transform: translate(4px,  3px);  }
 }
 
 /* ── Cloud blobs (children of fixed sky wrapper) ──────────── */
