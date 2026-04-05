@@ -8,7 +8,6 @@ import { DraftingTable } from './components/DraftingTable';
 import { useSession } from './hooks/useSession';
 import { useAdaptiveTheme } from './hooks/useAdaptiveTheme';
 import { useDigest } from './hooks/useDigest';
-import { useCardPositions } from './hooks/useCardPositions';
 import type { CadenceEvent } from './types';
 import styles from './App.module.css';
 
@@ -16,8 +15,6 @@ export default function App() {
   const { session, beginSession, endSession } = useSession();
   const theme = useAdaptiveTheme();
   const { events, refetch: refetchEvents } = useDigest();
-  const { getPos, moveCard, dropCard, clearPositions } = useCardPositions();
-
   const syncAndRefetch = useCallback(() => { refetchEvents(); }, [refetchEvents]);
   const [calendarOpen,  setCalendarOpen]  = useState(true);
   const [draftingOpen,  setDraftingOpen]  = useState(false);
@@ -31,8 +28,7 @@ export default function App() {
 
   const handleRecenter = useCallback(() => {
     setBgPos({ x: 0, y: 0 });
-    clearPositions();
-  }, [clearPositions]);
+  }, []);
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.target !== e.currentTarget) return;
@@ -113,10 +109,6 @@ export default function App() {
           session={session}
           onEndSession={handleEndSession}
           theme={theme}
-          canvasOffset={bgPos}
-          getPos={getPos}
-          moveCard={moveCard}
-          dropCard={dropCard}
         />
         <AgentWidget theme={theme} events={events} onActionApplied={syncAndRefetch} />
       </div>

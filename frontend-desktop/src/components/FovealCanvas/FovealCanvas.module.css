@@ -5,21 +5,23 @@
   z-index: 5;
 }
 
-/* ── Drive file card ────────────────────────────────────── */
+/* ── Bento grid ─────────────────────────────────────────── */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+  padding: 40px;
+  pointer-events: none; /* cards opt in individually */
+  align-items: start;
+}
+
+/* ── Drive / Figma / Notion / YouTube card ──────────────── */
 .card {
-  position: fixed;
-  width: 332px;
   border-radius: 20px;
   overflow: hidden;
   box-shadow: 0 4px 32px 0 rgba(0, 0, 0, 0.32);
   pointer-events: all;
-  cursor: grab;
-  user-select: none;
   animation: cardIn 300ms cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
-.cardSm {
-  width: 230px;
 }
 
 @keyframes cardIn {
@@ -155,7 +157,7 @@
 
 .cardOpenBtn:hover { opacity: 0.82; }
 
-/* ── Signal cards — right side ────────────────────────── */
+/* ── Signal cards — fixed right side ───────────────────── */
 .signal {
   position: fixed;
   right: 280px;

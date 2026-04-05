@@ -72,7 +72,13 @@ export async function fetchRecentDriveFiles(
   const folderMap = new Map(folderEntries);
 
   return rawFiles
-    .filter((f) => f.id && f.name && f.mimeType && f.webViewLink)
+    .filter((f) => {
+      if (!f.id || !f.name || !f.mimeType || !f.webViewLink) return false;
+      const lower = f.name.toLowerCase();
+      if (lower.includes('test') || lower.includes('untitled')) return false;
+      return true;
+    })
+    .slice(0, 8)
     .map((f) => {
       // Native Google formats report quotaBytesUsed instead of size
       const rawSize = f.size ?? f.quotaBytesUsed ?? null;

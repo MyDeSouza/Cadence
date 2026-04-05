@@ -61,8 +61,7 @@ router.get('/gmail-signals', async (_req: Request, res: Response): Promise<void>
 // Optional query param: ?q=<active event title or keywords>
 
 router.get('/youtube', async (req: Request, res: Response): Promise<void> => {
-  const context = typeof req.query.q === 'string' ? req.query.q : undefined;
-  const videos  = await fetchYouTubeVideos(context);
+  const videos = await fetchYouTubeVideos();
   res.json({ videos });
 });
 

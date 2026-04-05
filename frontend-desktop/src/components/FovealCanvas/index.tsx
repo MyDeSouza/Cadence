@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState } from 'react';
 import { format, parseISO } from 'date-fns';
 import type { ActiveSession, CadenceEvent } from '../../types';
 import type { Theme } from '../../hooks/useAdaptiveTheme';
@@ -9,7 +9,6 @@ import { useNotionPages }   from '../../hooks/useNotionPages';
 import { useGmailSignals }  from '../../hooks/useGmailSignals';
 import { useYouTubeVideos } from '../../hooks/useYouTubeVideos';
 import { useDigest }        from '../../hooks/useDigest';
-import type { Pos } from '../../hooks/useCardPositions';
 import type { FigmaFile }   from '../../hooks/useFigmaFiles';
 import type { NotionPage }  from '../../hooks/useNotionPages';
 import type { GmailSignal } from '../../hooks/useGmailSignals';
@@ -21,69 +20,6 @@ interface Props {
   session:      ActiveSession | null;
   onEndSession: () => void;
   theme:        Theme;
-  canvasOffset: Pos;
-  getPos:       (url: string, index: number) => Pos;
-  moveCard:     (url: string, pos: Pos) => void;
-  dropCard:     (url: string, pos: Pos) => void;
-}
-
-// ── Shared drag hook ───────────────────────────────────────
-function useDrag(
-  key:     string,
-  pos:     Pos,
-  onDrag:  (key: string, pos: Pos) => void,
-  onDrop:  (key: string, pos: Pos) => void,
-  canvasOffset: Pos,
-) {
-  const dragRef = useRef<{
-    startMX: number; startMY: number;
-    startCX: number; startCY: number;
-    onMove: (e: MouseEvent) => void;
-    onUp:   (e: MouseEvent) => void;
-  } | null>(null);
-
-  useEffect(() => {
-    return () => {
-      if (dragRef.current) {
-        window.removeEventListener('mousemove', dragRef.current.onMove);
-        window.removeEventListener('mouseup',   dragRef.current.onUp);
-        document.body.style.cursor    = '';
-        document.body.style.userSelect = '';
-      }
-    };
-  }, []);
-
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if ((e.target as HTMLElement).closest('a')) return;
-    e.stopPropagation();
-    const startMX = e.clientX, startMY = e.clientY;
-    const startCX = pos.x,    startCY = pos.y;
-
-    const onMove = (ev: MouseEvent) => {
-      onDrag(key, { x: startCX + (ev.clientX - startMX), y: startCY + (ev.clientY - startMY) });
-    };
-    const onUp = (ev: MouseEvent) => {
-      onDrop(key, { x: startCX + (ev.clientX - startMX), y: startCY + (ev.clientY - startMY) });
-      window.removeEventListener('mousemove', onMove);
-      window.removeEventListener('mouseup',   onUp);
-      dragRef.current = null;
-      document.body.style.cursor    = '';
-      document.body.style.userSelect = '';
-    };
-
-    dragRef.current = { startMX, startMY, startCX, startCY, onMove, onUp };
-    window.addEventListener('mousemove', onMove);
-    window.addEventListener('mouseup',   onUp);
-    document.body.style.cursor    = 'grabbing';
-    document.body.style.userSelect = 'none';
-  };
-
-  const cardStyle = {
-    top:  canvasOffset.y + pos.y,
-    left: canvasOffset.x + pos.x,
-  };
-
-  return { handleMouseDown, cardStyle };
 }
 
 // ── File type SVG icons ────────────────────────────────────
@@ -188,23 +124,11 @@ function ArrowIcon({ color }: { color: string }) {
 }
 
 // ── Drive file card ────────────────────────────────────────
-function DriveCard({
-  file, index, canvasOffset, pos, onDrag, onDragEnd,
-}: {
-  file:         DriveFile;
-  index:        number;
-  canvasOffset: Pos;
-  pos:          Pos;
-  onDrag:       (url: string, pos: Pos) => void;
-  onDragEnd:    (url: string, pos: Pos) => void;
-}) {
-  const { handleMouseDown, cardStyle } = useDrag(file.url, pos, onDrag, onDragEnd, canvasOffset);
-
+function DriveCard({ file, index }: { file: DriveFile; index: number }) {
   return (
     <div
-      className={`${styles.card}${file.type === 'doc' || file.type === 'pdf' ? ` ${styles.cardSm}` : ''}`}
-      style={{ ...cardStyle, animationDelay: `${index * 80}ms` }}
-      onMouseDown={handleMouseDown}
+      className={styles.card}
+      style={{ animationDelay: `${index * 80}ms` }}
     >
       <div className={styles.cardImgWrap}>
         {file.thumbnailLink && <img src={file.thumbnailLink} alt="" className={styles.cardBg} />}
@@ -226,7 +150,6 @@ function DriveCard({
             target="_blank"
             rel="noopener noreferrer"
             className={styles.cardOpenBtn}
-            onClick={(e) => e.stopPropagation()}
             aria-label="Open file"
           >
             <ArrowIcon color={ARROW_COLORS[file.type]} />
@@ -238,23 +161,11 @@ function DriveCard({
 }
 
 // ── Figma card ─────────────────────────────────────────────
-function FigmaCard({
-  file, index, canvasOffset, pos, onDrag, onDragEnd,
-}: {
-  file:         FigmaFile;
-  index:        number;
-  canvasOffset: Pos;
-  pos:          Pos;
-  onDrag:       (url: string, pos: Pos) => void;
-  onDragEnd:    (url: string, pos: Pos) => void;
-}) {
-  const { handleMouseDown, cardStyle } = useDrag(file.url, pos, onDrag, onDragEnd, canvasOffset);
-
+function FigmaCard({ file, index }: { file: FigmaFile; index: number }) {
   return (
     <div
-      className={`${styles.card} ${styles.cardSm}`}
-      style={{ ...cardStyle, animationDelay: `${index * 80}ms` }}
-      onMouseDown={handleMouseDown}
+      className={styles.card}
+      style={{ animationDelay: `${index * 80}ms` }}
     >
       <div className={`${styles.cardImgWrap} ${styles.figmaImgWrap}`}>
         {file.thumbnailUrl
@@ -280,7 +191,6 @@ function FigmaCard({
             target="_blank"
             rel="noopener noreferrer"
             className={styles.cardOpenBtn}
-            onClick={(e) => e.stopPropagation()}
             aria-label="Open in Figma"
           >
             <ArrowIcon color="#9747FF" />
@@ -292,23 +202,11 @@ function FigmaCard({
 }
 
 // ── Notion card ────────────────────────────────────────────
-function NotionCard({
-  page, index, canvasOffset, pos, onDrag, onDragEnd,
-}: {
-  page:         NotionPage;
-  index:        number;
-  canvasOffset: Pos;
-  pos:          Pos;
-  onDrag:       (url: string, pos: Pos) => void;
-  onDragEnd:    (url: string, pos: Pos) => void;
-}) {
-  const { handleMouseDown, cardStyle } = useDrag(page.url, pos, onDrag, onDragEnd, canvasOffset);
-
+function NotionCard({ page, index }: { page: NotionPage; index: number }) {
   return (
     <div
-      className={`${styles.card} ${styles.cardSm}`}
-      style={{ ...cardStyle, animationDelay: `${index * 80}ms` }}
-      onMouseDown={handleMouseDown}
+      className={styles.card}
+      style={{ animationDelay: `${index * 80}ms` }}
     >
       <div className={`${styles.cardImgWrap} ${styles.notionImgWrap}`}>
         <div className={styles.notionFallback} />
@@ -336,7 +234,6 @@ function NotionCard({
             target="_blank"
             rel="noopener noreferrer"
             className={styles.cardOpenBtn}
-            onClick={(e) => e.stopPropagation()}
             aria-label="Open in Notion"
           >
             <ArrowIcon color="#E5E5E5" />
@@ -348,23 +245,11 @@ function NotionCard({
 }
 
 // ── YouTube card ───────────────────────────────────────────
-function YouTubeCard({
-  video, index, canvasOffset, pos, onDrag, onDragEnd,
-}: {
-  video:        YouTubeVideo;
-  index:        number;
-  canvasOffset: Pos;
-  pos:          Pos;
-  onDrag:       (url: string, pos: Pos) => void;
-  onDragEnd:    (url: string, pos: Pos) => void;
-}) {
-  const { handleMouseDown, cardStyle } = useDrag(video.url, pos, onDrag, onDragEnd, canvasOffset);
-
+function YouTubeCard({ video, index }: { video: YouTubeVideo; index: number }) {
   return (
     <div
-      className={`${styles.card} ${styles.cardSm}`}
-      style={{ ...cardStyle, animationDelay: `${index * 80}ms` }}
-      onMouseDown={handleMouseDown}
+      className={styles.card}
+      style={{ animationDelay: `${index * 80}ms` }}
     >
       <div className={`${styles.cardImgWrap} ${styles.youtubeImgWrap}`}>
         {video.thumbnailUrl
@@ -390,7 +275,6 @@ function YouTubeCard({
             target="_blank"
             rel="noopener noreferrer"
             className={styles.cardOpenBtn}
-            onClick={(e) => e.stopPropagation()}
             aria-label="Watch on YouTube"
           >
             <ArrowIcon color="#FF0000" />
@@ -510,14 +394,14 @@ function YouTubeLogo() {
 }
 
 // ── FovealCanvas ───────────────────────────────────────────
-export function FovealCanvas({ theme, canvasOffset, getPos, moveCard, dropCard }: Props) {
-  const { events }           = useDigest();
-  const { files: allFiles }  = useDriveFiles();
-  const { files: figmaFiles } = useFigmaFiles();
-  const { pages: notionPages } = useNotionPages();
-  const { signals: gmailRaw }  = useGmailSignals();
-  const focusEvent             = getFocusEvent(events);
-  const { videos: ytVideos }   = useYouTubeVideos(focusEvent?.title);
+export function FovealCanvas({ theme }: Props) {
+  const { events }              = useDigest();
+  const { files: allFiles }     = useDriveFiles();
+  const { files: figmaFiles }   = useFigmaFiles();
+  const { pages: notionPages }  = useNotionPages();
+  const { signals: gmailRaw }   = useGmailSignals();
+  const focusEvent              = getFocusEvent(events);
+  const { videos: ytVideos }    = useYouTubeVideos(focusEvent?.title);
 
   const [dismissed,      setDismissed]      = useState<Set<string>>(new Set());
   const [gmailDismissed, setGmailDismissed] = useState<Set<string>>(new Set());
@@ -525,7 +409,6 @@ export function FovealCanvas({ theme, canvasOffset, getPos, moveCard, dropCard }
   const dismiss      = (id: string) => setDismissed((prev) => new Set(prev).add(id));
   const dismissGmail = (id: string) => setGmailDismissed((prev) => new Set(prev).add(id));
 
-  // Sort drive files — event-matched first
   const matchedFiles = allFiles.sort((a, b) => {
     const aM = focusEvent && a.eventId === focusEvent.id ? 0 : a.eventId && a.eventId !== 'none' ? 1 : 2;
     const bM = focusEvent && b.eventId === focusEvent.id ? 0 : b.eventId && b.eventId !== 'none' ? 1 : 2;
@@ -543,88 +426,37 @@ export function FovealCanvas({ theme, canvasOffset, getPos, moveCard, dropCard }
 
   const gmailSignals = gmailRaw.filter((s) => !gmailDismissed.has(s.id)).slice(0, 3);
 
-  // Global index base for each card type (so default positions don't collide)
-  const driveBase   = 0;
-  const figmaBase   = matchedFiles.length;
-  const notionBase  = figmaBase  + figmaFiles.length;
-  const ytBase      = notionBase + notionPages.length;
-  // Gmail signals use the right-side strip, starting after calendar signal slots
-  const gmailSignalBase = signalEvents.length;
+  // Flat ordered list for stagger index
+  const driveOffset  = 0;
+  const figmaOffset  = matchedFiles.length;
+  const notionOffset = figmaOffset  + figmaFiles.length;
+  const ytOffset     = notionOffset + notionPages.length;
+  const gmailOffset  = signalEvents.length;
 
   return (
     <div className={styles.canvas}>
-      {/* Drive cards */}
-      {matchedFiles.map((file, i) => (
-        <DriveCard
-          key={file.url}
-          file={file}
-          index={driveBase + i}
-          canvasOffset={canvasOffset}
-          pos={getPos(file.url, driveBase + i)}
-          onDrag={moveCard}
-          onDragEnd={dropCard}
-        />
-      ))}
+      {/* ── Bento grid ── */}
+      <div className={styles.grid}>
+        {matchedFiles.map((file, i) => (
+          <DriveCard key={file.url} file={file} index={driveOffset + i} />
+        ))}
+        {figmaFiles.map((file, i) => (
+          <FigmaCard key={file.url} file={file} index={figmaOffset + i} />
+        ))}
+        {notionPages.map((page, i) => (
+          <NotionCard key={page.url} page={page} index={notionOffset + i} />
+        ))}
+        {ytVideos.map((video, i) => (
+          <YouTubeCard key={video.url} video={video} index={ytOffset + i} />
+        ))}
+      </div>
 
-      {/* Figma cards */}
-      {figmaFiles.map((file, i) => (
-        <FigmaCard
-          key={file.url}
-          file={file}
-          index={figmaBase + i}
-          canvasOffset={canvasOffset}
-          pos={getPos(file.url, figmaBase + i)}
-          onDrag={moveCard}
-          onDragEnd={dropCard}
-        />
-      ))}
-
-      {/* Notion cards */}
-      {notionPages.map((page, i) => (
-        <NotionCard
-          key={page.url}
-          page={page}
-          index={notionBase + i}
-          canvasOffset={canvasOffset}
-          pos={getPos(page.url, notionBase + i)}
-          onDrag={moveCard}
-          onDragEnd={dropCard}
-        />
-      ))}
-
-      {/* YouTube cards */}
-      {ytVideos.map((video, i) => (
-        <YouTubeCard
-          key={video.url}
-          video={video}
-          index={ytBase + i}
-          canvasOffset={canvasOffset}
-          pos={getPos(video.url, ytBase + i)}
-          onDrag={moveCard}
-          onDragEnd={dropCard}
-        />
-      ))}
-
-      {/* Calendar signal cards — right side */}
+      {/* ── Signal strip — fixed right side ── */}
       {signalEvents.map((event, i) => (
-        <SignalCard
-          key={event.id}
-          event={event}
-          index={i}
-          theme={theme}
-          onDone={dismiss}
-        />
+        <SignalCard key={event.id} event={event} index={i} theme={theme} onDone={dismiss} />
       ))}
-
-      {/* Gmail signal cards — right side, below calendar signals */}
       {gmailSignals.map((signal, i) => (
-        <GmailSignalCard
-          key={signal.id}
-          signal={signal}
-          index={gmailSignalBase + i}
-          theme={theme}
-          onDismiss={dismissGmail}
-        />
+        <GmailSignalCard key={signal.id} signal={signal} index={gmailOffset + i} theme={theme} onDismiss={dismissGmail} />
       ))}
     </div>
   );
