@@ -497,11 +497,6 @@ export function FovealCanvas({ theme, resetLayoutKey, bgPos, isRecentering }: Pr
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // stable — uses refs for bgPos and cardOuterRefs
 
-  const resetLayout = useCallback(() => {
-    localStorage.removeItem(LS_KEY);
-    window.location.reload();
-  }, []);
-
   const dismiss      = (id: string) => setDismissed((p) => new Set(p).add(id));
   const dismissGmail = (id: string) => setGmailDismissed((p) => new Set(p).add(id));
 
@@ -614,12 +609,6 @@ export function FovealCanvas({ theme, resetLayoutKey, bgPos, isRecentering }: Pr
           theme={theme} onDismiss={dismissGmail} />
       ))}
 
-      {/* ── Reset layout button ── */}
-      {Object.keys(savedPos).length > 0 && (
-        <button className={styles.resetBtn} onClick={resetLayout}>
-          Reset layout
-        </button>
-      )}
     </div>
   );
 }
