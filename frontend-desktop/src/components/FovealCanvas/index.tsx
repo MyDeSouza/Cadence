@@ -34,12 +34,46 @@ function loadPositions(): Record<string, Pos> {
   catch { return {}; }
 }
 
+// ── Per-card rAF state ─────────────────────────────────────
+interface CardEntry {
+  outerEl:     HTMLDivElement | null;
+  innerEl:     HTMLDivElement | null;
+  nudgeX:      number;
+  nudgeY:      number;
+  targetHover: number;   // 1.0 or 1.04
+  hoverScale:  number;   // current lerped value
+  rotDeg:      number;   // fixed random –1° to +1°
+  phaseX:      number;   // random phase offset for X sine
+  phaseY:      number;   // random phase offset for Y sine
+  freqX:       number;   // cycles/sec for X sway
+  freqY:       number;   // cycles/sec for Y sway (slightly different)
+}
+
+// Creates entry with stable random params on first call for a given id
+function ensureEntry(id: string, map: Map<string, CardEntry>): CardEntry {
+  if (!map.has(id)) {
+    const dur = 5 + Math.random() * 4; // 5–9 s
+    map.set(id, {
+      outerEl: null, innerEl: null,
+      nudgeX: 0, nudgeY: 0,
+      targetHover: 1.0, hoverScale: 1.0,
+      rotDeg:  Math.random() * 2 - 1,
+      phaseX:  Math.random() * Math.PI * 2,
+      phaseY:  Math.random() * Math.PI * 2,
+      freqX:   1 / dur,
+      freqY:   1 / (dur * (1.1 + Math.random() * 0.4)),
+    });
+  }
+  return map.get(id)!;
+}
+
 // ── DraggableCard wrapper ──────────────────────────────────
-// Outer div: nudge positioning (--nudge-x/y CSS vars), absolute position when detached.
-// Inner .card div: visual styles, cardIn + idleSway animations, hover scale/rotate.
+// Outer div: absolute position when detached, bounds for nudge proximity.
+// Inner .card div: visual styles + cardIn entrance. rAF writes combined
+// transform (scale + rotate + swayX/Y + nudgeX/Y) directly to innerEl.
 function DraggableCard({
   id, isDetached, pos, index, extraClass, onDetach, onDrop,
-  swayDur, swayDelayMs, onNudgeRef, children,
+  onOuterRef, onInnerRef, onHover, children,
 }: {
   id:          string;
   isDetached:  boolean;
@@ -48,48 +82,21 @@ function DraggableCard({
   extraClass?: string;
   onDetach:    (id: string, pos: Pos) => void;
   onDrop:      (id: string, pos: Pos) => void;
-  swayDur:     number;
-  swayDelayMs: number;
-  onNudgeRef:  (id: string, el: HTMLDivElement | null) => void;
+  onOuterRef:  (id: string, el: HTMLDivElement | null) => void;
+  onInnerRef:  (id: string, el: HTMLDivElement | null) => void;
+  onHover:     (id: string, hovering: boolean) => void;
   children:    React.ReactNode;
 }) {
-  // outerRef — the positioned wrapper (used for drag left/top and nudge vars)
-  const outerRef   = useRef<HTMLDivElement | null>(null);
-  // Fixed random rotation per card, picked once on mount
-  const rotRef     = useRef(Math.random() * 2 - 1);
-  const exitTimer  = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const outerRef = useRef<HTMLDivElement | null>(null);
 
-  // Hover visual override (null = idle, let sway run freely)
-  const [override, setOverride] = useState<{
-    transform:  string;
-    boxShadow:  string;
-    transition: string;
-  } | null>(null);
-
-  // Expose outer wrapper ref to FovealCanvas for nudge tracking
   const setOuterRef = useCallback((el: HTMLDivElement | null) => {
     outerRef.current = el;
-    onNudgeRef(id, el);
-  }, [id, onNudgeRef]);
+    onOuterRef(id, el);
+  }, [id, onOuterRef]);
 
-  const handleMouseEnter = useCallback(() => {
-    clearTimeout(exitTimer.current);
-    setOverride({
-      transform:  `scale(1.04) rotate(${rotRef.current}deg)`,
-      boxShadow:  '0 8px 32px rgba(0,0,0,0.28)',
-      transition: 'transform 200ms ease, box-shadow 200ms ease',
-    });
-  }, []);
-
-  const handleMouseLeave = useCallback(() => {
-    // Snap to identity with slow transition, then clear override so sway resumes
-    setOverride({
-      transform:  'scale(1) rotate(0deg)',
-      boxShadow:  '0 4px 24px 0 rgba(0,0,0,0.28)',
-      transition: 'transform 300ms ease, box-shadow 300ms ease',
-    });
-    exitTimer.current = setTimeout(() => setOverride(null), 300);
-  }, []);
+  const setInnerRef = useCallback((el: HTMLDivElement | null) => {
+    onInnerRef(id, el);
+  }, [id, onInnerRef]);
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest('a')) return;
@@ -143,41 +150,25 @@ function DraggableCard({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, isDetached, pos?.x, pos?.y, onDetach, onDrop]);
 
-  // Sway starts after entrance finishes to avoid transform conflict
-  const entranceMs  = index * 80;
-  const swayStartMs = entranceMs + 300 + swayDelayMs;
+  const entranceMs = index * 80;
 
   const innerCls = [styles.card, isDetached ? styles.cardDetached : '', extraClass ?? '']
     .filter(Boolean).join(' ');
 
-  const innerStyle: React.CSSProperties = {
-    // Combined animation: entrance fade-in + ambient sway (sway deferred until entrance ends)
-    animation: `cardIn 300ms cubic-bezier(0.16, 1, 0.3, 1) ${entranceMs}ms both, idleSway ${swayDur}s ${swayStartMs}ms ease-in-out infinite`,
-    // Hover override: sets transform + shadow + transition; null = idle, sway runs freely
-    ...(override ? {
-      transform:  override.transform,
-      boxShadow:  override.boxShadow,
-      transition: override.transition,
-    } : {}),
-  };
-
-  // Outer wrapper: nudge transform + absolute position when detached
-  const outerStyle: React.CSSProperties = {
-    transform:  'translateX(var(--nudge-x, 0px)) translateY(var(--nudge-y, 0px))',
-    transition: 'transform 150ms ease-out',
-    ...(isDetached && pos
-      ? { position: 'absolute' as const, left: pos.x, top: pos.y, zIndex: 10 }
-      : {}),
-  };
+  // Outer wrapper: absolute position only when detached
+  const outerStyle: React.CSSProperties = isDetached && pos
+    ? { position: 'absolute' as const, left: pos.x, top: pos.y, zIndex: 10 }
+    : {};
 
   return (
     <div ref={setOuterRef} style={outerStyle}>
       <div
+        ref={setInnerRef}
         className={innerCls}
-        style={innerStyle}
+        style={{ animation: `cardIn 300ms cubic-bezier(0.16, 1, 0.3, 1) ${entranceMs}ms both` }}
         onMouseDown={handleMouseDown}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
+        onMouseEnter={() => onHover(id, true)}
+        onMouseLeave={() => onHover(id, false)}
       >
         {children}
       </div>
@@ -499,31 +490,53 @@ export function FovealCanvas({ theme, resetLayoutKey, bgPos, isRecentering }: Pr
     setSavedPos({});
   }, [resetLayoutKey]);
 
-  // ── Sway params: stable random values per card ID ──────────
-  const swayParamsRef = useRef<Map<string, { dur: number; delayMs: number }>>(new Map());
-  const getSwayParams = (id: string) => {
-    if (!swayParamsRef.current.has(id)) {
-      swayParamsRef.current.set(id, {
-        dur:     6 + Math.random() * 6,              // 6–12 s
-        delayMs: Math.floor(Math.random() * 4000),   // 0–4000 ms
-      });
-    }
-    return swayParamsRef.current.get(id)!;
-  };
+  // ── Per-card rAF state (sway, nudge, hover) ────────────────
+  const cardEntries = useRef<Map<string, CardEntry>>(new Map());
 
-  // ── Nudge refs: map from card id → outer wrapper element ───
-  const cardNudgeRefs = useRef<Map<string, HTMLDivElement | null>>(new Map());
-  const handleNudgeRef = useCallback((id: string, el: HTMLDivElement | null) => {
-    if (el) cardNudgeRefs.current.set(id, el);
-    else    cardNudgeRefs.current.delete(id);
+  const handleOuterRef = useCallback((id: string, el: HTMLDivElement | null) => {
+    ensureEntry(id, cardEntries.current).outerEl = el;
   }, []);
 
-  // ── Proximity nudge: global mousemove, direct DOM writes ───
+  const handleInnerRef = useCallback((id: string, el: HTMLDivElement | null) => {
+    ensureEntry(id, cardEntries.current).innerEl = el;
+  }, []);
+
+  const handleHover = useCallback((id: string, hovering: boolean) => {
+    const entry = cardEntries.current.get(id);
+    if (entry) entry.targetHover = hovering ? 1.04 : 1.0;
+  }, []);
+
+  // ── rAF loop: combines sway + hover scale + nudge into one transform ──
+  useEffect(() => {
+    let raf: number;
+    const loop = (t: number) => {
+      const time = t / 1000; // seconds
+      cardEntries.current.forEach((entry) => {
+        if (!entry.innerEl) return;
+        // Lerp hover scale (~12% per frame → smooth ~200ms rise, ~300ms fall)
+        entry.hoverScale += (entry.targetHover - entry.hoverScale) * 0.12;
+        // Sine-wave sway: ±6px X, ±4px Y, 5–9 s cycle
+        const swayX = Math.sin(time * entry.freqX * Math.PI * 2 + entry.phaseX) * 6;
+        const swayY = Math.sin(time * entry.freqY * Math.PI * 2 + entry.phaseY) * 4;
+        // Single combined transform — no separate transforms that could override each other
+        entry.innerEl.style.transform =
+          `scale(${entry.hoverScale.toFixed(4)}) ` +
+          `rotate(${entry.rotDeg.toFixed(3)}deg) ` +
+          `translateX(${(swayX + entry.nudgeX).toFixed(2)}px) ` +
+          `translateY(${(swayY + entry.nudgeY).toFixed(2)}px)`;
+      });
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
+  // ── Proximity nudge: stored in CardEntry, applied by rAF ───
   useEffect(() => {
     const onMove = (e: MouseEvent) => {
-      cardNudgeRefs.current.forEach((el) => {
-        if (!el) return;
-        const rect = el.getBoundingClientRect();
+      cardEntries.current.forEach((entry) => {
+        if (!entry.outerEl) return;
+        const rect = entry.outerEl.getBoundingClientRect();
         const cx = rect.left + rect.width  / 2;
         const cy = rect.top  + rect.height / 2;
         const dx = e.clientX - cx;
@@ -531,11 +544,11 @@ export function FovealCanvas({ theme, resetLayoutKey, bgPos, isRecentering }: Pr
         const dist = Math.hypot(dx, dy);
         if (dist < 120 && dist > 0.5) {
           const factor = 1 - dist / 120;
-          el.style.setProperty('--nudge-x', `${(dx / dist) * factor * 6}px`);
-          el.style.setProperty('--nudge-y', `${(dy / dist) * factor * 6}px`);
+          entry.nudgeX = (dx / dist) * factor * 6;
+          entry.nudgeY = (dy / dist) * factor * 6;
         } else {
-          el.style.setProperty('--nudge-x', '0px');
-          el.style.setProperty('--nudge-y', '0px');
+          entry.nudgeX = 0;
+          entry.nudgeY = 0;
         }
       });
     };
@@ -581,28 +594,46 @@ export function FovealCanvas({ theme, resetLayoutKey, bgPos, isRecentering }: Pr
     .slice(0, 3);
   const gmailSignals = gmailRaw.filter((s) => !gmailDismissed.has(s.id)).slice(0, 3);
 
-  // Per-type CSS width classes
   const driveExtraClass = (f: DriveFile) =>
     (f.type === 'slides') ? styles.cardSlides : styles.cardDoc;
 
-  // Build a flat card list with stable IDs, stagger indices, and width classes
   const driveOffset  = 0;
   const figmaOffset  = matchedFiles.length;
   const notionOffset = figmaOffset  + figmaFiles.length;
   const ytOffset     = notionOffset + notionPages.length;
 
-  type CardItem = { id: string; index: number; extraClass: string; inner: React.ReactNode };
+  // cardWidth/cardHeight used for ghost placeholders that preserve grid slots
+  type CardItem = {
+    id: string; index: number; extraClass: string;
+    cardWidth: number; cardHeight: number; inner: React.ReactNode;
+  };
   const allCards: CardItem[] = [
-    ...matchedFiles.map((f, i) => ({ id: f.url, index: driveOffset + i,  extraClass: driveExtraClass(f),  inner: <DriveCardInner   file={f} /> })),
-    ...figmaFiles  .map((f, i) => ({ id: f.url, index: figmaOffset  + i, extraClass: styles.cardSlides,   inner: <FigmaCardInner   file={f} /> })),
-    ...notionPages .map((p, i) => ({ id: p.url, index: notionOffset + i, extraClass: `${styles.cardNotion} ${styles.cardCompact}`, inner: <NotionCardInner  page={p} /> })),
-    ...ytVideos    .map((v, i) => ({ id: v.url, index: ytOffset     + i, extraClass: styles.cardVideo,    inner: <YouTubeCardInner video={v} /> })),
+    ...matchedFiles.map((f, i) => ({
+      id: f.url, index: driveOffset + i, extraClass: driveExtraClass(f),
+      cardWidth: 220,
+      cardHeight: (f.type === 'doc' || f.type === 'sheet' || f.type === 'pdf') ? 300 : 180,
+      inner: <DriveCardInner file={f} />,
+    })),
+    ...figmaFiles.map((f, i) => ({
+      id: f.url, index: figmaOffset + i, extraClass: styles.cardSlides,
+      cardWidth: 220, cardHeight: 180,
+      inner: <FigmaCardInner file={f} />,
+    })),
+    ...notionPages.map((p, i) => ({
+      id: p.url, index: notionOffset + i,
+      extraClass: `${styles.cardNotion} ${styles.cardCompact}`,
+      cardWidth: 200, cardHeight: 100,
+      inner: <NotionCardInner page={p} />,
+    })),
+    ...ytVideos.map((v, i) => ({
+      id: v.url, index: ytOffset + i, extraClass: styles.cardVideo,
+      cardWidth: 220, cardHeight: 160,
+      inner: <YouTubeCardInner video={v} />,
+    })),
   ];
 
-  const gridCards     = allCards.filter((c) => !(c.id in savedPos));
-  const detachedCards = allCards.filter((c) =>   c.id in savedPos);
+  const detachedCards = allCards.filter((c) => c.id in savedPos);
 
-  // Grid positioning — moves with canvas pan
   const gridClassName = [
     styles.grid,
     isRecentering ? styles.gridRecentering : '',
@@ -616,14 +647,22 @@ export function FovealCanvas({ theme, resetLayoutKey, bgPos, isRecentering }: Pr
 
   return (
     <div className={styles.canvas}>
-      {/* ── Card grid: cards without a saved position ── */}
+      {/* ── Card grid: real cards + ghost placeholders for detached slots ── */}
       <div className={gridClassName} style={gridStyle}>
-        {gridCards.map((c) => {
-          const sway = getSwayParams(c.id);
+        {allCards.map((c) => {
+          if (c.id in savedPos) {
+            // Ghost placeholder: preserves the grid slot so remaining cards never reflow
+            return (
+              <div key={c.id}
+                   style={{ width: c.cardWidth, height: c.cardHeight, borderRadius: 16, flexShrink: 0 }}
+                   aria-hidden="true" />
+            );
+          }
           return (
             <DraggableCard key={c.id} id={c.id} isDetached={false}
-              index={c.index} onDetach={handleDetach} onDrop={handleDrop}
-              swayDur={sway.dur} swayDelayMs={sway.delayMs} onNudgeRef={handleNudgeRef}>
+              index={c.index} extraClass={c.extraClass}
+              onDetach={handleDetach} onDrop={handleDrop}
+              onOuterRef={handleOuterRef} onInnerRef={handleInnerRef} onHover={handleHover}>
               {c.inner}
             </DraggableCard>
           );
@@ -631,16 +670,14 @@ export function FovealCanvas({ theme, resetLayoutKey, bgPos, isRecentering }: Pr
       </div>
 
       {/* ── Detached cards: freely positioned on the canvas ── */}
-      {detachedCards.map((c) => {
-        const sway = getSwayParams(c.id);
-        return (
-          <DraggableCard key={c.id} id={c.id} isDetached pos={savedPos[c.id]}
-            index={c.index} onDetach={handleDetach} onDrop={handleDrop}
-            swayDur={sway.dur} swayDelayMs={sway.delayMs} onNudgeRef={handleNudgeRef}>
-            {c.inner}
-          </DraggableCard>
-        );
-      })}
+      {detachedCards.map((c) => (
+        <DraggableCard key={c.id} id={c.id} isDetached pos={savedPos[c.id]}
+          index={c.index} extraClass={c.extraClass}
+          onDetach={handleDetach} onDrop={handleDrop}
+          onOuterRef={handleOuterRef} onInnerRef={handleInnerRef} onHover={handleHover}>
+          {c.inner}
+        </DraggableCard>
+      ))}
 
       {/* ── Signal strip — fixed right ── */}
       {signalEvents.map((event, i) => (
