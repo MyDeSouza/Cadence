@@ -35,21 +35,61 @@ function loadPositions(): Record<string, Pos> {
 }
 
 // ── DraggableCard wrapper ──────────────────────────────────
-// Renders the outer .card div. Grid cards detach on 5px drag threshold;
-// detached cards are absolutely positioned and immediately draggable.
+// Outer div: nudge positioning (--nudge-x/y CSS vars), absolute position when detached.
+// Inner .card div: visual styles, cardIn + idleSway animations, hover scale/rotate.
 function DraggableCard({
-  id, isDetached, pos, index, extraClass, onDetach, onDrop, children,
+  id, isDetached, pos, index, extraClass, onDetach, onDrop,
+  swayDur, swayDelayMs, onNudgeRef, children,
 }: {
-  id:         string;
-  isDetached: boolean;
-  pos?:       Pos;
-  index:      number;
+  id:          string;
+  isDetached:  boolean;
+  pos?:        Pos;
+  index:       number;
   extraClass?: string;
-  onDetach:   (id: string, pos: Pos) => void;
-  onDrop:     (id: string, pos: Pos) => void;
-  children:   React.ReactNode;
+  onDetach:    (id: string, pos: Pos) => void;
+  onDrop:      (id: string, pos: Pos) => void;
+  swayDur:     number;
+  swayDelayMs: number;
+  onNudgeRef:  (id: string, el: HTMLDivElement | null) => void;
+  children:    React.ReactNode;
 }) {
-  const cardRef = useRef<HTMLDivElement>(null);
+  // outerRef — the positioned wrapper (used for drag left/top and nudge vars)
+  const outerRef   = useRef<HTMLDivElement | null>(null);
+  // Fixed random rotation per card, picked once on mount
+  const rotRef     = useRef(Math.random() * 2 - 1);
+  const exitTimer  = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  // Hover visual override (null = idle, let sway run freely)
+  const [override, setOverride] = useState<{
+    transform:  string;
+    boxShadow:  string;
+    transition: string;
+  } | null>(null);
+
+  // Expose outer wrapper ref to FovealCanvas for nudge tracking
+  const setOuterRef = useCallback((el: HTMLDivElement | null) => {
+    outerRef.current = el;
+    onNudgeRef(id, el);
+  }, [id, onNudgeRef]);
+
+  const handleMouseEnter = useCallback(() => {
+    clearTimeout(exitTimer.current);
+    setOverride({
+      transform:  `scale(1.04) rotate(${rotRef.current}deg)`,
+      boxShadow:  '0 8px 32px rgba(0,0,0,0.28)',
+      transition: 'transform 200ms ease, box-shadow 200ms ease',
+    });
+  }, []);
+
+  const handleMouseLeave = useCallback(() => {
+    // Snap to identity with slow transition, then clear override so sway resumes
+    setOverride({
+      transform:  'scale(1) rotate(0deg)',
+      boxShadow:  '0 4px 24px 0 rgba(0,0,0,0.28)',
+      transition: 'transform 300ms ease, box-shadow 300ms ease',
+    });
+    exitTimer.current = setTimeout(() => setOverride(null), 300);
+  }, []);
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest('a')) return;
@@ -72,20 +112,19 @@ function DraggableCard({
 
       if (!active) {
         if (Math.hypot(dx, dy) <= 5) return;
-        // Threshold crossed — detach from grid
         active = true;
-        const rect = cardRef.current?.getBoundingClientRect();
+        const rect = outerRef.current?.getBoundingClientRect();
         if (rect) { baseX = rect.left; baseY = rect.top; }
         onDetach(id, { x: baseX + dx, y: baseY + dy });
         document.body.style.cursor     = 'grabbing';
         document.body.style.userSelect = 'none';
-        return; // next move will do DOM update
+        return;
       }
 
       // Direct DOM update for smooth 60fps dragging
-      if (cardRef.current) {
-        cardRef.current.style.left = `${baseX + dx}px`;
-        cardRef.current.style.top  = `${baseY + dy}px`;
+      if (outerRef.current) {
+        outerRef.current.style.left = `${baseX + dx}px`;
+        outerRef.current.style.top  = `${baseY + dy}px`;
       }
     };
 
@@ -104,16 +143,44 @@ function DraggableCard({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, isDetached, pos?.x, pos?.y, onDetach, onDrop]);
 
-  const cls = [styles.card, isDetached ? styles.cardDetached : '', extraClass ?? '']
+  // Sway starts after entrance finishes to avoid transform conflict
+  const entranceMs  = index * 80;
+  const swayStartMs = entranceMs + 300 + swayDelayMs;
+
+  const innerCls = [styles.card, isDetached ? styles.cardDetached : '', extraClass ?? '']
     .filter(Boolean).join(' ');
 
-  const style: React.CSSProperties = isDetached && pos
-    ? { position: 'absolute', left: pos.x, top: pos.y, animationDelay: `${index * 80}ms` }
-    : { animationDelay: `${index * 80}ms` };
+  const innerStyle: React.CSSProperties = {
+    // Combined animation: entrance fade-in + ambient sway (sway deferred until entrance ends)
+    animation: `cardIn 300ms cubic-bezier(0.16, 1, 0.3, 1) ${entranceMs}ms both, idleSway ${swayDur}s ${swayStartMs}ms ease-in-out infinite`,
+    // Hover override: sets transform + shadow + transition; null = idle, sway runs freely
+    ...(override ? {
+      transform:  override.transform,
+      boxShadow:  override.boxShadow,
+      transition: override.transition,
+    } : {}),
+  };
+
+  // Outer wrapper: nudge transform + absolute position when detached
+  const outerStyle: React.CSSProperties = {
+    transform:  'translateX(var(--nudge-x, 0px)) translateY(var(--nudge-y, 0px))',
+    transition: 'transform 150ms ease-out',
+    ...(isDetached && pos
+      ? { position: 'absolute' as const, left: pos.x, top: pos.y, zIndex: 10 }
+      : {}),
+  };
 
   return (
-    <div ref={cardRef} className={cls} style={style} onMouseDown={handleMouseDown}>
-      {children}
+    <div ref={setOuterRef} style={outerStyle}>
+      <div
+        className={innerCls}
+        style={innerStyle}
+        onMouseDown={handleMouseDown}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+      >
+        {children}
+      </div>
     </div>
   );
 }
@@ -432,6 +499,50 @@ export function FovealCanvas({ theme, resetLayoutKey, bgPos, isRecentering }: Pr
     setSavedPos({});
   }, [resetLayoutKey]);
 
+  // ── Sway params: stable random values per card ID ──────────
+  const swayParamsRef = useRef<Map<string, { dur: number; delayMs: number }>>(new Map());
+  const getSwayParams = (id: string) => {
+    if (!swayParamsRef.current.has(id)) {
+      swayParamsRef.current.set(id, {
+        dur:     6 + Math.random() * 6,              // 6–12 s
+        delayMs: Math.floor(Math.random() * 4000),   // 0–4000 ms
+      });
+    }
+    return swayParamsRef.current.get(id)!;
+  };
+
+  // ── Nudge refs: map from card id → outer wrapper element ───
+  const cardNudgeRefs = useRef<Map<string, HTMLDivElement | null>>(new Map());
+  const handleNudgeRef = useCallback((id: string, el: HTMLDivElement | null) => {
+    if (el) cardNudgeRefs.current.set(id, el);
+    else    cardNudgeRefs.current.delete(id);
+  }, []);
+
+  // ── Proximity nudge: global mousemove, direct DOM writes ───
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => {
+      cardNudgeRefs.current.forEach((el) => {
+        if (!el) return;
+        const rect = el.getBoundingClientRect();
+        const cx = rect.left + rect.width  / 2;
+        const cy = rect.top  + rect.height / 2;
+        const dx = e.clientX - cx;
+        const dy = e.clientY - cy;
+        const dist = Math.hypot(dx, dy);
+        if (dist < 120 && dist > 0.5) {
+          const factor = 1 - dist / 120;
+          el.style.setProperty('--nudge-x', `${(dx / dist) * factor * 6}px`);
+          el.style.setProperty('--nudge-y', `${(dy / dist) * factor * 6}px`);
+        } else {
+          el.style.setProperty('--nudge-x', '0px');
+          el.style.setProperty('--nudge-y', '0px');
+        }
+      });
+    };
+    document.addEventListener('mousemove', onMove);
+    return () => document.removeEventListener('mousemove', onMove);
+  }, []);
+
   const dismiss      = (id: string) => setDismissed((p) => new Set(p).add(id));
   const dismissGmail = (id: string) => setGmailDismissed((p) => new Set(p).add(id));
 
@@ -507,21 +618,29 @@ export function FovealCanvas({ theme, resetLayoutKey, bgPos, isRecentering }: Pr
     <div className={styles.canvas}>
       {/* ── Card grid: cards without a saved position ── */}
       <div className={gridClassName} style={gridStyle}>
-        {gridCards.map((c) => (
-          <DraggableCard key={c.id} id={c.id} isDetached={false}
-            index={c.index} onDetach={handleDetach} onDrop={handleDrop}>
-            {c.inner}
-          </DraggableCard>
-        ))}
+        {gridCards.map((c) => {
+          const sway = getSwayParams(c.id);
+          return (
+            <DraggableCard key={c.id} id={c.id} isDetached={false}
+              index={c.index} onDetach={handleDetach} onDrop={handleDrop}
+              swayDur={sway.dur} swayDelayMs={sway.delayMs} onNudgeRef={handleNudgeRef}>
+              {c.inner}
+            </DraggableCard>
+          );
+        })}
       </div>
 
       {/* ── Detached cards: freely positioned on the canvas ── */}
-      {detachedCards.map((c) => (
-        <DraggableCard key={c.id} id={c.id} isDetached pos={savedPos[c.id]}
-          index={c.index} onDetach={handleDetach} onDrop={handleDrop}>
-          {c.inner}
-        </DraggableCard>
-      ))}
+      {detachedCards.map((c) => {
+        const sway = getSwayParams(c.id);
+        return (
+          <DraggableCard key={c.id} id={c.id} isDetached pos={savedPos[c.id]}
+            index={c.index} onDetach={handleDetach} onDrop={handleDrop}
+            swayDur={sway.dur} swayDelayMs={sway.delayMs} onNudgeRef={handleNudgeRef}>
+            {c.inner}
+          </DraggableCard>
+        );
+      })}
 
       {/* ── Signal strip — fixed right ── */}
       {signalEvents.map((event, i) => (
