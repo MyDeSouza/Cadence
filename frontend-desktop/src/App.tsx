@@ -23,9 +23,6 @@ export default function App() {
   const [isDragging,    setIsDragging]    = useState(false);
   const [isRecentering, setIsRecentering] = useState(false);
   const [resetLayoutKey, setResetLayoutKey] = useState(0);
-  const [isPinned, setIsPinned] = useState(
-    () => localStorage.getItem('cadence_pin_state') === 'pinned',
-  );
   const dragRef = useRef<{ startX: number; startY: number; originX: number; originY: number } | null>(null);
 
   const handleBeginSession = (event: CadenceEvent) => { beginSession(event); };
@@ -36,14 +33,6 @@ export default function App() {
     setBgPos({ x: 0, y: 0 });
     setResetLayoutKey((k) => k + 1);
     setTimeout(() => setIsRecentering(false), 320);
-  }, []);
-
-  const handlePinToggle = useCallback(() => {
-    setIsPinned((prev) => {
-      const next = !prev;
-      localStorage.setItem('cadence_pin_state', next ? 'pinned' : 'unpinned');
-      return next;
-    });
   }, []);
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -107,8 +96,6 @@ export default function App() {
           onRecenter={handleRecenter}
           onDraftToggle={() => setDraftingOpen((v) => !v)}
           draftOpen={draftingOpen}
-          isPinned={isPinned}
-          onPinToggle={handlePinToggle}
         />
         {draftingOpen && (
           <DraftingTable
@@ -129,7 +116,6 @@ export default function App() {
           onEndSession={handleEndSession}
           theme={theme}
           resetLayoutKey={resetLayoutKey}
-          isPinned={isPinned}
           bgPos={bgPos}
           isRecentering={isRecentering}
         />

@@ -7,11 +7,11 @@
 }
 
 /* ── Card grid ──────────────────────────────────────────── */
-/* Default: position absolute — moves with canvas pan (bgPos applied via inline style) */
+/* Card grid — moves with canvas pan (bgPos applied via inline style) */
 .grid {
   position: absolute;
-  top: 40vh;     /* overridden by inline style when unpinned */
-  left: 80px;    /* overridden by inline style when unpinned */
+  top: 40vh;
+  left: 80px;
   right: 40px;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 260px));
@@ -20,14 +20,6 @@
   pointer-events: none;
   align-items: start;
   justify-content: start;
-}
-
-/* Pinned: fixed to viewport — ignores canvas pan */
-.gridPinned {
-  position: fixed !important;
-  top: 40vh;
-  left: 80px;
-  right: 40px;
 }
 
 /* Smooth pan-reset animation */

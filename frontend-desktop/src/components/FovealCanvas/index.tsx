@@ -21,7 +21,6 @@ interface Props {
   onEndSession:    () => void;
   theme:           Theme;
   resetLayoutKey?: number;
-  isPinned?:       boolean;
   bgPos?:          { x: number; y: number };
   isRecentering?:  boolean;
 }
@@ -413,7 +412,7 @@ function YouTubeLogo() {
 }
 
 // ── FovealCanvas ───────────────────────────────────────────
-export function FovealCanvas({ theme, resetLayoutKey, isPinned, bgPos, isRecentering }: Props) {
+export function FovealCanvas({ theme, resetLayoutKey, bgPos, isRecentering }: Props) {
   const { events }             = useDigest();
   const { files: allFiles }    = useDriveFiles();
   const { files: figmaFiles }  = useFigmaFiles();
@@ -492,20 +491,17 @@ export function FovealCanvas({ theme, resetLayoutKey, isPinned, bgPos, isRecente
   const gridCards     = allCards.filter((c) => !(c.id in savedPos));
   const detachedCards = allCards.filter((c) =>   c.id in savedPos);
 
-  // Grid positioning — unpinned moves with canvas pan, pinned stays fixed
+  // Grid positioning — moves with canvas pan
   const gridClassName = [
     styles.grid,
-    isPinned      ? styles.gridPinned     : '',
     isRecentering ? styles.gridRecentering : '',
   ].filter(Boolean).join(' ');
 
-  const gridStyle: React.CSSProperties = isPinned
-    ? {}
-    : {
-        top:  `calc(40vh + ${bgPos?.y ?? 0}px)`,
-        left: `${80 + (bgPos?.x ?? 0)}px`,
-        transition: isRecentering ? 'top 300ms ease, left 300ms ease' : undefined,
-      };
+  const gridStyle: React.CSSProperties = {
+    top:  `calc(40vh + ${bgPos?.y ?? 0}px)`,
+    left: `${80 + (bgPos?.x ?? 0)}px`,
+    transition: isRecentering ? 'top 300ms ease, left 300ms ease' : undefined,
+  };
 
   return (
     <div className={styles.canvas}>
