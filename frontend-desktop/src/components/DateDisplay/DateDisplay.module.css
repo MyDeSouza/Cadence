@@ -1,31 +1,47 @@
-/* ── Slim left notch ─────────────────────────────────────── */
+/* ══════════════════════════════════════════════════════════
+   NOTCH — vertical pill on left edge
+   ══════════════════════════════════════════════════════════ */
 .notch {
   position: fixed;
   left: 0;
-  top: 0;
+  top: 24px;
   width: 52px;
-  height: 100vh;
-  background: #141414;
-  border-radius: 0 12px 12px 0;
+  background: rgba(20, 20, 20, 0.72);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 0 16px 16px 0;
   z-index: 50;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  padding-top: 16px;
+  overflow: hidden;
+  transition: width 280ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Month label */
+.notchExpanded {
+  width: 300px;
+}
+
+/* ── Header strip — always 52px wide ─────────────────────── */
+.header {
+  width: 52px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px 0;
+  flex-shrink: 0;
+  align-self: flex-start;
+}
+
 .month {
   font-family: 'Outfit', sans-serif;
   font-weight: 300;
   font-size: 11px;
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(255, 255, 255, 0.5);
   margin-bottom: 8px;
   user-select: none;
   pointer-events: none;
 }
 
-/* Date circle button */
 .dayCircleBtn {
   width: 36px;
   height: 36px;
@@ -36,8 +52,8 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: background 0.15s ease;
   flex-shrink: 0;
+  transition: background 0.15s ease;
 }
 
 .dayCircleBtn:hover  { background: rgba(255, 255, 255, 0.20); }
@@ -45,24 +61,22 @@
 
 .day {
   font-family: 'Outfit', sans-serif;
-  font-weight: 500;
-  font-size: 22px;
+  font-weight: 600;
+  font-size: 18px;
   color: white;
   line-height: 1;
   pointer-events: none;
   user-select: none;
 }
 
-/* Divider */
 .divider {
   width: 32px;
   height: 1px;
   background: rgba(255, 255, 255, 0.08);
-  margin: 12px 0;
+  margin: 8px auto;
   flex-shrink: 0;
 }
 
-/* Icon buttons */
 .iconBtn {
   background: none;
   border: none;
@@ -71,8 +85,8 @@
   align-items: center;
   justify-content: center;
   padding: 0;
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   border-radius: 8px;
   transition: background 0.15s ease;
   flex-shrink: 0;
@@ -80,18 +94,278 @@
 
 .iconBtn:hover { background: rgba(255, 255, 255, 0.08); }
 
-.iconBtnGap { margin-top: 16px; }
+.iconBtnGap { margin-top: 12px; }
 
-/* ── Floating calendar panel ─────────────────────────────── */
-.calendarSlide {
-  position: fixed;
-  left: 60px;
-  top: 16px;
-  z-index: 200;
-  animation: slideInLeft 200ms cubic-bezier(0.16, 1, 0.3, 1) both;
+/* ══════════════════════════════════════════════════════════
+   EXPAND WRAPPER — CSS grid trick for smooth height anim
+   ══════════════════════════════════════════════════════════ */
+.expandWrapper {
+  display: grid;
+  grid-template-rows: 0fr;
+  width: 100%;
+  transition: grid-template-rows 280ms cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
 }
 
-@keyframes slideInLeft {
-  from { opacity: 0; transform: translateX(-12px); }
-  to   { opacity: 1; transform: translateX(0); }
+.expandWrapperOpen {
+  grid-template-rows: 1fr;
 }
+
+.expandInner {
+  overflow: hidden;
+  min-height: 0; /* required for grid trick */
+}
+
+/* ══════════════════════════════════════════════════════════
+   MINI CALENDAR (dark theme)
+   ══════════════════════════════════════════════════════════ */
+.calPanel {
+  padding: 0 10px 14px;
+}
+
+/* Month header */
+.calHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 2px 10px;
+}
+
+.calMonthTitle {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 500;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.8);
+  letter-spacing: 0.01em;
+}
+
+.calNavBtn {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 15px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: none;
+  transition: background 0.1s ease, color 0.1s ease;
+}
+
+.calNavBtn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: white;
+}
+
+/* Day-of-week row */
+.calDayHeaders {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  margin-bottom: 4px;
+}
+
+.calDayHeader {
+  font-family: 'Outfit', sans-serif;
+  font-size: 9px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.25);
+  text-align: center;
+  padding: 2px 0;
+  letter-spacing: 0.04em;
+}
+
+/* Date grid */
+.calDayGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.calDayCell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 28px;
+  border-radius: 7px;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  transition: background 0.1s ease;
+  gap: 1px;
+}
+
+.calDayCell:hover { background: rgba(255, 255, 255, 0.07); }
+
+.calDayNum {
+  font-family: 'Outfit', sans-serif;
+  font-size: 11px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.8);
+  line-height: 1;
+}
+
+/* Today: white circle */
+.calDayCellToday {
+  background: white;
+}
+
+.calDayCellToday .calDayNum {
+  color: #111;
+  font-weight: 600;
+}
+
+/* Selected (not today) */
+.calDayCellSelected {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+/* Other-month cells */
+.calDayCellOther .calDayNum {
+  color: rgba(255, 255, 255, 0.22);
+}
+
+/* Event dot */
+.calDayDot {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+  flex-shrink: 0;
+}
+
+.calDayCellToday .calDayDot {
+  background: rgba(0, 0, 0, 0.4);
+}
+
+/* Events list */
+.calEventsDivider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.08);
+  margin: 10px 0 8px;
+}
+
+.calEvents {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.calNoEvents {
+  font-family: 'Outfit', sans-serif;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.4);
+  padding: 4px 2px;
+}
+
+.calEventRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.calEventTitle {
+  font-family: 'Outfit', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  color: white;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.calEventTime {
+  font-family: 'Outfit', sans-serif;
+  font-size: 11px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.5);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ══════════════════════════════════════════════════════════
+   DRAFT PANEL
+   ══════════════════════════════════════════════════════════ */
+.draftPanel {
+  display: flex;
+  flex-direction: column;
+  padding: 0 12px 12px;
+  gap: 10px;
+}
+
+.draftPanelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 4px;
+}
+
+.draftPanelLabel {
+  font-family: 'Outfit', sans-serif;
+  font-size: 10px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.4);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.draftPanelClose {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 14px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.1s ease;
+}
+
+.draftPanelClose:hover { background: rgba(255, 255, 255, 0.15); }
+
+.draftPanelContent {
+  font-family: 'Outfit', sans-serif;
+  font-size: 13px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.6;
+  max-height: 320px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.15) transparent;
+}
+
+.draftPanelContent::-webkit-scrollbar        { width: 3px; }
+.draftPanelContent::-webkit-scrollbar-track  { background: transparent; }
+.draftPanelContent::-webkit-scrollbar-thumb  { background: rgba(255,255,255,0.15); border-radius: 2px; }
+
+.draftPanelActions {
+  display: flex;
+  gap: 8px;
+}
+
+.draftPanelBtn {
+  background: rgba(255, 255, 255, 0.10);
+  border: none;
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 500;
+  font-size: 12px;
+  color: white;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.draftPanelBtn:hover { background: rgba(255, 255, 255, 0.18); }

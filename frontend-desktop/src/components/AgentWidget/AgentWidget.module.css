@@ -16,6 +16,53 @@
   min-width: 280px;
 }
 
+/* ── Response bubble (above the bar) ────────────────────── */
+.responseBubble {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: 480px;
+  background: #141414;
+  border-radius: 12px;
+  padding: 12px 16px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.55;
+  color: white;
+  white-space: pre-wrap;
+  word-break: break-word;
+  opacity: 1;
+  transition: opacity 500ms ease;
+  pointer-events: none;
+  animation: bubbleIn 200ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes bubbleIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(6px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+.responseBubbleFading { opacity: 0; }
+
+/* Streaming dot */
+.streamDot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+  animation: blink 1s ease-in-out infinite;
+  vertical-align: middle;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.2; }
+}
+
 /* ── Expanded inner box ──────────────────────────────────── */
 .innerBox {
   background: #141414;
@@ -34,7 +81,7 @@
   to   { opacity: 1; transform: scaleY(1) translateY(0); }
 }
 
-/* AI icon + message row */
+/* AI icon + message */
 .aiRow {
   display: flex;
   align-items: center;
@@ -108,7 +155,7 @@
 }
 
 .tonePill:hover   { background: rgba(255, 255, 255, 0.14); }
-.tonePillActive   { background: rgba(255, 255, 255, 0.20) !important; }
+.tonePillActive   { background: rgba(255, 255, 255, 0.22) !important; }
 
 /* ── Bottom row ──────────────────────────────────────────── */
 .bottomRow {
@@ -118,19 +165,39 @@
   min-height: 42px;
 }
 
-/* Idle placeholder text */
-.placeholder {
+/* The unified ask/context/intent input */
+.askInput {
   flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
   font-family: 'Outfit', sans-serif;
   font-weight: 400;
   font-size: 16px;
   color: rgba(255, 255, 255, 0.64);
-  user-select: none;
   padding: 0 8px;
-  pointer-events: none;
+  resize: none;
+  line-height: 1.4;
 }
 
-.placeholderDim { opacity: 0.35; }
+.askInput::placeholder { color: rgba(255, 255, 255, 0.50); }
+.askInput:disabled     { opacity: 0.4; cursor: not-allowed; }
+
+/* Span variant used as placeholder-only display */
+.askInputPlaceholder {
+  pointer-events: none;
+  user-select: none;
+  display: flex;
+  align-items: center;
+}
+
+.askInputDim { opacity: 0.35; }
+
+/* Tall intent textarea */
+.intentArea {
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
 
 /* Spark squircle button */
 .sparkBtn {
@@ -160,134 +227,3 @@
   border-radius: 0 12px 0 0;
   flex-shrink: 0;
 }
-
-/* Input / textarea */
-.inputField {
-  flex: 1;
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 8px;
-  border: none;
-  outline: none;
-  padding: 8px 12px;
-  font-family: 'Outfit', sans-serif;
-  font-weight: 500;
-  font-size: 16px;
-  color: rgba(255, 255, 255, 0.9);
-  resize: none;
-  box-sizing: border-box;
-  line-height: 1.4;
-}
-
-.inputField::placeholder { color: rgba(255, 255, 255, 0.50); }
-
-/* Placeholder-only span that mimics the input look */
-.inputPlaceholder {
-  display: flex;
-  align-items: center;
-  color: rgba(255, 255, 255, 0.50);
-  font-weight: 500;
-  pointer-events: none;
-  padding: 8px 12px;
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 8px;
-  user-select: none;
-}
-
-/* Tall intent textarea */
-.intentArea {
-  min-height: 56px;
-  padding-top: 10px;
-  padding-bottom: 10px;
-}
-
-/* ── Draft card ──────────────────────────────────────────── */
-.draftCard {
-  position: fixed;
-  width: 260px;
-  min-height: 360px;
-  background: white;
-  border-radius: 16px;
-  padding: 20px;
-  z-index: 200;
-  cursor: grab;
-  user-select: none;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.22);
-  animation: slideInLeft 300ms ease-out both;
-}
-
-.draftCard:active { cursor: grabbing; }
-
-@keyframes slideInLeft {
-  from { transform: translateX(-320px); opacity: 0; }
-  to   { transform: translateX(0);      opacity: 1; }
-}
-
-.draftCardHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-shrink: 0;
-}
-
-.draftCardType {
-  font-family: 'Outfit', sans-serif;
-  font-size: 10px;
-  font-weight: 500;
-  color: rgba(0, 0, 0, 0.4);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
-.draftCardClose {
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.06);
-  color: rgba(0, 0, 0, 0.4);
-  font-size: 14px;
-  line-height: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  border: none;
-  transition: background 0.1s ease;
-}
-
-.draftCardClose:hover { background: rgba(0, 0, 0, 0.12); }
-
-.draftCardContent {
-  flex: 1;
-  font-family: 'Outfit', sans-serif;
-  font-size: 13px;
-  color: #111;
-  line-height: 1.55;
-  overflow-y: auto;
-  white-space: pre-wrap;
-  word-break: break-word;
-  min-height: 0;
-}
-
-.draftCardActions {
-  display: flex;
-  justify-content: flex-end;
-  flex-shrink: 0;
-}
-
-.draftCardAction {
-  font-family: 'Outfit', sans-serif;
-  font-size: 12px;
-  font-weight: 500;
-  padding: 5px 14px;
-  border-radius: 100px;
-  border: none;
-  background: rgba(0, 0, 0, 0.07);
-  color: rgba(0, 0, 0, 0.55);
-  cursor: pointer;
-  transition: opacity 0.15s ease;
-}
-
-.draftCardAction:hover { opacity: 0.7; }

@@ -1,39 +1,147 @@
 import { useState, useEffect, useRef } from 'react';
-import { format } from 'date-fns';
-import type { Theme } from '../../hooks/useAdaptiveTheme';
+import {
+  format, addDays, addMonths, subMonths,
+  startOfWeek, startOfMonth,
+  isToday, isSameDay, isSameMonth, parseISO,
+} from 'date-fns';
 import type { CadenceEvent } from '../../types';
-import { CalendarWidget } from '../CalendarWidget';
 import styles from './DateDisplay.module.css';
 
 interface Props {
-  theme:          Theme;
-  events:         CadenceEvent[];
-  onBeginSession: (event: CadenceEvent) => void;
+  events:       CadenceEvent[];
+  draft:        { type: 'email' | 'document'; content: string } | null;
+  onDraftClear: () => void;
 }
 
+type View = 'none' | 'calendar' | 'draft';
+
+// ── Icons ─────────────────────────────────────────────────
 function AccountsIcon() {
   return (
-    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-      <circle cx="7"  cy="6.5" r="2.5" stroke="white" strokeWidth="1.4" strokeOpacity="0.6" />
-      <path   d="M2 16c0-2.761 2.239-5 5-5" stroke="white" strokeWidth="1.4" strokeLinecap="round" strokeOpacity="0.6" />
-      <circle cx="13" cy="6.5" r="2.5" stroke="white" strokeWidth="1.4" strokeOpacity="0.6" />
-      <path   d="M10 16c0-2.761 2.239-5 5-5s5 2.239 5 5" stroke="white" strokeWidth="1.4" strokeLinecap="round" strokeOpacity="0.6" />
+    <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <circle cx="7"  cy="6.5" r="2.5" stroke="white" strokeWidth="1.4" strokeOpacity="0.5" />
+      <path   d="M2 16c0-2.761 2.239-5 5-5"             stroke="white" strokeWidth="1.4" strokeLinecap="round" strokeOpacity="0.5" />
+      <circle cx="13" cy="6.5" r="2.5" stroke="white" strokeWidth="1.4" strokeOpacity="0.5" />
+      <path   d="M10 16c0-2.761 2.239-5 5-5s5 2.239 5 5" stroke="white" strokeWidth="1.4" strokeLinecap="round" strokeOpacity="0.5" />
     </svg>
   );
 }
 
 function UserIcon() {
   return (
-    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-      <circle cx="10" cy="7" r="3.5" stroke="white" strokeWidth="1.4" strokeOpacity="0.6" />
-      <path   d="M3 18c0-3.866 3.134-7 7-7s7 3.134 7 7" stroke="white" strokeWidth="1.4" strokeLinecap="round" strokeOpacity="0.6" />
+    <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <circle cx="10" cy="7"  r="3.5" stroke="white" strokeWidth="1.4" strokeOpacity="0.5" />
+      <path   d="M3 18c0-3.866 3.134-7 7-7s7 3.134 7 7" stroke="white" strokeWidth="1.4" strokeLinecap="round" strokeOpacity="0.5" />
     </svg>
   );
 }
 
-export function DateDisplay({ theme, events, onBeginSession }: Props) {
-  const [now,          setNow]          = useState(() => new Date());
-  const [calendarOpen, setCalendarOpen] = useState(false);
+// ── Helpers ────────────────────────────────────────────────
+function fmtEventTime(event: CadenceEvent): string {
+  const start = parseISO(event.timestamp);
+  if (event.deadline) {
+    return `${format(start, 'h:mm')}–${format(parseISO(event.deadline), 'h:mmaaa')}`;
+  }
+  return format(start, 'h:mmaaa');
+}
+
+function getTodayEvents(events: CadenceEvent[]): CadenceEvent[] {
+  const today = new Date();
+  return events
+    .filter((e) => isSameDay(parseISO(e.timestamp), today))
+    .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
+    .slice(0, 5);
+}
+
+// ── Inline dark mini-calendar ──────────────────────────────
+function MiniCalendar({ events }: { events: CadenceEvent[] }) {
+  const [viewMonth,   setViewMonth]   = useState(() => new Date());
+  const [selectedDay, setSelectedDay] = useState(() => new Date());
+
+  const monthStart = startOfMonth(viewMonth);
+  const gridStart  = startOfWeek(monthStart, { weekStartsOn: 1 });
+  const days       = Array.from({ length: 42 }, (_, i) => addDays(gridStart, i));
+
+  const eventDays = new Set(
+    events.map((e) => format(parseISO(e.timestamp), 'yyyy-MM-dd'))
+  );
+
+  const todayEvents = getTodayEvents(events);
+
+  return (
+    <div className={styles.calPanel}>
+      {/* Month navigation */}
+      <div className={styles.calHeader}>
+        <button
+          className={styles.calNavBtn}
+          onClick={() => setViewMonth((m) => subMonths(m, 1))}
+          aria-label="Previous month"
+        >‹</button>
+        <span className={styles.calMonthTitle}>{format(viewMonth, 'MMMM yyyy')}</span>
+        <button
+          className={styles.calNavBtn}
+          onClick={() => setViewMonth((m) => addMonths(m, 1))}
+          aria-label="Next month"
+        >›</button>
+      </div>
+
+      {/* Day-of-week headers */}
+      <div className={styles.calDayHeaders}>
+        {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => (
+          <span key={i} className={styles.calDayHeader}>{d}</span>
+        ))}
+      </div>
+
+      {/* Date grid */}
+      <div className={styles.calDayGrid}>
+        {days.map((day) => {
+          const inMonth  = isSameMonth(day, viewMonth);
+          const today    = isToday(day);
+          const selected = isSameDay(day, selectedDay) && !today;
+          const hasEvent = eventDays.has(format(day, 'yyyy-MM-dd'));
+
+          return (
+            <button
+              key={day.toISOString()}
+              className={[
+                styles.calDayCell,
+                today    ? styles.calDayCellToday    : '',
+                selected ? styles.calDayCellSelected : '',
+                !inMonth ? styles.calDayCellOther    : '',
+              ].filter(Boolean).join(' ')}
+              onClick={() => setSelectedDay(day)}
+            >
+              <span className={styles.calDayNum}>{format(day, 'd')}</span>
+              {hasEvent && <span className={styles.calDayDot} />}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Divider */}
+      <div className={styles.calEventsDivider} />
+
+      {/* Today's events */}
+      <div className={styles.calEvents}>
+        {todayEvents.length === 0 ? (
+          <span className={styles.calNoEvents}>Nothing scheduled today</span>
+        ) : (
+          todayEvents.map((e) => (
+            <div key={e.id} className={styles.calEventRow}>
+              <span className={styles.calEventTitle}>{e.title}</span>
+              <span className={styles.calEventTime}>{fmtEventTime(e)}</span>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Main notch component ───────────────────────────────────
+export function DateDisplay({ events, draft, onDraftClear }: Props) {
+  const [now,  setNow]  = useState(() => new Date());
+  const [view, setView] = useState<View>('none');
   const notchRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -41,60 +149,113 @@ export function DateDisplay({ theme, events, onBeginSession }: Props) {
     return () => clearInterval(t);
   }, []);
 
-  // Close calendar on outside click
+  // Auto-switch to draft view when new draft arrives
   useEffect(() => {
-    if (!calendarOpen) return;
+    if (draft) setView('draft');
+  }, [draft]);
+
+  // Close on outside click
+  useEffect(() => {
+    if (view === 'none') return;
     const handler = (e: MouseEvent) => {
       if (notchRef.current && !notchRef.current.contains(e.target as Node)) {
-        setCalendarOpen(false);
+        setView('none');
       }
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
-  }, [calendarOpen]);
+  }, [view]);
 
   const monthText = format(now, 'MMM') + '.';
   const dayText   = format(now, 'd');
+  const isExpanded = view !== 'none';
+
+  const toggleCalendar = () => setView((v) => (v === 'calendar' ? 'none' : 'calendar'));
+
+  const closeDraft = () => {
+    onDraftClear();
+    setView('none');
+  };
+
+  const exportDoc = () => {
+    if (!draft) return;
+    const win = window.open('', '_blank');
+    if (!win) return;
+    const esc = draft.content
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    win.document.write(`<!DOCTYPE html><html><head><title>Draft</title>
+<style>body{font-family:Georgia,serif;max-width:720px;margin:48px auto;line-height:1.7;color:#111;font-size:15px;}pre{white-space:pre-wrap;font-family:inherit;}</style>
+</head><body><pre>${esc}</pre><script>window.onload=function(){window.print();}<\/script></body></html>`);
+    win.document.close();
+  };
+
+  const copyDraft = async () => {
+    if (!draft) return;
+    await navigator.clipboard.writeText(draft.content);
+  };
 
   return (
-    <div ref={notchRef} className={styles.notch}>
-      {/* Month label */}
-      <span className={styles.month}>{monthText}</span>
+    <div
+      ref={notchRef}
+      className={`${styles.notch} ${isExpanded ? styles.notchExpanded : ''}`}
+    >
+      {/* ── Header strip — always visible at 52px ──────────── */}
+      <div className={styles.header}>
+        <span className={styles.month}>{monthText}</span>
 
-      {/* Date circle — click to toggle calendar */}
-      <button
-        className={styles.dayCircleBtn}
-        onClick={() => setCalendarOpen((v) => !v)}
-        aria-label="Toggle calendar"
-        aria-expanded={calendarOpen}
-      >
-        <span className={styles.day}>{dayText}</span>
-      </button>
+        <button
+          className={styles.dayCircleBtn}
+          onClick={toggleCalendar}
+          aria-label="Toggle calendar"
+          aria-expanded={view === 'calendar'}
+        >
+          <span className={styles.day}>{dayText}</span>
+        </button>
 
-      {/* Divider */}
-      <div className={styles.divider} />
+        <div className={styles.divider} />
 
-      {/* Accounts icon */}
-      <button className={styles.iconBtn} aria-label="Accounts">
-        <AccountsIcon />
-      </button>
+        <button className={styles.iconBtn} aria-label="Accounts">
+          <AccountsIcon />
+        </button>
+        <button className={`${styles.iconBtn} ${styles.iconBtnGap}`} aria-label="User">
+          <UserIcon />
+        </button>
+      </div>
 
-      {/* Single user icon */}
-      <button className={`${styles.iconBtn} ${styles.iconBtnGap}`} aria-label="User profile">
-        <UserIcon />
-      </button>
-
-      {/* Floating calendar panel — slides out to the right */}
-      {calendarOpen && (
-        <div className={styles.calendarSlide}>
-          <CalendarWidget
-            theme={theme}
-            events={events}
-            onClose={() => setCalendarOpen(false)}
-            onBeginSession={onBeginSession}
-          />
+      {/* ── Calendar expand (grid trick for smooth height) ──── */}
+      <div className={`${styles.expandWrapper} ${view === 'calendar' ? styles.expandWrapperOpen : ''}`}>
+        <div className={styles.expandInner}>
+          <MiniCalendar events={events} />
         </div>
-      )}
+      </div>
+
+      {/* ── Draft expand ────────────────────────────────────── */}
+      <div className={`${styles.expandWrapper} ${view === 'draft' && draft ? styles.expandWrapperOpen : ''}`}>
+        <div className={styles.expandInner}>
+          {draft && (
+            <div className={styles.draftPanel}>
+              <div className={styles.draftPanelHeader}>
+                <span className={styles.draftPanelLabel}>
+                  {draft.type === 'email' ? 'Email Draft' : 'Document'}
+                </span>
+                <button
+                  className={styles.draftPanelClose}
+                  onClick={closeDraft}
+                  aria-label="Close draft"
+                >×</button>
+              </div>
+              <div className={styles.draftPanelContent}>{draft.content}</div>
+              <div className={styles.draftPanelActions}>
+                {draft.type === 'email' ? (
+                  <button className={styles.draftPanelBtn} onClick={copyDraft}>Send</button>
+                ) : (
+                  <button className={styles.draftPanelBtn} onClick={exportDoc}>Export</button>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
