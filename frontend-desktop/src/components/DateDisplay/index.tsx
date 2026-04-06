@@ -8,7 +8,6 @@ import type { CadenceEvent } from '../../types';
 import styles from './DateDisplay.module.css';
 
 interface Props {
-  events:       CadenceEvent[];
   draft:        { type: 'email' | 'document'; content: string } | null;
   onDraftClear: () => void;
 }
@@ -25,12 +24,12 @@ function fmtEventTime(event: CadenceEvent): string {
 }
 
 function getTodayEvents(events: CadenceEvent[]): CadenceEvent[] {
-  const todayStr = new Date().toLocaleDateString();
+  const today = new Date().toDateString();
   console.log(`[Notch Calendar] events received: ${events.length}, dates:`,
-    events.map(e => new Date(e.timestamp).toLocaleDateString())
+    events.map(e => new Date(e.timestamp).toDateString())
   );
   return events
-    .filter((e) => new Date(e.timestamp).toLocaleDateString() === todayStr)
+    .filter((e) => new Date(e.timestamp).toDateString() === today)
     .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
     .slice(0, 5);
 }
@@ -121,14 +120,27 @@ function MiniCalendar({ events }: { events: CadenceEvent[] }) {
 }
 
 // ── Main notch component ───────────────────────────────────
-export function DateDisplay({ events, draft, onDraftClear }: Props) {
-  const [now,  setNow]  = useState(() => new Date());
-  const [view, setView] = useState<View>('none');
+export function DateDisplay({ draft, onDraftClear }: Props) {
+  const [now,        setNow]        = useState(() => new Date());
+  const [view,       setView]       = useState<View>('none');
+  const [calEvents,  setCalEvents]  = useState<CadenceEvent[]>([]);
   const notchRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 60_000);
     return () => clearInterval(t);
+  }, []);
+
+  // Fetch calendar events directly from backend
+  useEffect(() => {
+    const load = () =>
+      fetch('http://localhost:3001/events')
+        .then((r) => r.json())
+        .then((data: CadenceEvent[]) => setCalEvents(data))
+        .catch(() => {});
+    load();
+    const interval = setInterval(load, 60_000);
+    return () => clearInterval(interval);
   }, []);
 
   // Auto-switch to draft view when new draft arrives
@@ -200,7 +212,7 @@ export function DateDisplay({ events, draft, onDraftClear }: Props) {
       {/* ── Calendar expand (grid trick for smooth height) ──── */}
       <div className={`${styles.expandWrapper} ${view === 'calendar' ? styles.expandWrapperOpen : ''}`}>
         <div className={styles.expandInner}>
-          <MiniCalendar events={events} />
+          <MiniCalendar events={calEvents} />
         </div>
       </div>
 
