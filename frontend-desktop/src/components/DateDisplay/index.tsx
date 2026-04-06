@@ -23,21 +23,29 @@ function fmtEventTime(event: CadenceEvent): string {
   return format(start, 'h:mmaaa');
 }
 
-function getTodayEvents(events: CadenceEvent[]): CadenceEvent[] {
-  const today = new Date().toDateString();
+function getEventsForDay(events: CadenceEvent[], day: Date): CadenceEvent[] {
   console.log(`[Notch Calendar] events received: ${events.length}, dates:`,
     events.map(e => new Date(e.timestamp).toDateString())
   );
   return events
-    .filter((e) => new Date(e.timestamp).toDateString() === today)
+    .filter((e) => new Date(e.timestamp).toDateString() === day.toDateString())
     .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
     .slice(0, 5);
 }
 
 // ── Inline dark mini-calendar ──────────────────────────────
-function MiniCalendar({ events }: { events: CadenceEvent[] }) {
+function MiniCalendar({ events, isOpen }: { events: CadenceEvent[]; isOpen: boolean }) {
   const [viewMonth,   setViewMonth]   = useState(() => new Date());
   const [selectedDay, setSelectedDay] = useState(() => new Date());
+
+  // Reset to today whenever the panel is opened
+  useEffect(() => {
+    if (isOpen) {
+      const now = new Date();
+      setSelectedDay(now);
+      setViewMonth(now);
+    }
+  }, [isOpen]);
 
   const monthStart = startOfMonth(viewMonth);
   const gridStart  = startOfWeek(monthStart, { weekStartsOn: 1 });
@@ -47,7 +55,7 @@ function MiniCalendar({ events }: { events: CadenceEvent[] }) {
     events.map((e) => format(parseISO(e.timestamp), 'yyyy-MM-dd'))
   );
 
-  const todayEvents = getTodayEvents(events);
+  const selectedEvents = getEventsForDay(events, selectedDay);
 
   return (
     <div className={styles.calPanel}>
@@ -78,7 +86,7 @@ function MiniCalendar({ events }: { events: CadenceEvent[] }) {
         {days.map((day) => {
           const inMonth  = isSameMonth(day, viewMonth);
           const today    = isToday(day);
-          const selected = isSameDay(day, selectedDay) && !today;
+          const selected = isSameDay(day, selectedDay);
           const hasEvent = eventDays.has(format(day, 'yyyy-MM-dd'));
 
           return (
@@ -87,7 +95,7 @@ function MiniCalendar({ events }: { events: CadenceEvent[] }) {
               className={[
                 styles.calDayCell,
                 today    ? styles.calDayCellToday    : '',
-                selected ? styles.calDayCellSelected : '',
+                selected && !today ? styles.calDayCellSelected : '',
                 !inMonth ? styles.calDayCellOther    : '',
               ].filter(Boolean).join(' ')}
               onClick={() => setSelectedDay(day)}
@@ -102,12 +110,12 @@ function MiniCalendar({ events }: { events: CadenceEvent[] }) {
       {/* Divider */}
       <div className={styles.calEventsDivider} />
 
-      {/* Today's events */}
+      {/* Selected day's events */}
       <div className={styles.calEvents}>
-        {todayEvents.length === 0 ? (
-          <span className={styles.calNoEvents}>Nothing scheduled today</span>
+        {selectedEvents.length === 0 ? (
+          <span className={styles.calNoEvents}>Nothing scheduled</span>
         ) : (
-          todayEvents.map((e) => (
+          selectedEvents.map((e) => (
             <div key={e.id} className={styles.calEventRow}>
               <span className={styles.calEventTitle}>{e.title}</span>
               <span className={styles.calEventTime}>{fmtEventTime(e)}</span>
@@ -212,7 +220,7 @@ export function DateDisplay({ draft, onDraftClear }: Props) {
       {/* ── Calendar expand (grid trick for smooth height) ──── */}
       <div className={`${styles.expandWrapper} ${view === 'calendar' ? styles.expandWrapperOpen : ''}`}>
         <div className={styles.expandInner}>
-          <MiniCalendar events={calEvents} />
+          <MiniCalendar events={calEvents} isOpen={view === 'calendar'} />
         </div>
       </div>
 

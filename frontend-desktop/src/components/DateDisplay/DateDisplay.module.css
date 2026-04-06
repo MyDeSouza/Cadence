@@ -216,9 +216,18 @@
   font-weight: 600;
 }
 
-/* Selected (not today) */
+/* Selected (not today) — same white circle as today */
 .calDayCellSelected {
-  background: rgba(255, 255, 255, 0.18);
+  background: white;
+}
+
+.calDayCellSelected .calDayNum {
+  color: #111;
+  font-weight: 600;
+}
+
+.calDayCellSelected .calDayDot {
+  background: rgba(0, 0, 0, 0.4);
 }
 
 /* Other-month cells */
