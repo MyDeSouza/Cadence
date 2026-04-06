@@ -15,27 +15,6 @@ interface Props {
 
 type View = 'none' | 'calendar' | 'draft';
 
-// ── Icons ─────────────────────────────────────────────────
-function AccountsIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-      <circle cx="7"  cy="6.5" r="2.5" stroke="white" strokeWidth="1.4" strokeOpacity="0.5" />
-      <path   d="M2 16c0-2.761 2.239-5 5-5"             stroke="white" strokeWidth="1.4" strokeLinecap="round" strokeOpacity="0.5" />
-      <circle cx="13" cy="6.5" r="2.5" stroke="white" strokeWidth="1.4" strokeOpacity="0.5" />
-      <path   d="M10 16c0-2.761 2.239-5 5-5s5 2.239 5 5" stroke="white" strokeWidth="1.4" strokeLinecap="round" strokeOpacity="0.5" />
-    </svg>
-  );
-}
-
-function UserIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-      <circle cx="10" cy="7"  r="3.5" stroke="white" strokeWidth="1.4" strokeOpacity="0.5" />
-      <path   d="M3 18c0-3.866 3.134-7 7-7s7 3.134 7 7" stroke="white" strokeWidth="1.4" strokeLinecap="round" strokeOpacity="0.5" />
-    </svg>
-  );
-}
-
 // ── Helpers ────────────────────────────────────────────────
 function fmtEventTime(event: CadenceEvent): string {
   const start = parseISO(event.timestamp);
@@ -46,9 +25,12 @@ function fmtEventTime(event: CadenceEvent): string {
 }
 
 function getTodayEvents(events: CadenceEvent[]): CadenceEvent[] {
-  const today = new Date();
+  const todayStr = new Date().toLocaleDateString();
+  console.log(`[Notch Calendar] events received: ${events.length}, dates:`,
+    events.map(e => new Date(e.timestamp).toLocaleDateString())
+  );
   return events
-    .filter((e) => isSameDay(parseISO(e.timestamp), today))
+    .filter((e) => new Date(e.timestamp).toLocaleDateString() === todayStr)
     .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
     .slice(0, 5);
 }
@@ -213,13 +195,6 @@ export function DateDisplay({ events, draft, onDraftClear }: Props) {
         </button>
 
         <div className={styles.divider} />
-
-        <button className={styles.iconBtn} aria-label="Accounts">
-          <AccountsIcon />
-        </button>
-        <button className={`${styles.iconBtn} ${styles.iconBtnGap}`} aria-label="User">
-          <UserIcon />
-        </button>
       </div>
 
       {/* ── Calendar expand (grid trick for smooth height) ──── */}
