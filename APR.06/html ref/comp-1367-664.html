@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <title>1367:664 — Chat Panel (Write Intent)</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #1a1f2a; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: 'Outfit', sans-serif; gap: 40px; }
+    .label { color: rgba(255,255,255,0.35); font-size: 11px; letter-spacing: 0.06em; }
+  </style>
+</head>
+<body>
+  <div style="transform: scale(2); transform-origin: center;">
+    <!--
+      1367:664 — Write intent panel.
+      AI message "What would you like to write..." + tall freetext input with Cadence icon.
+    -->
+    <div style="background:rgba(0,0,0,0.16);border-radius:20px;padding:8px;box-shadow:0 4px 18.1px rgba(0,0,0,0.12);display:flex;flex-direction:column;align-items:center;justify-content:flex-end;overflow:hidden;">
+
+      <!-- Upper dark container: AI msg (top corners only, no bottom radius) -->
+      <div style="background:#141414;border-radius:12px 12px 0 0;padding:12px 0;display:flex;flex-direction:column;align-items:flex-start;flex-shrink:0;">
+        <!-- AI icon + message row -->
+        <div style="display:flex;gap:10px;align-items:flex-end;padding:0 8px;flex-shrink:0;">
+          <!-- AI icon -->
+          <div style="position:relative;width:45px;height:45px;overflow:hidden;border-radius:12px;flex-shrink:0;">
+            <!-- Petal 1: E17 -->
+            <div style="position:absolute;width:19px;height:20px;left:calc(50% - 9px);top:22px;transform:translateX(-50%);">
+              <div style="position:absolute;top:-30%;right:-63.16%;bottom:-40%;left:-13.16%;">
+                <img src="https://www.figma.com/api/mcp/asset/54626678-e12b-4393-a75f-837886eaa5fd" alt="" style="display:block;max-width:none;width:100%;height:100%;">
+              </div>
+            </div>
+            <!-- Petal 2: E23, rotate-180 -->
+            <div style="position:absolute;width:19px;height:21px;left:calc(50% + 13px);top:-1px;transform:translateX(-50%);display:flex;align-items:center;justify-content:center;">
+              <div style="transform:rotate(180deg);flex-shrink:0;">
+                <div style="position:relative;width:19px;height:21px;">
+                  <div style="position:absolute;top:-28.57%;right:-63.16%;bottom:-35.71%;left:-13.16%;">
+                    <img src="https://www.figma.com/api/mcp/asset/37e5f5d9-562c-477b-9623-6aca2f5b6442" alt="" style="display:block;max-width:none;width:100%;height:100%;">
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- Petal 3: E19, rotate-180, 20×20 -->
+            <div style="position:absolute;width:20px;height:20px;left:calc(50% + 9.5px);top:4px;transform:translateX(-50%);display:flex;align-items:center;justify-content:center;">
+              <div style="transform:rotate(180deg);flex-shrink:0;">
+                <div style="position:relative;width:20px;height:20px;">
+                  <div style="position:absolute;top:-30%;right:-60%;bottom:-40%;left:-10%;">
+                    <img src="https://www.figma.com/api/mcp/asset/ffc4fc86-1e13-4bdb-b736-7a79cadde73e" alt="" style="display:block;max-width:none;width:100%;height:100%;">
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- Petal 4: E21 -->
+            <div style="position:absolute;width:19px;height:21px;left:calc(50% - 14px);top:26px;transform:translateX(-50%);">
+              <div style="position:absolute;top:-28.57%;right:-63.16%;bottom:-35.71%;left:-13.16%;">
+                <img src="https://www.figma.com/api/mcp/asset/50762b96-15b8-436d-a0f8-140cff8a8877" alt="" style="display:block;max-width:none;width:100%;height:100%;">
+              </div>
+            </div>
+            <!-- Petal 5: E24, -rotate90, 20×20 -->
+            <div style="position:absolute;width:20px;height:20px;left:calc(50% + 9.5px);top:22px;transform:translateX(-50%);display:flex;align-items:center;justify-content:center;">
+              <div style="transform:rotate(-90deg);flex-shrink:0;">
+                <div style="position:relative;width:20px;height:20px;">
+                  <div style="position:absolute;top:-30%;right:-60%;bottom:-40%;left:-10%;">
+                    <img src="https://www.figma.com/api/mcp/asset/eba13572-ae60-4b80-9f55-6fd097f611ad" alt="" style="display:block;max-width:none;width:100%;height:100%;">
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- Petal 6: E22, rotate90, w:20 h:19 -->
+            <div style="position:absolute;width:19px;height:20px;left:calc(50% - 9px);top:4px;transform:translateX(-50%);display:flex;align-items:center;justify-content:center;">
+              <div style="transform:rotate(90deg);flex-shrink:0;">
+                <div style="position:relative;width:20px;height:19px;">
+                  <div style="position:absolute;top:-31.58%;right:-60%;bottom:-44.74%;left:-10%;">
+                    <img src="https://www.figma.com/api/mcp/asset/99127420-0bbe-4566-aa68-8f3761229dad" alt="" style="display:block;max-width:none;width:100%;height:100%;">
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Message text -->
+          <div style="padding:8px 12px;padding-right:32px;flex-shrink:0;">
+            <span style="font-size:16px;font-weight:500;color:white;line-height:1.25;white-space:nowrap;">What would you like to write...</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Input section: 67px tall, Cadence icon sits at bottom-left -->
+      <div style="display:flex;align-items:flex-end;flex-shrink:0;width:100%;height:67px;">
+        <!-- Left column: fill above + Cadence icon at bottom -->
+        <div style="display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-end;height:100%;flex-shrink:0;">
+          <!-- Fill gap above icon -->
+          <div style="background:#141414;border-radius:0 0 0 12px;width:45px;height:22px;flex-shrink:0;"></div>
+          <!-- Cadence icon -->
+          <div style="background:#141414;flex-shrink:0;">
+            <div style="background:#7c889a;border-radius:0 12px 0 0;width:45px;height:45px;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;padding:8px 12px;">
+              <div style="aspect-ratio:18/24;width:100%;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                <div style="aspect-ratio:18/24;width:100%;position:relative;">
+                  <img src="https://www.figma.com/api/mcp/asset/94fa651b-e133-4fde-9df2-f07ce9c2d3f9" alt="" style="position:absolute;display:block;max-width:none;width:100%;height:100%;">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Right: tall freetext input area -->
+        <div style="flex:1;display:flex;flex-direction:row;align-items:flex-end;align-self:stretch;">
+          <div style="background:#141414;flex:1;height:100%;display:flex;align-items:flex-end;min-width:0;padding:8px;border-radius:0 0 12px 12px;">
+            <div style="background:rgba(255,255,255,0.08);flex:1;border-radius:8px;padding:4px 12px;display:flex;align-items:center;">
+              <span style="font-size:16px;font-weight:500;color:rgba(255,255,255,0.64);line-height:1.25;">e.g. notes on the gate 6 presentation...</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <span class="label">1367:664 — Chat Panel (Write Intent)</span>
+</body>
+</html>

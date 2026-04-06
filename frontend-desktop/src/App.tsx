@@ -1,10 +1,8 @@
 import { useCallback, useRef, useState } from 'react';
-import { CalendarWidget } from './components/CalendarWidget';
 import { AgentWidget } from './components/AgentWidget';
 import { FovealCanvas } from './components/FovealCanvas';
 import { EventStrip } from './components/EventStrip';
 import { DateDisplay } from './components/DateDisplay';
-import { DraftingTable } from './components/DraftingTable';
 import { useSession } from './hooks/useSession';
 import { useAdaptiveTheme } from './hooks/useAdaptiveTheme';
 import { useDigest } from './hooks/useDigest';
@@ -14,26 +12,14 @@ import styles from './App.module.css';
 export default function App() {
   const { session, beginSession, endSession } = useSession();
   const theme = useAdaptiveTheme();
-  const { events, refetch: refetchEvents } = useDigest();
-  const syncAndRefetch = useCallback(() => { refetchEvents(); }, [refetchEvents]);
-  const [calendarOpen,  setCalendarOpen]  = useState(true);
-  const [draftingOpen,  setDraftingOpen]  = useState(false);
+  const { events } = useDigest();
 
-  const [bgPos,         setBgPos]         = useState({ x: 0, y: 0 });
-  const [isDragging,    setIsDragging]    = useState(false);
-  const [isRecentering, setIsRecentering] = useState(false);
-  const [resetLayoutKey, setResetLayoutKey] = useState(0);
+  const [bgPos,      setBgPos]      = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
   const dragRef = useRef<{ startX: number; startY: number; originX: number; originY: number } | null>(null);
 
   const handleBeginSession = (event: CadenceEvent) => { beginSession(event); };
   const handleEndSession   = () => { endSession(); setBgPos({ x: 0, y: 0 }); };
-
-  const handleRecenter = useCallback(() => {
-    setIsRecentering(true);
-    setBgPos({ x: 0, y: 0 });
-    setResetLayoutKey((k) => k + 1);
-    setTimeout(() => setIsRecentering(false), 320);
-  }, []);
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.target !== e.currentTarget) return;
@@ -41,19 +27,19 @@ export default function App() {
     setIsDragging(true);
   };
 
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (!dragRef.current) return;
     setBgPos({
       x: dragRef.current.originX + (e.clientX - dragRef.current.startX),
       y: dragRef.current.originY + (e.clientY - dragRef.current.startY),
     });
-  };
+  }, []);
 
-  const handleMouseUp = () => {
+  const handleMouseUp = useCallback(() => {
     if (!dragRef.current) return;
     dragRef.current = null;
     setIsDragging(false);
-  };
+  }, []);
 
   return (
     <>
@@ -85,45 +71,28 @@ export default function App() {
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
       >
-        {/* Dot grid layer — background-position tracks pan; transform provides drift */}
+        {/* Dot grid layer */}
         <div
           className={`${styles.dotGrid} ${styles[`dotGrid_${theme}`]}`}
-          style={{
-            backgroundPosition: `${bgPos.x}px ${bgPos.y}px`,
-            transition: isRecentering ? 'background-position 300ms ease' : undefined,
-          }}
+          style={{ backgroundPosition: `${bgPos.x}px ${bgPos.y}px` }}
         />
+
         <EventStrip theme={theme} />
+
         <DateDisplay
           theme={theme}
-          onToggle={() => setCalendarOpen((v) => !v)}
-          onRecenter={handleRecenter}
-          onDraftToggle={() => setDraftingOpen((v) => !v)}
-          draftOpen={draftingOpen}
+          events={events}
+          onBeginSession={handleBeginSession}
         />
-        {draftingOpen && (
-          <DraftingTable
-            theme={theme}
-            onClose={() => setDraftingOpen(false)}
-          />
-        )}
-        {calendarOpen && (
-          <CalendarWidget
-            theme={theme}
-            events={events}
-            onClose={() => setCalendarOpen(false)}
-            onBeginSession={handleBeginSession}
-          />
-        )}
+
         <FovealCanvas
           session={session}
           onEndSession={handleEndSession}
           theme={theme}
-          resetLayoutKey={resetLayoutKey}
           bgPos={bgPos}
-          isRecentering={isRecentering}
         />
-        <AgentWidget theme={theme} events={events} onActionApplied={syncAndRefetch} />
+
+        <AgentWidget />
       </div>
     </>
   );

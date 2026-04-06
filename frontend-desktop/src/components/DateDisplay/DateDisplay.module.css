@@ -1,148 +1,97 @@
-/* ── Left-side sidebar notch ──────────────────────────────── */
+/* ── Slim left notch ─────────────────────────────────────── */
 .notch {
   position: fixed;
   left: 0;
-  top: 70px;
-  width: 61px;
-  height: 330px;
-  z-index: 50;
-  cursor: pointer;
-  padding: 0;
-  background: none;
-  border: none;
-}
-
-/* Backing strip — seals the left screen edge */
-.backingStrip {
-  position: absolute;
-  left: 0;
   top: 0;
-  width: 20px;
-  height: 100%;
-  background: #161717;
-  pointer-events: none;
-}
-
-/* Body pill — dark gradient, rounded on the right */
-.body {
-  position: absolute;
-  left: 0;
-  top: 16px;
-  width: 61px;
-  height: 298px;
-  background: linear-gradient(89.76deg, #161717 50.18%, rgba(22,23,23,0.64) 176.66%);
-  border-radius: 0 20px 20px 0;
+  width: 52px;
+  height: 100vh;
+  background: #141414;
+  border-radius: 0 12px 12px 0;
+  z-index: 50;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: space-between;
-  padding: 8px;
+  padding-top: 16px;
 }
 
-/* App icon container */
-.iconWrap {
-  background: white;
-  border-radius: 12px;
-  width: 45px;
-  height: 45px;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  padding: 8px 12px;
-}
-
-.iconImg {
-  width: 100%;
-  aspect-ratio: 18 / 24;
-  object-fit: contain;
-  display: block;
-}
-
-/* Recenter / action buttons */
-.recenterBtn {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.10);
-  border: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: background 0.15s ease;
-}
-
-.recenterBtn:hover      { background: rgba(255, 255, 255, 0.20); }
-.recenterBtn:active     { background: rgba(255, 255, 255, 0.28); }
-.recenterBtnActive      { background: rgba(255, 255, 255, 0.22) !important; }
-.recenterBtnActive:hover { background: rgba(255, 255, 255, 0.30) !important; }
-
-/* Date widget */
-.dateWidget {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-}
-
+/* Month label */
 .month {
   font-family: 'Outfit', sans-serif;
   font-weight: 300;
-  font-size: 16px;
-  color: white;
-  line-height: 1.25;
-  white-space: nowrap;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: 8px;
+  user-select: none;
+  pointer-events: none;
 }
 
-.dayPill {
-  background: white;
-  border-radius: 12px;
-  padding: 8px 12px;
+/* Date circle button */
+.dayCircleBtn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  border: none;
   display: flex;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  flex-shrink: 0;
 }
+
+.dayCircleBtn:hover  { background: rgba(255, 255, 255, 0.20); }
+.dayCircleBtn:active { background: rgba(255, 255, 255, 0.28); }
 
 .day {
   font-family: 'Outfit', sans-serif;
   font-weight: 500;
-  font-size: 16px;
-  color: #161717;
-  line-height: 1.25;
+  font-size: 22px;
+  color: white;
+  line-height: 1;
+  pointer-events: none;
+  user-select: none;
 }
 
-/* ── Corner caps ─────────────────────────────────────────── */
-.cap {
-  position: absolute;
-  width: 61px;
-  height: 16px;
+/* Divider */
+.divider {
+  width: 32px;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.08);
+  margin: 12px 0;
+  flex-shrink: 0;
 }
 
-.capTop {
-  left: 0;
-  top: 0;
-  border-radius: 0 0 0 20px;
+/* Icon buttons */
+.iconBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  transition: background 0.15s ease;
+  flex-shrink: 0;
 }
 
-.capBottom {
-  left: 0;
-  bottom: 0;
-  border-radius: 20px 0 0 0;
+.iconBtn:hover { background: rgba(255, 255, 255, 0.08); }
+
+.iconBtnGap { margin-top: 16px; }
+
+/* ── Floating calendar panel ─────────────────────────────── */
+.calendarSlide {
+  position: fixed;
+  left: 60px;
+  top: 16px;
+  z-index: 200;
+  animation: slideInLeft 200ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-/* Day: fixed-attachment gradient matches the sky layer pixel-perfectly */
-.capTop_day,
-.capBottom_day {
-  background: linear-gradient(to bottom, #485e80 0%, #cadaf6 100%);
-  background-attachment: fixed;
-  background-size: 100% 100%;
-}
-
-/* Night: match dark background */
-.capTop_night,
-.capBottom_night {
-  background: #161717;
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-12px); }
+  to   { opacity: 1; transform: translateX(0); }
 }

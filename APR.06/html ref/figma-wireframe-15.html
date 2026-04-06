@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Wireframe - 15</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { width: 100%; height: 100%; overflow: hidden; }
+    body { background: #161717; font-family: 'Outfit', sans-serif; }
+
+    /* Cloud glow blobs */
+    .cloud-blob {
+      position: absolute;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(180,200,230,0.55) 0%, rgba(180,200,230,0) 70%);
+      filter: blur(28px);
+      pointer-events: none;
+    }
+
+    /* Dot grid overlay */
+    .dot-grid {
+      position: absolute;
+      inset: 0;
+      background-image: radial-gradient(circle, rgba(255,255,255,0.18) 1px, transparent 1px);
+      background-size: 28px 28px;
+      pointer-events: none;
+      border-radius: 20px;
+    }
+
+    /* Inset shadow vignette */
+    .vignette {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      border-radius: 20px;
+      box-shadow: inset 0 0 69px 12px rgba(0,0,0,0.08);
+    }
+
+    /* Side notch */
+    .notch-track {
+      background: linear-gradient(89.76deg, #161717 50.18%, rgba(22,23,23,0.64) 176.66%);
+    }
+
+    /* Card backdrop */
+    .card-backdrop {
+      position: absolute;
+      inset: 0;
+      border-radius: 20px;
+      pointer-events: none;
+    }
+
+    /* Google Slides card gradient overlay */
+    .card-overlay-orange {
+      background: linear-gradient(to bottom, rgba(255,166,0,0.16) 50%, rgba(31,15,0,0.61) 100%);
+    }
+
+    /* Google Meet card gradient overlay */
+    .card-overlay-blue {
+      background: linear-gradient(to bottom, rgba(7,65,151,0.31) 50%, rgba(33,46,64,0.61) 100%);
+    }
+
+    /* Ask bar */
+    .ask-bar {
+      background: rgba(0,0,0,0.16);
+      backdrop-filter: blur(10px);
+    }
+
+    .arrow-icon {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border-right: 2px solid #f59e0b;
+      border-top: 2px solid #f59e0b;
+      transform: rotate(45deg);
+    }
+    .arrow-icon-blue {
+      border-right-color: #3b82f6;
+      border-top-color: #3b82f6;
+    }
+
+    /* Mic icon */
+    .mic-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Root frame -->
+<div style="width:100%;height:100vh;position:relative;border-radius:20px;overflow:hidden;">
+
+  <!-- Sky gradient background -->
+  <div style="
+    position:absolute;inset:0;border-radius:20px;
+    background: linear-gradient(to bottom, #485e80 0%, #cadaf6 100%);
+  "></div>
+
+  <!-- Dot grid -->
+  <div class="dot-grid"></div>
+
+  <!-- Cloud blobs -->
+  <!-- Left cluster -->
+  <div class="cloud-blob" style="width:430px;height:430px;left:-5px;top:20px;"></div>
+  <div class="cloud-blob" style="width:340px;height:250px;left:80px;top:80px;"></div>
+  <div class="cloud-blob" style="width:340px;height:220px;left:80px;top:200px;"></div>
+
+  <!-- Mid-left cluster -->
+  <div class="cloud-blob" style="width:430px;height:430px;left:175px;top:60px;"></div>
+  <div class="cloud-blob" style="width:280px;height:240px;left:430px;top:110px;"></div>
+  <div class="cloud-blob" style="width:280px;height:240px;left:430px;top:260px;"></div>
+
+  <!-- Mid-right cluster -->
+  <div class="cloud-blob" style="width:430px;height:430px;left:794px;top:15px;"></div>
+  <div class="cloud-blob" style="width:280px;height:240px;left:1058px;top:55px;"></div>
+  <div class="cloud-blob" style="width:280px;height:240px;left:1058px;top:214px;"></div>
+
+  <!-- ============================================================ -->
+  <!-- LEFT SIDE NOTCH  (node 1330:19)
+
+    Layout (matching Figma exactly):
+    ┌─────────────────────────────┐  ← top cap (42px wide, 16px tall)
+    │  sky #8696ac  ╮ rounded     │    border-radius: 0 0 0 20px
+    │               ╰─────────────┤    (bottom-LEFT corner only)
+    │  STACK body (dark gradient) │  ← 42px × 302px, rounded-tr + rounded-br
+    │  ┌──────────────────────┐   │    App icon + date inside
+    │  └──────────────────────┘   │
+    │               ╭─────────────┤
+    │  sky #889ab5  ╯ rounded     │  ← bottom cap (42px wide, 16px tall)
+    └─────────────────────────────┘    border-radius: 20px 0 0 0
+
+    A 20px dark backing strip (Left) sits behind the full 334px height,
+    capping off any seam between the screen edge and the notch body.
+  ============================================================ -->
+  <div style="position:absolute;left:0;top:70px;width:61px;height:334px;transform:rotate(0.24deg);">
+
+    <!-- Backing strip: pure #161717, 20px wide, full height.
+         Sits behind everything; seals the left edge. -->
+    <div style="position:absolute;left:0;top:0;width:20px;height:100%;background:#161717;"></div>
+
+    <!-- STACK body: dark gradient pill, right side rounded (tr+br 20px).
+         Width = 8px padding + 45px icon + 8px padding = 61px. -->
+    <div style="
+      position:absolute;left:0;top:16px;
+      width:61px;height:302px;
+      background:linear-gradient(89.76deg, #161717 50.18%, rgba(22,23,23,0.64) 176.66%);
+      border-radius:0 20px 20px 0;
+      display:flex;flex-direction:column;align-items:center;justify-content:space-between;
+      padding:8px;
+    ">
+      <!-- App Icon: 45×45 white rounded square with the Cadence logo image -->
+      <div style="
+        background:white;border-radius:12px;
+        width:45px;height:45px;flex-shrink:0;
+        display:flex;align-items:center;justify-content:center;
+        overflow:hidden;padding:8px 12px;
+      ">
+        <img
+          src="https://www.figma.com/api/mcp/asset/a3029290-7ba7-4778-8d59-fde96df37220"
+          alt="App icon"
+          style="width:100%;aspect-ratio:18/24;object-fit:contain;display:block;"
+        />
+      </div>
+
+      <!-- Date widget: "Mar." label + "08" white pill -->
+      <div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
+        <span style="font-family:'Outfit',sans-serif;font-weight:300;font-size:16px;color:white;line-height:1.25;white-space:nowrap;">Mar.</span>
+        <div style="background:white;border-radius:12px;padding:8px 12px;display:flex;align-items:center;justify-content:center;">
+          <span style="font-family:'Outfit',sans-serif;font-weight:500;font-size:16px;color:#161717;line-height:1.25;">08</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- TOP corner cap: full-width sky-blue square, 16px tall.
+         border-radius 0 0 0 20px = BOTTOM-LEFT rounded only.
+         The rounded bottom-left bites into the dark body, creating the
+         concave transition at the screen edge. -->
+    <div style="
+      position:absolute;left:0;top:0;
+      width:61px;height:16px;
+      background:#8696ac;
+      border-radius:0 0 0 20px;
+    "></div>
+
+    <!-- BOTTOM corner cap: mirror of top.
+         border-radius 20px 0 0 0 = TOP-LEFT rounded only. -->
+    <div style="
+      position:absolute;left:0;bottom:0;
+      width:61px;height:16px;
+      background:#889ab5;
+      border-radius:20px 0 0 0;
+    "></div>
+
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- TOP HEADER / NAVSTACK -->
+  <!-- ============================================================ -->
+  <div style="
+    position:absolute;
+    left:50%;top:82px;
+    transform:translateX(-50%);
+    display:flex;flex-direction:column;gap:12px;
+    padding:0 8px;
+    min-width:600px;
+  ">
+    <!-- Title row -->
+    <div style="display:flex;align-items:flex-end;gap:46px;padding:0 12px;overflow:hidden;">
+      <span style="font-family:'Outfit',sans-serif;font-weight:400;font-size:24px;color:white;white-space:nowrap;line-height:1.25;">
+        GradEX Committee Workshop
+      </span>
+      <span style="font-family:'Outfit',sans-serif;font-weight:400;font-size:12px;color:white;white-space:nowrap;line-height:1.25;text-align:right;">
+        11:50 - 2:50pm
+      </span>
+    </div>
+    <!-- Subtitle row -->
+    <div style="display:flex;align-items:flex-end;justify-content:space-between;padding:0 12px;opacity:0.64;overflow:hidden;">
+      <span style="font-family:'Outfit',sans-serif;font-weight:400;font-size:12px;color:white;line-height:1.25;flex:1;">
+        Lazer Cut Components for Presentation
+      </span>
+      <span style="font-family:'Outfit',sans-serif;font-weight:400;font-size:10px;color:white;line-height:1.25;text-align:right;white-space:nowrap;">
+        3hrs
+      </span>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- CARD 1 — Google Slides Test (bottom-left area) -->
+  <!-- ============================================================ -->
+  <div style="position:absolute;left:189px;top:441px;width:332px;display:flex;flex-direction:column;gap:14px;">
+
+    <!-- Drag handles -->
+    <div style="
+      position:absolute;left:-20px;top:-4px;z-index:10;
+      background:rgba(0,0,0,0.24);
+      display:flex;gap:8px;align-items:center;
+      padding:4px;border-radius:10px;overflow:hidden;
+    ">
+      <div style="width:12px;height:12px;background:white;border-radius:8px;box-shadow:0 4px 5.4px rgba(0,0,0,0.25);display:flex;align-items:center;justify-content:center;">
+        <div style="width:4px;height:1px;background:#999;border-radius:1px;"></div>
+      </div>
+      <div style="width:12px;height:12px;background:white;border-radius:8px;box-shadow:0 4px 5.4px rgba(0,0,0,0.25);display:flex;align-items:center;justify-content:center;">
+        <div style="width:5px;height:5px;background:#999;border-radius:50%;"></div>
+      </div>
+    </div>
+
+    <!-- Card -->
+    <div style="
+      position:relative;
+      width:332px;height:200px;
+      border-radius:20px;
+      overflow:hidden;
+      box-shadow:0 4px 32px rgba(0,0,0,0.32);
+      display:flex;flex-direction:column;align-items:center;justify-content:space-between;
+      padding:8px;
+    ">
+      <!-- Background image (sunset road) -->
+      <img
+        src="https://www.figma.com/api/mcp/asset/76a8fd4b-ce39-4750-b940-c5265dc553ee"
+        alt=""
+        style="position:absolute;inset:0;width:100%;height:221%;top:-41%;object-fit:cover;opacity:0.96;pointer-events:none;"
+      />
+      <!-- Gradient overlay -->
+      <div class="card-overlay-orange" style="position:absolute;inset:0;pointer-events:none;border-radius:20px;"></div>
+
+      <!-- Top row -->
+      <div style="position:relative;display:flex;align-items:flex-start;justify-content:space-between;width:100%;">
+        <!-- Timestamp -->
+        <div style="display:flex;gap:4px;align-items:center;padding:8px 12px;">
+          <!-- Clock icon dot -->
+          <div style="width:11px;height:11px;border:1.5px solid white;border-radius:50%;flex-shrink:0;"></div>
+          <span style="font-family:'Outfit',sans-serif;font-size:12px;color:white;white-space:nowrap;line-height:1.25;">
+            Modified Yesterday
+          </span>
+        </div>
+        <!-- App icon -->
+        <div style="
+          background:white;border-radius:20px;
+          width:32px;height:32px;
+          display:flex;align-items:center;justify-content:center;
+          overflow:hidden;flex-shrink:0;
+        ">
+          <img
+            src="https://www.figma.com/api/mcp/asset/715723ea-0dd7-4079-b83d-7b3c7874bac0"
+            alt="Google Slides"
+            style="width:12px;height:16px;object-fit:cover;"
+          />
+        </div>
+      </div>
+
+      <!-- Bottom row -->
+      <div style="position:relative;display:flex;gap:12px;align-items:flex-end;width:100%;">
+        <div style="flex:1;padding:8px 12px;">
+          <span style="font-family:'Outfit',sans-serif;font-weight:400;font-size:24px;color:white;white-space:nowrap;line-height:1.25;">
+            Google Slides Test
+          </span>
+        </div>
+        <!-- Arrow button -->
+        <div style="
+          background:white;border-radius:12px;
+          width:46px;height:46px;flex-shrink:0;
+          display:flex;align-items:center;justify-content:center;
+        ">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M3 13L13 3M13 3H6M13 3V10" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- CARD 2 — Weekly All Hands (mid-right area) -->
+  <!-- ============================================================ -->
+  <div style="position:absolute;left:752px;top:357px;width:332px;display:flex;flex-direction:column;gap:14px;">
+
+    <!-- Drag handles -->
+    <div style="
+      position:absolute;left:-20px;top:-4px;z-index:10;
+      background:rgba(0,0,0,0.24);
+      display:flex;gap:8px;align-items:center;
+      padding:4px;border-radius:10px;overflow:hidden;
+    ">
+      <div style="width:12px;height:12px;background:white;border-radius:8px;box-shadow:0 4px 5.4px rgba(0,0,0,0.25);display:flex;align-items:center;justify-content:center;">
+        <div style="width:4px;height:1px;background:#999;border-radius:1px;"></div>
+      </div>
+      <div style="width:12px;height:12px;background:white;border-radius:8px;box-shadow:0 4px 5.4px rgba(0,0,0,0.25);display:flex;align-items:center;justify-content:center;">
+        <div style="width:5px;height:5px;background:#999;border-radius:50%;"></div>
+      </div>
+    </div>
+
+    <!-- Card -->
+    <div style="
+      position:relative;
+      width:332px;height:201px;
+      border-radius:20px;
+      overflow:hidden;
+      box-shadow:0 4px 32px rgba(0,0,0,0.32);
+      display:flex;flex-direction:column;align-items:center;justify-content:space-between;
+      padding:8px;
+    ">
+      <!-- Background image (blurred abstract) -->
+      <img
+        src="https://www.figma.com/api/mcp/asset/05581537-0b5b-4118-a028-0ebeff386b6e"
+        alt=""
+        style="position:absolute;inset:0;width:100%;height:221%;top:-41%;object-fit:cover;opacity:0.64;pointer-events:none;"
+      />
+      <!-- Gradient overlay -->
+      <div class="card-overlay-blue" style="position:absolute;inset:0;pointer-events:none;border-radius:20px;"></div>
+
+      <!-- Top row -->
+      <div style="position:relative;display:flex;align-items:flex-start;justify-content:space-between;width:100%;">
+        <!-- Timestamp -->
+        <div style="display:flex;gap:4px;align-items:center;padding:8px 12px;">
+          <div style="width:11px;height:11px;border:1.5px solid white;border-radius:50%;flex-shrink:0;"></div>
+          <span style="font-family:'Outfit',sans-serif;font-size:12px;color:white;white-space:nowrap;line-height:1.25;">
+            11:50 - 2:50pm
+          </span>
+        </div>
+        <!-- App icon -->
+        <div style="
+          background:white;border-radius:20px;
+          width:32px;height:32px;
+          display:flex;align-items:center;justify-content:center;
+          overflow:hidden;flex-shrink:0;
+        ">
+          <img
+            src="https://www.figma.com/api/mcp/asset/af46360f-eee7-4496-bd8c-8bd32423e97d"
+            alt="Google Meet"
+            style="width:16px;height:13px;object-fit:cover;"
+          />
+        </div>
+      </div>
+
+      <!-- Bottom row -->
+      <div style="position:relative;display:flex;gap:12px;align-items:flex-end;width:100%;">
+        <div style="flex:1;padding:8px 12px;display:flex;flex-direction:column;gap:4px;">
+          <span style="font-family:'Outfit',sans-serif;font-weight:400;font-size:24px;color:white;white-space:nowrap;line-height:1.25;">
+            Weekly All Hands
+          </span>
+          <span style="font-family:'Outfit',sans-serif;font-size:12px;color:rgba(255,255,255,0.8);line-height:1.25;">
+            5-minute recap of current metrics and North Star progress.
+          </span>
+        </div>
+        <!-- Arrow button -->
+        <div style="
+          background:white;border-radius:12px;
+          width:46px;height:46px;flex-shrink:0;
+          display:flex;align-items:center;justify-content:center;
+        ">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M3 13L13 3M13 3H6M13 3V10" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- BOTTOM ASK BAR -->
+  <!-- ============================================================ -->
+  <div style="
+    position:absolute;
+    left:597px;top:927px;
+    width:245px;height:52px;
+    background:rgba(0,0,0,0.16);
+    backdrop-filter:blur(12px);
+    border-radius:20px;
+    box-shadow:0 4px 18.1px rgba(0,0,0,0.12);
+    display:flex;align-items:center;justify-content:space-between;
+    padding:8px;
+    overflow:hidden;
+  ">
+    <!-- Placeholder text -->
+    <div style="padding:8px 12px;">
+      <span style="font-family:'Outfit',sans-serif;font-weight:400;font-size:16px;color:rgba(255,255,255,0.64);line-height:1.25;">
+        Ask...
+      </span>
+    </div>
+    <!-- Mic button -->
+    <div style="
+      background:white;
+      border-radius:12px;
+      padding:8px 12px;
+      display:flex;align-items:center;justify-content:center;
+      flex-shrink:0;
+    ">
+      <svg width="15" height="20" viewBox="0 0 15 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="4" y="1" width="7" height="11" rx="3.5" fill="#161717"/>
+        <path d="M1 9.5C1 12.814 3.686 15.5 7 15.5C10.314 15.5 13 12.814 13 9.5" stroke="#161717" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="7.5" y1="15.5" x2="7.5" y2="19" stroke="#161717" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="5" y1="19" x2="10" y2="19" stroke="#161717" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </div>
+  </div>
+
+  <!-- Vignette overlay -->
+  <div class="vignette"></div>
+
+</div>
+
+</body>
+</html>

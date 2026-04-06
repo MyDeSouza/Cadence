@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <title>1367:485 — Chat Panel (Doc Type Picker)</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #1a1f2a; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: 'Outfit', sans-serif; gap: 40px; }
+    .label { color: rgba(255,255,255,0.35); font-size: 11px; letter-spacing: 0.06em; }
+  </style>
+</head>
+<body>
+  <div style="transform: scale(2); transform-origin: center;">
+    <!--
+      1367:485 — Doc type picker.
+      AI message "What are we drafting?..." + email/doc icon buttons + Ask input.
+    -->
+    <div style="background:rgba(0,0,0,0.16);border-radius:20px;padding:8px;box-shadow:0 4px 18.1px rgba(0,0,0,0.12);display:flex;flex-direction:column;align-items:center;justify-content:flex-end;overflow:hidden;">
+
+      <!-- Upper dark container: AI msg + doc icons -->
+      <div style="background:#141414;border-radius:12px 12px 12px 0;padding:12px 0;display:flex;flex-direction:column;gap:10px;align-items:flex-start;flex-shrink:0;">
+
+        <!-- AI icon + message row -->
+        <div style="display:flex;gap:10px;align-items:flex-end;padding:0 8px;flex-shrink:0;">
+          <!-- AI icon (no background — shows #141414 through) -->
+          <div style="position:relative;width:45px;height:45px;overflow:hidden;border-radius:12px;flex-shrink:0;">
+            <!-- Petal 1: E17 -->
+            <div style="position:absolute;width:19px;height:20px;left:calc(50% - 9px);top:22px;transform:translateX(-50%);">
+              <div style="position:absolute;top:-30%;right:-63.16%;bottom:-40%;left:-13.16%;">
+                <img src="https://www.figma.com/api/mcp/asset/cf470699-af88-41d8-bfed-1fd0ae0074d3" alt="" style="display:block;max-width:none;width:100%;height:100%;">
+              </div>
+            </div>
+            <!-- Petal 2: E23, rotate-180 -->
+            <div style="position:absolute;width:19px;height:21px;left:calc(50% + 13px);top:-1px;transform:translateX(-50%);display:flex;align-items:center;justify-content:center;">
+              <div style="transform:rotate(180deg);flex-shrink:0;">
+                <div style="position:relative;width:19px;height:21px;">
+                  <div style="position:absolute;top:-28.57%;right:-63.16%;bottom:-35.71%;left:-13.16%;">
+                    <img src="https://www.figma.com/api/mcp/asset/2c57f643-264d-4013-9ffb-af00aa4e0e60" alt="" style="display:block;max-width:none;width:100%;height:100%;">
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- Petal 3: E19, rotate-180, 20×20 -->
+            <div style="position:absolute;width:20px;height:20px;left:calc(50% + 9.5px);top:4px;transform:translateX(-50%);display:flex;align-items:center;justify-content:center;">
+              <div style="transform:rotate(180deg);flex-shrink:0;">
+                <div style="position:relative;width:20px;height:20px;">
+                  <div style="position:absolute;top:-30%;right:-60%;bottom:-40%;left:-10%;">
+                    <img src="https://www.figma.com/api/mcp/asset/0925a79b-5bef-494b-96fd-8cde7f8c29f1" alt="" style="display:block;max-width:none;width:100%;height:100%;">
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- Petal 4: E21 -->
+            <div style="position:absolute;width:19px;height:21px;left:calc(50% - 14px);top:26px;transform:translateX(-50%);">
+              <div style="position:absolute;top:-28.57%;right:-63.16%;bottom:-35.71%;left:-13.16%;">
+                <img src="https://www.figma.com/api/mcp/asset/8c996b99-95bb-4d5b-ae75-aaca93d3ded5" alt="" style="display:block;max-width:none;width:100%;height:100%;">
+              </div>
+            </div>
+            <!-- Petal 5: E24, -rotate90, 20×20 -->
+            <div style="position:absolute;width:20px;height:20px;left:calc(50% + 9.5px);top:22px;transform:translateX(-50%);display:flex;align-items:center;justify-content:center;">
+              <div style="transform:rotate(-90deg);flex-shrink:0;">
+                <div style="position:relative;width:20px;height:20px;">
+                  <div style="position:absolute;top:-30%;right:-60%;bottom:-40%;left:-10%;">
+                    <img src="https://www.figma.com/api/mcp/asset/04f4acf9-ad92-43f2-90ab-4b51362f3343" alt="" style="display:block;max-width:none;width:100%;height:100%;">
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- Petal 6: E22, rotate90, w:20 h:19 -->
+            <div style="position:absolute;width:19px;height:20px;left:calc(50% - 9px);top:4px;transform:translateX(-50%);display:flex;align-items:center;justify-content:center;">
+              <div style="transform:rotate(90deg);flex-shrink:0;">
+                <div style="position:relative;width:20px;height:19px;">
+                  <div style="position:absolute;top:-31.58%;right:-60%;bottom:-44.74%;left:-10%;">
+                    <img src="https://www.figma.com/api/mcp/asset/e74cc9e5-7b02-49e4-beb5-744811cddece" alt="" style="display:block;max-width:none;width:100%;height:100%;">
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Message text -->
+          <div style="padding:8px 12px;padding-right:32px;flex-shrink:0;">
+            <span style="font-size:16px;font-weight:500;color:white;line-height:1.25;white-space:nowrap;">What are we drafting?...</span>
+          </div>
+        </div>
+
+        <!-- Doc type icon buttons row -->
+        <div style="display:flex;gap:10px;align-items:center;justify-content:center;padding:0 8px;width:100%;flex-shrink:0;">
+          <!-- Email icon -->
+          <div style="background:rgba(255,255,255,0.08);border-radius:12px;width:45px;height:45px;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;">
+            <div style="position:relative;width:31px;height:21px;">
+              <img src="https://www.figma.com/api/mcp/asset/28bee35f-3ab3-45dc-a3c1-9cf210739f80" alt="" style="position:absolute;display:block;max-width:none;width:100%;height:100%;">
+            </div>
+          </div>
+          <!-- Document icon -->
+          <div style="background:rgba(255,255,255,0.08);border-radius:12px;width:45px;height:45px;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;">
+            <div style="position:relative;width:25px;height:29px;">
+              <img src="https://www.figma.com/api/mcp/asset/fb4eeb43-925e-4333-a68c-789a382ed0b3" alt="" style="position:absolute;display:block;max-width:none;width:100%;height:100%;">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Input row -->
+      <div style="display:flex;align-items:center;justify-content:center;flex-shrink:0;width:100%;">
+        <!-- Cadence user icon -->
+        <div style="position:relative;width:45px;height:45px;background:#141414;flex-shrink:0;">
+          <div style="position:absolute;inset:0;background:#7c889a;border-radius:0 12px 0 0;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;padding:8px 12px;">
+            <div style="aspect-ratio:18/24;width:100%;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+              <div style="aspect-ratio:18/24;width:100%;position:relative;">
+                <img src="https://www.figma.com/api/mcp/asset/44dd0d2e-bc2f-40b9-97ac-e0530cfa7c96" alt="" style="position:absolute;display:block;max-width:none;width:100%;height:100%;">
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Input field -->
+        <div style="flex:1;display:flex;flex-direction:row;align-items:center;align-self:stretch;">
+          <div style="background:#141414;flex:1;height:100%;display:flex;align-items:center;min-width:0;padding:4px;border-radius:0 0 12px 12px;">
+            <div style="background:rgba(255,255,255,0.08);flex:1;height:100%;border-radius:8px;padding:8px 24px;display:flex;align-items:center;">
+              <span style="font-size:16px;font-weight:500;color:rgba(255,255,255,0.64);line-height:1.25;white-space:nowrap;">Ask...</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <span class="label">1367:485 — Chat Panel (Doc Type Picker)</span>
+</body>
+</html>

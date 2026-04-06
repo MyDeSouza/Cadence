@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <title>1355:379 — AI App Icon v1</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #1a1f2a; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: 'Outfit', sans-serif; gap: 40px; }
+    .label { color: rgba(255,255,255,0.35); font-size: 11px; letter-spacing: 0.06em; }
+  </style>
+</head>
+<body>
+  <div style="transform: scale(5); transform-origin: center;">
+    <!--
+      1355:379 — AI mark on white 45×45.
+      Six 15×15 petal fragments at different positions/rotations.
+      Each shows the TOP-RIGHT quadrant (top:0, left:50%, right:0, bottom:50%)
+      of its source ellipse image.
+    -->
+    <div style="background:white;border-radius:12px;width:45px;height:45px;overflow:hidden;position:relative;">
+
+      <!-- Petal 1: E17, no-rotation, top:12 -->
+      <div style="position:absolute;width:15px;height:15px;left:50%;top:12px;transform:translateX(-50%);">
+        <div style="position:absolute;top:0;left:50%;right:0;bottom:50%;">
+          <img src="https://www.figma.com/api/mcp/asset/51641ef3-c213-4857-8019-c1995a4182aa" alt="" style="display:block;max-width:none;width:100%;height:100%;">
+        </div>
+      </div>
+
+      <!-- Petal 2: E17, no-rotation, top:25 -->
+      <div style="position:absolute;width:15px;height:15px;left:50%;top:25px;transform:translateX(-50%);">
+        <div style="position:absolute;top:0;left:50%;right:0;bottom:50%;">
+          <img src="https://www.figma.com/api/mcp/asset/51641ef3-c213-4857-8019-c1995a4182aa" alt="" style="display:block;max-width:none;width:100%;height:100%;">
+        </div>
+      </div>
+
+      <!-- Petal 3: E19, rotate-180, top:12 -->
+      <div style="position:absolute;width:15px;height:15px;left:50%;top:12px;transform:translateX(-50%);display:flex;align-items:center;justify-content:center;">
+        <div style="transform:rotate(180deg);flex-shrink:0;">
+          <div style="position:relative;width:15px;height:15px;">
+            <div style="position:absolute;top:0;left:50%;right:0;bottom:50%;">
+              <img src="https://www.figma.com/api/mcp/asset/3f44f4a5-102d-4124-bc7a-cc5d1363c46c" alt="" style="display:block;max-width:none;width:100%;height:100%;">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Petal 4: E21, -rotate90, top:25 -->
+      <div style="position:absolute;width:15px;height:15px;left:50%;top:25px;transform:translateX(-50%);display:flex;align-items:center;justify-content:center;">
+        <div style="transform:rotate(-90deg);flex-shrink:0;">
+          <div style="position:relative;width:15px;height:15px;">
+            <div style="position:absolute;top:0;left:50%;right:0;bottom:50%;">
+              <img src="https://www.figma.com/api/mcp/asset/0376c511-62d0-4804-b1a1-08a9f8b5358d" alt="" style="display:block;max-width:none;width:100%;height:100%;">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Petal 5: E21, -rotate90, top:12 -->
+      <div style="position:absolute;width:15px;height:15px;left:50%;top:12px;transform:translateX(-50%);display:flex;align-items:center;justify-content:center;">
+        <div style="transform:rotate(-90deg);flex-shrink:0;">
+          <div style="position:relative;width:15px;height:15px;">
+            <div style="position:absolute;top:0;left:50%;right:0;bottom:50%;">
+              <img src="https://www.figma.com/api/mcp/asset/0376c511-62d0-4804-b1a1-08a9f8b5358d" alt="" style="display:block;max-width:none;width:100%;height:100%;">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Petal 6: E22, rotate90, top:12 -->
+      <div style="position:absolute;width:15px;height:15px;left:50%;top:12px;transform:translateX(-50%);display:flex;align-items:center;justify-content:center;">
+        <div style="transform:rotate(90deg);flex-shrink:0;">
+          <div style="position:relative;width:15px;height:15px;">
+            <div style="position:absolute;top:0;left:50%;right:0;bottom:50%;">
+              <img src="https://www.figma.com/api/mcp/asset/d29243fc-e39e-4161-af0f-bb74f042eb8b" alt="" style="display:block;max-width:none;width:100%;height:100%;">
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+  <span class="label">1355:379 — AI App Icon v1</span>
+</body>
+</html>

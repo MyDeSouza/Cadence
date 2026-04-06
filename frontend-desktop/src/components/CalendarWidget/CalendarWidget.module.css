@@ -39,12 +39,9 @@
   --cal-scrollbar:     rgba(255, 255, 255, 0.15);
 }
 
-/* ── Wrapper — positioning only ─────────────────────────── */
+/* ── Wrapper — positioning delegated to parent ───────────── */
 .wrapper {
-  position: fixed;
-  top: 24px;
-  left: 24px;
-  z-index: 100;
+  position: static;
 }
 
 /* ══════════════════════════════════════════════════════════
