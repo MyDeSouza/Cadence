@@ -24,11 +24,16 @@ function PenIcon() {
 }
 
 // ── Stored draft shape ─────────────────────────────────────
+type DraftTone = 'direct' | 'casual' | 'professional';
+const TONES: DraftTone[] = ['direct', 'casual', 'professional'];
+
 interface StoredDraft {
-  type:    'email' | 'document';
-  to:      string;
-  subject: string;
-  content: string;
+  type:        'email' | 'document';
+  to:          string;
+  subject:     string;
+  content:     string;                     // active tone's content (fallback)
+  versions?:   Record<DraftTone, string>;  // all three versions
+  activeTone?: DraftTone;                  // last selected tone
 }
 
 // ── Helpers ────────────────────────────────────────────────
@@ -131,17 +136,22 @@ function MiniCalendar({ events, isOpen }: { events: CadenceEvent[]; isOpen: bool
 }
 
 // ── Pending Draft Panel (shows draft from localStorage) ────
-type SendState = 'idle' | 'sending' | 'success' | 'error' | 'missingFields';
+type SendState = 'idle' | 'sending' | 'success' | 'error';
 
 function PendingDraftPanel({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
-  const [draft,     setDraft]     = useState<StoredDraft | null>(null);
-  const [to,        setTo]        = useState('');
-  const [subject,   setSubject]   = useState('');
-  const [body,      setBody]      = useState('');
-  const [toError,   setToError]   = useState(false);
-  const [sendState, setSendState] = useState<SendState>('idle');
+  const [draft,      setDraft]      = useState<StoredDraft | null>(null);
+  const [to,         setTo]         = useState('');
+  const [subject,    setSubject]    = useState('');
+  const [body,       setBody]       = useState('');
+  const [toError,    setToError]    = useState(false);
+  const [sendState,  setSendState]  = useState<SendState>('idle');
+  const [activeTone, setActiveTone] = useState<DraftTone>('direct');
+  // Per-tone edits so user tweaks survive cycling
+  const [edits,      setEdits]      = useState<Partial<Record<DraftTone, string>>>({});
+  const [fading,     setFading]     = useState(false);
 
-  const toValid = to.includes('@');
+  const toValid    = to.includes('@');
+  const hasVersions = !!draft?.versions;
 
   useEffect(() => {
     if (isOpen) {
@@ -149,23 +159,41 @@ function PendingDraftPanel({ isOpen, onClose }: { isOpen: boolean; onClose: () =
       if (raw) {
         try {
           const stored = JSON.parse(raw) as StoredDraft;
+          const tone   = stored.activeTone ?? 'direct';
           setDraft(stored);
           setTo(stored.to ?? '');
           setSubject(stored.subject ?? '');
-          setBody(stored.content);
+          setBody(stored.versions?.[tone] ?? stored.content ?? '');
+          setActiveTone(tone);
+          setEdits({});
         } catch {}
       }
       setToError(false);
       setSendState('idle');
+      setFading(false);
     }
   }, [isOpen]);
 
+  const switchTone = (newTone: DraftTone) => {
+    if (newTone === activeTone || !draft?.versions) return;
+    // Save current edits for current tone
+    setEdits(prev => ({ ...prev, [activeTone]: body }));
+    setFading(true);
+    setTimeout(() => {
+      const target = edits[newTone] ?? draft.versions![newTone];
+      setBody(target);
+      setActiveTone(newTone);
+      setFading(false);
+    }, 150);
+  };
+
+  const toneIdx  = TONES.indexOf(activeTone);
+  const prevTone = TONES[(toneIdx - 1 + 3) % 3];
+  const nextTone = TONES[(toneIdx + 1)     % 3];
+
   const sendEmail = async () => {
     if (!draft) return;
-    if (!toValid) {
-      setToError(true);
-      return;
-    }
+    if (!toValid) { setToError(true); return; }
     setToError(false);
     setSendState('sending');
     try {
@@ -198,8 +226,7 @@ function PendingDraftPanel({ isOpen, onClose }: { isOpen: boolean; onClose: () =
   const exportPDF = () => {
     const win = window.open('', '_blank');
     if (!win) return;
-    const esc = body
-      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const esc = body.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     win.document.write(`<!DOCTYPE html><html><head><title>Document</title>
 <style>body{font-family:Georgia,serif;max-width:720px;margin:48px auto;line-height:1.7;color:#111;font-size:15px;}pre{white-space:pre-wrap;font-family:inherit;}</style>
 </head><body><pre>${esc}</pre><script>window.onload=function(){window.print();}<\/script></body></html>`);
@@ -220,6 +247,7 @@ function PendingDraftPanel({ isOpen, onClose }: { isOpen: boolean; onClose: () =
         {draft.type === 'email' ? 'Email Draft' : 'Document'}
       </div>
 
+      {/* To / Subject editable fields (email only) */}
       {draft.type === 'email' && (
         <div className={styles.draftingMeta}>
           <div className={styles.draftingMetaRow}>
@@ -239,11 +267,6 @@ function PendingDraftPanel({ isOpen, onClose }: { isOpen: boolean; onClose: () =
               ⚠ Add an email address to send (e.g. max@gmail.com)
             </span>
           )}
-          {toError && toValid && (
-            <span className={styles.draftingToErrorMsg}>
-              Please enter a valid email address (e.g. mabel@email.com)
-            </span>
-          )}
           <div className={styles.draftingMetaRow}>
             <span className={styles.draftingMetaKey}>Sub</span>
             <input
@@ -256,19 +279,32 @@ function PendingDraftPanel({ isOpen, onClose }: { isOpen: boolean; onClose: () =
         </div>
       )}
 
+      {/* Tone cycle — only shown when draft has 3 versions */}
+      {hasVersions && (
+        <div className={styles.toneCycle}>
+          <button className={styles.toneCycleArrow} onClick={() => switchTone(prevTone)} aria-label="Previous tone">←</button>
+          {TONES.map(t => (
+            <span
+              key={t}
+              className={`${styles.toneCycleLabel} ${activeTone === t ? styles.toneCycleLabelActive : ''}`}
+            >
+              {t.charAt(0).toUpperCase() + t.slice(1)}
+            </span>
+          ))}
+          <button className={styles.toneCycleArrow} onClick={() => switchTone(nextTone)} aria-label="Next tone">→</button>
+        </div>
+      )}
+
+      {/* Editable draft body with crossfade on tone switch */}
       <textarea
-        className={`${styles.draftingTextarea} ${styles.draftingTextareaResult}`}
+        className={`${styles.draftingTextarea} ${styles.draftingTextareaResult} ${fading ? styles.draftingTextareaFade : ''}`}
         value={body}
         onChange={(e) => setBody(e.target.value)}
         rows={9}
       />
 
-      {sendState === 'success' && (
-        <span className={styles.draftingSendSuccess}>Sent ✓</span>
-      )}
-      {sendState === 'error' && (
-        <span className={styles.draftingSendError}>Failed — check connection</span>
-      )}
+      {sendState === 'success' && <span className={styles.draftingSendSuccess}>Sent ✓</span>}
+      {sendState === 'error'   && <span className={styles.draftingSendError}>Failed — check connection</span>}
 
       <div className={styles.draftingActions}>
         {draft.type === 'email' ? (

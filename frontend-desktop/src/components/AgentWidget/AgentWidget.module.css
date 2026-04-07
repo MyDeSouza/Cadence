@@ -129,8 +129,9 @@
   flex-shrink: 0;
 }
 
-.docTypeBtn:hover  { background: rgba(255, 255, 255, 0.16); }
-.docTypeBtn:active { background: rgba(255, 255, 255, 0.22); }
+.docTypeBtn:hover   { background: rgba(255, 255, 255, 0.16); }
+.docTypeBtn:active  { background: rgba(255, 255, 255, 0.22); }
+.docTypeBtnActive   { background: rgba(255, 255, 255, 0.22) !important; }
 
 /* Tone chips */
 .toneRow {

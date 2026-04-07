@@ -3,8 +3,7 @@ import { API_BASE } from '../../constants/api';
 import styles from './AgentWidget.module.css';
 
 type DraftType = 'email' | 'document';
-type DraftTone = 'formal' | 'casual' | 'direct';
-type Step = 'idle' | 'step1' | 'emailDetails' | 'step2' | 'step3' | 'generating';
+type Step = 'idle' | 'idea' | 'recipient' | 'type' | 'generating';
 type BubbleState = 'idle' | 'visible' | 'fading';
 
 interface Props {
@@ -15,10 +14,7 @@ interface Props {
 function SparkIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-      <path
-        d="M10 2L11.8 8.2L18 10L11.8 11.8L10 18L8.2 11.8L2 10L8.2 8.2L10 2Z"
-        fill="white"
-      />
+      <path d="M10 2L11.8 8.2L18 10L11.8 11.8L10 18L8.2 11.8L2 10L8.2 8.2L10 2Z" fill="white" />
     </svg>
   );
 }
@@ -51,21 +47,47 @@ function ChevronIcon() {
   );
 }
 
+// ── Helpers ──────────────────────────────────────────────
+/** Extract a name reference from the idea text (e.g. "ask Sarah about..." → "Sarah") */
+function detectName(text: string): string | null {
+  const m = text.match(
+    /\b(?:to|for|with|ask|tell|email|update|message|invite|remind|contact|from)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)/
+  );
+  return m ? m[1] : null;
+}
+
+/** Extract "Subject: ..." from an email draft string */
+function extractSubject(text: string): string {
+  const m = text.match(/^Subject:\s*(.+)/mi);
+  return m ? m[1].trim() : '';
+}
+
+/** Parse delimiter-separated 3-version response */
+function parseVersions(raw: string): { direct: string; casual: string; professional: string } {
+  const extract = (key: string) => {
+    const re = new RegExp(`---${key}---\\s*([\\s\\S]*?)(?=\\s*---[A-Z]+---|$)`, 'i');
+    const m = raw.match(re);
+    return m ? m[1].trim() : '';
+  };
+  const direct       = extract('DIRECT');
+  const casual       = extract('CASUAL');
+  const professional = extract('PROFESSIONAL');
+  // Fallback: if parsing fails, use full text for all three
+  return {
+    direct:       direct       || raw.trim(),
+    casual:       casual       || raw.trim(),
+    professional: professional || raw.trim(),
+  };
+}
+
 // ── Main component ──────────────────────────────────────
 export function AgentWidget({ onDraftGenerated }: Props) {
-  // Drafting flow
-  const [step,         setStep]         = useState<Step>('idle');
-  const [draftType,    setDraftType]    = useState<DraftType | null>(null);
-  const [tone,         setTone]         = useState<DraftTone>('casual');
-  const [intent,       setIntent]       = useState('');
+  const [step,          setStep]          = useState<Step>('idle');
+  const [ideaText,      setIdeaText]      = useState('');
+  const [recipientName, setRecipientName] = useState('');
+  const [draftType,     setDraftType]     = useState<DraftType | null>(null);
+  const [emailTo,       setEmailTo]       = useState('');
 
-  // Email-specific fields
-  const [to,           setTo]           = useState('');
-  const [subject,      setSubject]      = useState('');
-  const [toError,      setToError]      = useState(false);
-  const [subjectError, setSubjectError] = useState(false);
-
-  // Ask (direct chat) state
   const [askInput,     setAskInput]     = useState('');
   const [responseText, setResponseText] = useState('');
   const [bubbleState,  setBubbleState]  = useState<BubbleState>('idle');
@@ -73,7 +95,7 @@ export function AgentWidget({ onDraftGenerated }: Props) {
 
   const abortRef     = useRef<AbortController | null>(null);
   const fadeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const subjectRef   = useRef<HTMLInputElement>(null);
+  const emailToRef   = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     return () => { if (fadeTimerRef.current) clearTimeout(fadeTimerRef.current); };
@@ -83,35 +105,29 @@ export function AgentWidget({ onDraftGenerated }: Props) {
   const sendAsk = async () => {
     const text = askInput.trim();
     if (!text || askStreaming) return;
-
     setAskInput('');
     setResponseText('');
     setBubbleState('visible');
     setAskStreaming(true);
     if (fadeTimerRef.current) clearTimeout(fadeTimerRef.current);
-
     const controller = new AbortController();
     abortRef.current = controller;
-
     try {
       const res = await fetch(`${API_BASE}/ask`, {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ message: text }),
-        signal:  controller.signal,
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text }), signal: controller.signal,
       });
       if (!res.ok || !res.body) throw new Error('bad response');
-      const reader  = res.body.getReader();
+      const reader = res.body.getReader();
       const decoder = new TextDecoder();
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-        setResponseText((prev) => prev + decoder.decode(value, { stream: true }));
+        setResponseText(prev => prev + decoder.decode(value, { stream: true }));
       }
     } catch (err) {
-      if (!(err instanceof Error && err.name === 'AbortError')) {
+      if (!(err instanceof Error && err.name === 'AbortError'))
         setResponseText('Unable to reach the model. Is Ollama running?');
-      }
     } finally {
       abortRef.current = null;
       setAskStreaming(false);
@@ -125,48 +141,94 @@ export function AgentWidget({ onDraftGenerated }: Props) {
   // ── Drafting flow ─────────────────────────────────────
   const resetDraft = () => {
     setStep('idle');
+    setIdeaText('');
+    setRecipientName('');
     setDraftType(null);
-    setTone('casual');
-    setIntent('');
-    setTo('');
-    setSubject('');
-    setToError(false);
-    setSubjectError(false);
+    setEmailTo('');
   };
 
   const startDraft = () => {
     if (fadeTimerRef.current) clearTimeout(fadeTimerRef.current);
     setBubbleState('idle');
     setResponseText('');
-    setStep('step1');
+    setStep('idea');
   };
 
-  const advanceFromEmailDetails = () => {
-    const toOk  = to.trim().length > 0;
-    const subOk = subject.trim().length > 0;
-    setToError(!toOk);
-    setSubjectError(!subOk);
-    if (toOk && subOk) setStep('step2');
+  const advanceFromIdea = () => {
+    if (!ideaText.trim()) return;
+    const name = detectName(ideaText);
+    if (name) {
+      setRecipientName(name);
+      setStep('type');
+    } else {
+      setStep('recipient');
+    }
   };
 
-  const generate = async (intentText: string) => {
-    if (!intentText.trim()) return;
+  const advanceFromRecipient = () => {
+    // recipientName may be empty — that's fine
+    setStep('type');
+  };
+
+  const selectEmail = () => {
+    setDraftType('email');
+    // Pre-fill emailTo with recipientName if it looks like an email, else leave for user
+    setEmailTo(recipientName.includes('@') ? recipientName : '');
+    setTimeout(() => emailToRef.current?.focus(), 50);
+  };
+
+  const generate = async () => {
+    if (!draftType) return;
     setStep('generating');
 
+    const recipientPart = recipientName.trim() ? ` for ${recipientName.trim()}` : '';
+
     const prompt = draftType === 'email'
-      ? `Draft a ${tone} email to ${to} with subject "${subject}". Content request: ${intentText.trim()}.\n\nFormat:\nSubject: ${subject}\n\n[email body with appropriate greeting and sign-off]`
-      : `Draft a ${tone} document. Topic: ${intentText.trim()}.\n\nInclude a clear title and organized sections.`;
+      ? `Write three email drafts${recipientPart} about: "${ideaText.trim()}".
+
+Use EXACTLY this format with no extra text before or after:
+
+---DIRECT---
+Subject: [subject line]
+
+[concise, direct email body with greeting and sign-off]
+
+---CASUAL---
+Subject: [subject line]
+
+[friendly, casual email body with greeting and sign-off]
+
+---PROFESSIONAL---
+Subject: [subject line]
+
+[formal, professional email body with greeting and sign-off]`
+      : `Write three document drafts${recipientPart} about: "${ideaText.trim()}".
+
+Use EXACTLY this format with no extra text before or after:
+
+---DIRECT---
+[Title]
+
+[concise, direct content with clear sections]
+
+---CASUAL---
+[Title]
+
+[friendly, conversational content]
+
+---PROFESSIONAL---
+[Title]
+
+[formal, professional content with structured sections]`;
 
     const controller = new AbortController();
     abortRef.current = controller;
-
     let accumulated = '';
+
     try {
       const res = await fetch(`${API_BASE}/ask`, {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ message: prompt }),
-        signal:  controller.signal,
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: prompt }), signal: controller.signal,
       });
       if (!res.ok || !res.body) throw new Error('bad response');
       const reader  = res.body.getReader();
@@ -177,24 +239,27 @@ export function AgentWidget({ onDraftGenerated }: Props) {
         accumulated += decoder.decode(value, { stream: true });
       }
     } catch (err) {
-      if (!(err instanceof Error && err.name === 'AbortError')) {
+      if (!(err instanceof Error && err.name === 'AbortError'))
         accumulated = 'Unable to generate draft. Please try again.';
-      }
     } finally {
       abortRef.current = null;
     }
 
     if (accumulated) {
-      // Store in localStorage so notch pen icon appears
+      const versions = parseVersions(accumulated);
+      const subject  = extractSubject(versions.direct) || ideaText.trim().slice(0, 60);
+
       const draftData = {
-        type:    draftType ?? 'document',
-        to:      draftType === 'email' ? to      : '',
-        subject: draftType === 'email' ? subject : '',
-        content: accumulated,
+        type:       draftType,
+        to:         draftType === 'email' ? emailTo : '',
+        subject,
+        content:    versions.direct,
+        versions,
+        activeTone: 'direct' as const,
       };
       localStorage.setItem('cadence_active_draft', JSON.stringify(draftData));
       window.dispatchEvent(new CustomEvent('cadenceDraftReady'));
-      onDraftGenerated({ type: draftType ?? 'document', content: accumulated });
+      onDraftGenerated({ type: draftType, content: versions.direct });
     }
     resetDraft();
   };
@@ -202,11 +267,10 @@ export function AgentWidget({ onDraftGenerated }: Props) {
   const isExpanded = step !== 'idle';
 
   const stepMessage =
-    step === 'step1'        ? 'What are we drafting?...'       :
-    step === 'emailDetails' ? 'Who is this going to?'          :
-    step === 'step2'        ? "What's the tone?"               :
-    step === 'step3'        ? 'What would you like to write...' :
-    step === 'generating'   ? 'Generating...'                  : '';
+    step === 'idea'      ? 'What do you need to write about?'     :
+    step === 'recipient' ? 'Who is this for?'                     :
+    step === 'type'      ? 'How would you like to deliver this?'  :
+    step === 'generating'? 'Generating...'                        : '';
 
   return (
     <div className={styles.wrapper}>
@@ -225,69 +289,41 @@ export function AgentWidget({ onDraftGenerated }: Props) {
             <span className={styles.aiMessage}>{stepMessage}</span>
           </div>
 
-          {/* Step 1 — doc type */}
-          {step === 'step1' && (
-            <div className={styles.docTypeRow}>
-              <button
-                className={styles.docTypeBtn}
-                aria-label="Email"
-                onClick={() => { setDraftType('email'); setStep('emailDetails'); }}
-              ><EmailIcon /></button>
-              <button
-                className={styles.docTypeBtn}
-                aria-label="Document"
-                onClick={() => { setDraftType('document'); setStep('step2'); }}
-              ><DocIcon /></button>
-            </div>
-          )}
-
-          {/* Email details — To + Subject */}
-          {step === 'emailDetails' && (
-            <div className={styles.emailDetailsRow}>
-              <input
-                className={`${styles.emailInput} ${toError ? styles.emailInputError : ''}`}
-                type="email"
-                placeholder="To"
-                value={to}
-                autoFocus
-                onChange={(e) => { setTo(e.target.value); if (toError) setToError(false); }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Tab') { e.preventDefault(); subjectRef.current?.focus(); }
-                  if (e.key === 'Enter') subjectRef.current?.focus();
-                }}
-              />
-              <input
-                ref={subjectRef}
-                className={`${styles.emailInput} ${subjectError ? styles.emailInputError : ''}`}
-                placeholder="Subject"
-                value={subject}
-                onChange={(e) => { setSubject(e.target.value); if (subjectError) setSubjectError(false); }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') advanceFromEmailDetails();
-                }}
-              />
-            </div>
-          )}
-
-          {/* Step 2 — tone */}
-          {step === 'step2' && (
-            <div className={styles.toneRow}>
-              {(['formal', 'casual', 'direct'] as DraftTone[]).map((t) => (
+          {/* Type selection + email To: field */}
+          {step === 'type' && (
+            <>
+              <div className={styles.docTypeRow}>
                 <button
-                  key={t}
-                  className={`${styles.tonePill} ${tone === t ? styles.tonePillActive : ''}`}
-                  onClick={() => setTone(t)}
-                >
-                  {t.charAt(0).toUpperCase() + t.slice(1)}
-                </button>
-              ))}
-            </div>
+                  className={`${styles.docTypeBtn} ${draftType === 'email' ? styles.docTypeBtnActive : ''}`}
+                  aria-label="Email"
+                  onClick={selectEmail}
+                ><EmailIcon /></button>
+                <button
+                  className={`${styles.docTypeBtn} ${draftType === 'document' ? styles.docTypeBtnActive : ''}`}
+                  aria-label="Document"
+                  onClick={() => { setDraftType('document'); generate(); }}
+                ><DocIcon /></button>
+              </div>
+
+              {draftType === 'email' && (
+                <input
+                  ref={emailToRef}
+                  className={styles.emailInput}
+                  type="email"
+                  placeholder="To (email address)"
+                  value={emailTo}
+                  onChange={e => setEmailTo(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); generate(); } }}
+                />
+              )}
+            </>
           )}
         </div>
       )}
 
       {/* ── Bottom row ─────────────────────────────────────── */}
       <div className={styles.bottomRow}>
+        {/* Idle */}
         {step === 'idle' && (
           <>
             <input
@@ -295,10 +331,8 @@ export function AgentWidget({ onDraftGenerated }: Props) {
               placeholder="Ask..."
               value={askInput}
               disabled={askStreaming}
-              onChange={(e) => setAskInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendAsk(); }
-              }}
+              onChange={e => setAskInput(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendAsk(); } }}
             />
             <button className={styles.sparkBtn} aria-label="Start drafting" onClick={startDraft}>
               <SparkIcon />
@@ -306,57 +340,62 @@ export function AgentWidget({ onDraftGenerated }: Props) {
           </>
         )}
 
-        {step === 'step1' && (
+        {/* Step: idea */}
+        {step === 'idea' && (
           <>
             <div className={styles.avatar} />
-            <span className={`${styles.askInput} ${styles.askInputPlaceholder}`}>Ask...</span>
+            <input
+              className={styles.askInput}
+              placeholder="e.g. coffee tomorrow, Q3 update, meeting follow-up..."
+              value={ideaText}
+              autoFocus
+              onChange={e => setIdeaText(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); advanceFromIdea(); } }}
+            />
+            <button
+              className={styles.sparkBtn}
+              disabled={!ideaText.trim()}
+              onClick={advanceFromIdea}
+            ><ChevronIcon /></button>
           </>
         )}
 
-        {step === 'emailDetails' && (
+        {/* Step: recipient */}
+        {step === 'recipient' && (
           <>
             <div className={styles.avatar} />
-            <span className={`${styles.askInput} ${styles.askInputPlaceholder}`}>Fill in details above...</span>
-            <button className={styles.sparkBtn} aria-label="Next" onClick={advanceFromEmailDetails}>
+            <input
+              className={styles.askInput}
+              placeholder="Name or email..."
+              value={recipientName}
+              autoFocus
+              onChange={e => setRecipientName(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); advanceFromRecipient(); } }}
+            />
+            <button className={styles.sparkBtn} onClick={advanceFromRecipient}>
               <ChevronIcon />
             </button>
           </>
         )}
 
-        {step === 'step2' && (
+        {/* Step: type — no email selected yet */}
+        {step === 'type' && !draftType && (
           <>
             <div className={styles.avatar} />
-            <span className={`${styles.askInput} ${styles.askInputPlaceholder}`}>
-              {tone ? `${tone.charAt(0).toUpperCase() + tone.slice(1)} selected — press enter` : 'Pick a tone above...'}
-            </span>
-            <button
-              className={styles.sparkBtn}
-              disabled={!tone}
-              aria-label="Next"
-              onClick={() => { if (tone) setStep('step3'); }}
-            ><ChevronIcon /></button>
+            <span className={`${styles.askInput} ${styles.askInputPlaceholder}`}>Email or document?...</span>
           </>
         )}
 
-        {step === 'step3' && (
+        {/* Step: type — email selected, waiting for To: */}
+        {step === 'type' && draftType === 'email' && (
           <>
             <div className={styles.avatar} />
-            <textarea
-              className={`${styles.askInput} ${styles.intentArea}`}
-              placeholder={draftType === 'email'
-                ? 'e.g. ask Sarah if she wants coffee next week'
-                : 'e.g. notes on the Q3 review meeting...'}
-              value={intent}
-              autoFocus
-              rows={2}
-              onChange={(e) => setIntent(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); generate(intent); }
-              }}
-            />
+            <span className={`${styles.askInput} ${styles.askInputPlaceholder}`}>Add email above, then generate</span>
+            <button className={styles.sparkBtn} onClick={generate}><ChevronIcon /></button>
           </>
         )}
 
+        {/* Generating */}
         {step === 'generating' && (
           <>
             <span className={`${styles.askInput} ${styles.askInputPlaceholder} ${styles.askInputDim}`}>
