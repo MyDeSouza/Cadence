@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { API_BASE } from '../../constants/api';
 import { parseCanvasCommand } from '../../utils/canvasCommands';
 import type { CanvasCommand } from '../../utils/canvasCommands';
+import type { VisibleCard } from '../FovealCanvas';
 import styles from './AgentWidget.module.css';
 
 type DraftType = 'email' | 'document';
@@ -9,8 +10,9 @@ type Step = 'idle' | 'idea' | 'recipient' | 'type' | 'generating';
 type BubbleState = 'idle' | 'visible' | 'fading';
 
 interface Props {
-  onDraftGenerated:  (draft: { type: DraftType; content: string }) => void;
-  onCanvasCommand?: (cmd: CanvasCommand) => void;
+  onDraftGenerated:      (draft: { type: DraftType; content: string }) => void;
+  onCanvasCommand?:      (cmd: CanvasCommand) => void;
+  visibleCards?:         VisibleCard[];
 }
 
 // ── Icons ────────────────────────────────────────────────
@@ -84,7 +86,36 @@ function parseVersions(raw: string): { direct: string; casual: string; professio
 }
 
 // ── Main component ──────────────────────────────────────
-export function AgentWidget({ onDraftGenerated, onCanvasCommand }: Props) {
+// ── Context builder ──────────────────────────────────────
+async function buildCanvasContext(cards: VisibleCard[]): Promise<string> {
+  const cardList = cards.length > 0
+    ? cards.map(c => `"${c.title.substring(0, 45)}" [${c.type}]`).join(', ')
+    : 'No cards visible';
+
+  let eventsStr = 'Calendar unavailable';
+  try {
+    const res  = await fetch(`${API_BASE}/events`);
+    const data = await res.json() as Array<{ title: string; timestamp: string }>;
+    const today = new Date().toDateString();
+    const todayEvents = data
+      .filter(e => new Date(e.timestamp).toDateString() === today)
+      .map(e => `${e.title} at ${new Date(e.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`)
+      .join(', ');
+    eventsStr = todayEvents || 'No events today';
+  } catch { /* leave as unavailable */ }
+
+  const now     = new Date();
+  const dateStr = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+  const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+
+  return [
+    `Cards: ${cardList}`,
+    `Today's schedule: ${eventsStr}`,
+    `Current time: ${timeStr}, ${dateStr}`,
+  ].join('\n');
+}
+
+export function AgentWidget({ onDraftGenerated, onCanvasCommand, visibleCards }: Props) {
   const [step,          setStep]          = useState<Step>('idle');
   const [ideaText,      setIdeaText]      = useState('');
   const [recipientName, setRecipientName] = useState('');
@@ -153,12 +184,19 @@ export function AgentWidget({ onDraftGenerated, onCanvasCommand }: Props) {
     setBubbleState('visible');
     setAskStreaming(true);
     if (fadeTimerRef.current) clearTimeout(fadeTimerRef.current);
+
+    // Build canvas context to enrich the system prompt
+    const context = visibleCards !== undefined
+      ? await buildCanvasContext(visibleCards)
+      : undefined;
+
     const controller = new AbortController();
     abortRef.current = controller;
     try {
       const res = await fetch(`${API_BASE}/ask`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text }), signal: controller.signal,
+        body: JSON.stringify({ message: text, ...(context ? { context } : {}) }),
+        signal: controller.signal,
       });
       if (!res.ok || !res.body) throw new Error('bad response');
       const reader = res.body.getReader();

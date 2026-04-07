@@ -7,15 +7,18 @@ import { useSession } from './hooks/useSession';
 import { useAdaptiveTheme } from './hooks/useAdaptiveTheme';
 import type { CanvasCommand, CanvasFilterState } from './utils/canvasCommands';
 import { INITIAL_CANVAS_FILTER } from './utils/canvasCommands';
+import type { VisibleCard } from './components/FovealCanvas';
 import styles from './App.module.css';
 
 export default function App() {
   const { session, endSession } = useSession();
   const theme = useAdaptiveTheme();
 
-  const [bgPos,        setBgPos]        = useState({ x: 0, y: 0 });
-  const [isDragging,   setIsDragging]   = useState(false);
-  const [canvasFilter, setCanvasFilter] = useState<CanvasFilterState>(INITIAL_CANVAS_FILTER);
+  const [bgPos,         setBgPos]         = useState({ x: 0, y: 0 });
+  const [isDragging,    setIsDragging]    = useState(false);
+  const [canvasFilter,  setCanvasFilter]  = useState<CanvasFilterState>(INITIAL_CANVAS_FILTER);
+  const [visibleCards,  setVisibleCards]  = useState<VisibleCard[]>([]);
+  const [ytQuery,       setYtQuery]       = useState<string | undefined>(undefined);
   const dragRef = useRef<{ startX: number; startY: number; originX: number; originY: number } | null>(null);
 
   const handleEndSession = () => { endSession(); setBgPos({ x: 0, y: 0 }); };
@@ -51,6 +54,9 @@ export default function App() {
         break;
       case 'nextEvent':
         // Handled entirely in AgentWidget (fetches events, shows in bubble)
+        break;
+      case 'youtubeSearch':
+        setYtQuery(cmd.query);
         break;
     }
   }, []);
@@ -121,9 +127,15 @@ export default function App() {
           theme={theme}
           bgPos={bgPos}
           canvasFilter={canvasFilter}
+          youtubeQuery={ytQuery}
+          onVisibleCardsChange={setVisibleCards}
         />
 
-        <AgentWidget onDraftGenerated={() => {}} onCanvasCommand={handleCanvasCommand} />
+        <AgentWidget
+          onDraftGenerated={() => {}}
+          onCanvasCommand={handleCanvasCommand}
+          visibleCards={visibleCards}
+        />
       </div>
     </>
   );

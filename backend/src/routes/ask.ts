@@ -14,7 +14,7 @@ const OLLAMA_PORT  = 11434;
 const OLLAMA_MODEL = 'mistral';
 
 router.post('/', async (req: Request, res: Response): Promise<void> => {
-  const { message } = req.body as { message?: string };
+  const { message, context: canvasContext } = req.body as { message?: string; context?: string };
 
   if (!message?.trim()) {
     res.status(400).json({ error: 'message is required' });
@@ -25,8 +25,6 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
   const prefs = await getPreferences();
   const now   = new Date();
 
-  // Scope conflict context to tomorrow only — the full window causes the model
-  // to flag non-issues on empty days far in the future.
   const startOfTomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
   const endOfTomorrow   = new Date(startOfTomorrow.getTime() + 24 * 60 * 60 * 1000);
 
@@ -42,8 +40,8 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
     orderBy: { timestamp: 'asc' },
   });
 
-  // ── Build context block ────────────────────────────────────────────────────
-  const contextLines = events
+  // ── Build calendar signal block ────────────────────────────────────────────
+  const calLines = events
     .map((e) => {
       const due = e.deadline
         ? `due ${new Date(e.deadline).toLocaleString('en-GB', { dateStyle: 'short', timeStyle: 'short' })}`
@@ -52,20 +50,27 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
     })
     .join('\n');
 
-  const context = contextLines.length > 0
-    ? `The user's upcoming surfaced signals:\n${contextLines}\n\n`
-    : `There are no upcoming surfaced signals right now.\n\n`;
+  const calendarBlock = calLines.length > 0
+    ? `Upcoming surfaced signals:\n${calLines}\n\n`
+    : `No upcoming surfaced signals.\n\n`;
+
+  // ── Canvas context block (injected by frontend) ────────────────────────────
+  const canvasBlock = canvasContext?.trim()
+    ? `User's current workspace:\n${canvasContext.trim()}\n\n`
+    : '';
 
   const prompt =
-    `You are Cadence, a focused cognitive triage assistant. ` +
-    `Respond in 2-3 sentences maximum. Be direct. No bullet points, no numbered lists, no headers — plain conversational text only.\n` +
+    `You are Cadence, a personal workspace assistant. ` +
+    `Respond in 2-3 sentences maximum. Be direct and specific — refer to actual card titles or event names when relevant. ` +
+    `No bullet points, no numbered lists, no headers — plain conversational text only.\n` +
     `When you identify a scheduling conflict or want to suggest a schedule change, do not describe it in prose. ` +
     `Instead output a JSON action block in this exact format on its own line: ` +
     `ACTION:{"type":"reschedule","eventId":"<copy the value after eventId: from the context>","newStart":"ISO8601","newEnd":"ISO8601","reason":"one sentence"} ` +
     `or ACTION:{"type":"move","eventId":"<copy the value after eventId: from the context>","newStart":"ISO8601","newEnd":"ISO8601","reason":"one sentence"}. ` +
     `The eventId MUST be the exact string after "eventId:" in the context — never use the event title, a number, or any other value. ` +
     `You may output multiple ACTION blocks, one per line. After the action blocks, output nothing else.\n\n` +
-    context +
+    canvasBlock +
+    calendarBlock +
     `User: ${message.trim()}\nCadence:`;
 
   // ── Stream Ollama response ─────────────────────────────────────────────────

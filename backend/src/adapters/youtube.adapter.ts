@@ -95,7 +95,32 @@ async function fetchLatestFromChannel(channelId: string, apiKey: string): Promis
   };
 }
 
-export async function fetchYouTubeVideos(): Promise<YouTubeVideo[]> {
+async function fetchByQuery(query: string, apiKey: string): Promise<YouTubeVideo[]> {
+  const params = new URLSearchParams({
+    part:       'snippet',
+    q:          query,
+    maxResults: '4',
+    type:       'video',
+    key:        apiKey,
+  });
+
+  const res = await fetch(`https://www.googleapis.com/youtube/v3/search?${params}`);
+  if (!res.ok) throw new Error(`YouTube query search → ${res.status}`);
+  const data = await res.json() as YouTubeSearchResponse;
+
+  return (data.items ?? [])
+    .filter((item) => item.id.videoId)
+    .map((item) => ({
+      videoId:      item.id.videoId!,
+      title:        item.snippet.title,
+      channelName:  item.snippet.channelTitle,
+      thumbnailUrl: bestThumb(item.snippet.thumbnails),
+      publishedAt:  item.snippet.publishedAt,
+      url:          `https://www.youtube.com/watch?v=${item.id.videoId}`,
+    }));
+}
+
+export async function fetchYouTubeVideos(query?: string): Promise<YouTubeVideo[]> {
   const apiKey     = process.env.YOUTUBE_API_KEY;
   const channelEnv = process.env.YOUTUBE_CHANNEL_IDS;
 
@@ -105,6 +130,9 @@ export async function fetchYouTubeVideos(): Promise<YouTubeVideo[]> {
   }
 
   try {
+    // User-specified topic query takes priority
+    if (query) return await fetchByQuery(query, apiKey);
+
     if (channelEnv) {
       const channelIds = channelEnv.split(',').map((c) => c.trim()).filter(Boolean);
       const results = await Promise.all(

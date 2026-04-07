@@ -8,7 +8,8 @@ export type CanvasCommand =
   | { kind: 'sortRecent' }
   | { kind: 'highlightTitle'; keyword: string }
   | { kind: 'calendarDay';    date: Date }
-  | { kind: 'nextEvent' };
+  | { kind: 'nextEvent' }
+  | { kind: 'youtubeSearch';  query: string };
 
 export interface CanvasFilterState {
   fileType:      DriveFileTypeFilter | null;
@@ -101,6 +102,27 @@ export function parseCanvasCommand(raw: string): ParsedCommand | null {
   // ── Next event ────────────────────────────────────────────
   if (/\bnext event\b|what.?s next\b/.test(t)) {
     return { command: { kind: 'nextEvent' }, confirmation: 'Checking next event...' };
+  }
+
+  // ── YouTube topic search ──────────────────────────────────
+  const ytSearch = t.match(
+    /(?:show\s+me|find|i\s+want\s+to\s+see|pull\s+up|search\s+for)\s+(.+?)\s+(?:videos?|clips?|footage)/
+  );
+  if (ytSearch) {
+    const query = ytSearch[1].trim();
+    return { command: { kind: 'youtubeSearch', query }, confirmation: `Searching for "${query}" videos…` };
+  }
+
+  // ── Drive file search ─────────────────────────────────────
+  const driveSearch = t.match(/(?:find|show)\s+(?:my\s+)?(.+?)\s+files?/);
+  if (driveSearch) {
+    const keyword = driveSearch[1].trim();
+    if (!['youtube','notion','figma','drive','all','everything','recent'].includes(keyword)) {
+      return {
+        command: { kind: 'highlightTitle', keyword },
+        confirmation: `Filtering cards for "${keyword}"`,
+      };
+    }
   }
 
   // ── Title keyword highlight (catch-all for "show X") ──────

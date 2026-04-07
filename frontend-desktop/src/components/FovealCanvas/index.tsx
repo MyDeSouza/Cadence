@@ -4,6 +4,11 @@ import type { ActiveSession, CadenceEvent } from '../../types';
 import type { Theme } from '../../hooks/useAdaptiveTheme';
 import type { DriveFile, DriveFileType } from '../../hooks/useDriveFiles';
 import type { CanvasFilterState } from '../../utils/canvasCommands';
+
+export type VisibleCard = {
+  title: string;
+  type: 'doc' | 'slides' | 'sheet' | 'pdf' | 'figma' | 'notion' | 'youtube';
+};
 import { useDriveFiles }    from '../../hooks/useDriveFiles';
 import { useFigmaFiles }    from '../../hooks/useFigmaFiles';
 import { useNotionPages }   from '../../hooks/useNotionPages';
@@ -18,13 +23,15 @@ import { API_BASE } from '../../constants/api';
 import styles from './FovealCanvas.module.css';
 
 interface Props {
-  session:         ActiveSession | null;
-  onEndSession:    () => void;
-  theme:           Theme;
-  resetLayoutKey?: number;
-  bgPos?:          { x: number; y: number };
-  isRecentering?:  boolean;
-  canvasFilter?:   CanvasFilterState;
+  session:                ActiveSession | null;
+  onEndSession:           () => void;
+  theme:                  Theme;
+  resetLayoutKey?:        number;
+  bgPos?:                 { x: number; y: number };
+  isRecentering?:         boolean;
+  canvasFilter?:          CanvasFilterState;
+  youtubeQuery?:          string;
+  onVisibleCardsChange?:  (cards: VisibleCard[]) => void;
 }
 
 // ── Persistent card positions ──────────────────────────────
@@ -403,14 +410,14 @@ function YouTubeLogo() {
 }
 
 // ── FovealCanvas ───────────────────────────────────────────
-export function FovealCanvas({ theme, resetLayoutKey, bgPos, isRecentering, canvasFilter }: Props) {
+export function FovealCanvas({ theme, resetLayoutKey, bgPos, isRecentering, canvasFilter, youtubeQuery, onVisibleCardsChange }: Props) {
   const { events }             = useDigest();
   const { files: allFiles }    = useDriveFiles();
   const { files: figmaFiles }  = useFigmaFiles();
   const { pages: notionPages } = useNotionPages();
   const { signals: gmailRaw }  = useGmailSignals();
   const focusEvent             = getFocusEvent(events);
-  const { videos: ytVideos }   = useYouTubeVideos(focusEvent?.title);
+  const { videos: ytVideos }   = useYouTubeVideos(youtubeQuery ?? focusEvent?.title);
 
   const [dismissed,      setDismissed]      = useState<Set<string>>(new Set());
   const [gmailDismissed, setGmailDismissed] = useState<Set<string>>(new Set());
@@ -554,6 +561,19 @@ export function FovealCanvas({ theme, resetLayoutKey, bgPos, isRecentering, canv
     if (hiddenSources.has('notion'))  displayNotion = [];
     if (hiddenSources.has('youtube')) displayYT     = [];
   }
+
+  // Notify parent of visible card changes for context injection
+  useEffect(() => {
+    if (!onVisibleCardsChange) return;
+    const cards: VisibleCard[] = [
+      ...displayDrive.map(f  => ({ title: f.title, type: f.type  as VisibleCard['type'] })),
+      ...displayFigma.map(f  => ({ title: f.name,  type: 'figma'   as const })),
+      ...displayNotion.map(p => ({ title: p.title, type: 'notion'  as const })),
+      ...displayYT.map(v     => ({ title: v.title, type: 'youtube' as const })),
+    ];
+    onVisibleCardsChange(cards);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [displayDrive, displayFigma, displayNotion, displayYT]);
 
   const driveExtraClass = (f: DriveFile) =>
     (f.type === 'slides') ? styles.cardSlides : styles.cardDoc;
