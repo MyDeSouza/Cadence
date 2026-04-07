@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { API_BASE } from '../../constants/api';
+import { parseCanvasCommand } from '../../utils/canvasCommands';
+import type { CanvasCommand } from '../../utils/canvasCommands';
 import styles from './AgentWidget.module.css';
 
 type DraftType = 'email' | 'document';
@@ -7,7 +9,8 @@ type Step = 'idle' | 'idea' | 'recipient' | 'type' | 'generating';
 type BubbleState = 'idle' | 'visible' | 'fading';
 
 interface Props {
-  onDraftGenerated: (draft: { type: DraftType; content: string }) => void;
+  onDraftGenerated:  (draft: { type: DraftType; content: string }) => void;
+  onCanvasCommand?: (cmd: CanvasCommand) => void;
 }
 
 // ── Icons ────────────────────────────────────────────────
@@ -81,7 +84,7 @@ function parseVersions(raw: string): { direct: string; casual: string; professio
 }
 
 // ── Main component ──────────────────────────────────────
-export function AgentWidget({ onDraftGenerated }: Props) {
+export function AgentWidget({ onDraftGenerated, onCanvasCommand }: Props) {
   const [step,          setStep]          = useState<Step>('idle');
   const [ideaText,      setIdeaText]      = useState('');
   const [recipientName, setRecipientName] = useState('');
@@ -102,10 +105,50 @@ export function AgentWidget({ onDraftGenerated }: Props) {
   }, []);
 
   // ── Ask / direct chat ────────────────────────────────
+  const showBubble = (text: string, durationMs = 4_000) => {
+    setResponseText(text);
+    setBubbleState('visible');
+    if (fadeTimerRef.current) clearTimeout(fadeTimerRef.current);
+    fadeTimerRef.current = setTimeout(() => {
+      setBubbleState('fading');
+      setTimeout(() => { setBubbleState('idle'); setResponseText(''); }, 500);
+    }, durationMs);
+  };
+
   const sendAsk = async () => {
     const text = askInput.trim();
     if (!text || askStreaming) return;
     setAskInput('');
+
+    // ── Canvas command intercept ───────────────────────
+    const parsed = parseCanvasCommand(text);
+    if (parsed) {
+      if (parsed.command.kind === 'nextEvent') {
+        // Fetch events and surface the next one in the bubble
+        showBubble('Checking next event…', 10_000);
+        try {
+          const res  = await fetch(`${API_BASE}/events`);
+          const data = await res.json() as Array<{ title: string; timestamp: string }>;
+          const now  = Date.now();
+          const next = data
+            .map(e => ({ ...e, ms: new Date(e.timestamp).getTime() }))
+            .filter(e => e.ms > now)
+            .sort((a, b) => a.ms - b.ms)[0];
+          const msg = next
+            ? `Next: ${next.title} at ${new Date(next.ms).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+            : 'No upcoming events found';
+          showBubble(msg, 6_000);
+        } catch {
+          showBubble('Could not load events', 4_000);
+        }
+      } else {
+        showBubble(parsed.confirmation, 3_000);
+        onCanvasCommand?.(parsed.command);
+      }
+      return;
+    }
+
+    // ── Ollama passthrough ─────────────────────────────
     setResponseText('');
     setBubbleState('visible');
     setAskStreaming(true);

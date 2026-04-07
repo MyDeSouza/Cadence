@@ -3,6 +3,7 @@ import { format, parseISO } from 'date-fns';
 import type { ActiveSession, CadenceEvent } from '../../types';
 import type { Theme } from '../../hooks/useAdaptiveTheme';
 import type { DriveFile, DriveFileType } from '../../hooks/useDriveFiles';
+import type { CanvasFilterState } from '../../utils/canvasCommands';
 import { useDriveFiles }    from '../../hooks/useDriveFiles';
 import { useFigmaFiles }    from '../../hooks/useFigmaFiles';
 import { useNotionPages }   from '../../hooks/useNotionPages';
@@ -23,6 +24,7 @@ interface Props {
   resetLayoutKey?: number;
   bgPos?:          { x: number; y: number };
   isRecentering?:  boolean;
+  canvasFilter?:   CanvasFilterState;
 }
 
 // ── Persistent card positions ──────────────────────────────
@@ -401,7 +403,7 @@ function YouTubeLogo() {
 }
 
 // ── FovealCanvas ───────────────────────────────────────────
-export function FovealCanvas({ theme, resetLayoutKey, bgPos, isRecentering }: Props) {
+export function FovealCanvas({ theme, resetLayoutKey, bgPos, isRecentering, canvasFilter }: Props) {
   const { events }             = useDigest();
   const { files: allFiles }    = useDriveFiles();
   const { files: figmaFiles }  = useFigmaFiles();
@@ -516,37 +518,74 @@ export function FovealCanvas({ theme, resetLayoutKey, bgPos, isRecentering }: Pr
     .slice(0, 3);
   const gmailSignals = gmailRaw.filter((s) => !gmailDismissed.has(s.id)).slice(0, 3);
 
+  // ── Apply canvas filter ────────────────────────────────────
+  let displayDrive  = matchedFiles;
+  let displayFigma  = figmaFiles;
+  let displayNotion = notionPages;
+  let displayYT     = ytVideos;
+
+  if (canvasFilter) {
+    const { fileType, hiddenSources, sortByRecent, titleKeyword } = canvasFilter;
+
+    // Sort drive files by recency when requested
+    if (sortByRecent) {
+      displayDrive = [...displayDrive].sort(
+        (a, b) => new Date(b.modified).getTime() - new Date(a.modified).getTime()
+      );
+    }
+
+    // Drive file-type filter
+    if (fileType) {
+      displayDrive = displayDrive.filter(f => f.type === fileType);
+    }
+
+    // Title keyword filter (all card types)
+    if (titleKeyword) {
+      const kw = titleKeyword.toLowerCase();
+      displayDrive  = displayDrive.filter(f => f.title.toLowerCase().includes(kw));
+      displayFigma  = displayFigma.filter(f => f.name.toLowerCase().includes(kw));
+      displayNotion = displayNotion.filter(p => p.title.toLowerCase().includes(kw));
+      displayYT     = displayYT.filter(v => v.title.toLowerCase().includes(kw));
+    }
+
+    // Source visibility
+    if (hiddenSources.has('drive'))   displayDrive  = [];
+    if (hiddenSources.has('figma'))   displayFigma  = [];
+    if (hiddenSources.has('notion'))  displayNotion = [];
+    if (hiddenSources.has('youtube')) displayYT     = [];
+  }
+
   const driveExtraClass = (f: DriveFile) =>
     (f.type === 'slides') ? styles.cardSlides : styles.cardDoc;
 
   const driveOffset  = 0;
-  const figmaOffset  = matchedFiles.length;
-  const notionOffset = figmaOffset  + figmaFiles.length;
-  const ytOffset     = notionOffset + notionPages.length;
+  const figmaOffset  = displayDrive.length;
+  const notionOffset = figmaOffset  + displayFigma.length;
+  const ytOffset     = notionOffset + displayNotion.length;
 
   type CardItem = {
     id: string; index: number; extraClass: string;
     cardWidth: number; cardHeight: number; inner: React.ReactNode;
   };
   const allCards: CardItem[] = [
-    ...matchedFiles.map((f, i) => ({
+    ...displayDrive.map((f, i) => ({
       id: f.url, index: driveOffset + i, extraClass: driveExtraClass(f),
       cardWidth: 220,
       cardHeight: (f.type === 'doc' || f.type === 'sheet' || f.type === 'pdf') ? 300 : 180,
       inner: <DriveCardInner file={f} />,
     })),
-    ...figmaFiles.map((f, i) => ({
+    ...displayFigma.map((f, i) => ({
       id: f.url, index: figmaOffset + i, extraClass: styles.cardSlides,
       cardWidth: 220, cardHeight: 180,
       inner: <FigmaCardInner file={f} />,
     })),
-    ...notionPages.map((p, i) => ({
+    ...displayNotion.map((p, i) => ({
       id: p.url, index: notionOffset + i,
       extraClass: `${styles.cardNotion} ${styles.cardCompact}`,
       cardWidth: 200, cardHeight: 100,
       inner: <NotionCardInner page={p} />,
     })),
-    ...ytVideos.map((v, i) => ({
+    ...displayYT.map((v, i) => ({
       id: v.url, index: ytOffset + i, extraClass: styles.cardVideo,
       cardWidth: 220, cardHeight: 160,
       inner: <YouTubeCardInner video={v} />,

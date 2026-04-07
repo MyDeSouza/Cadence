@@ -56,7 +56,7 @@ function getEventsForDay(events: CadenceEvent[], day: Date): CadenceEvent[] {
 }
 
 // ── Inline dark mini-calendar ──────────────────────────────
-function MiniCalendar({ events, isOpen }: { events: CadenceEvent[]; isOpen: boolean }) {
+function MiniCalendar({ events, isOpen, targetDate }: { events: CadenceEvent[]; isOpen: boolean; targetDate?: Date }) {
   const [viewMonth,   setViewMonth]   = useState(() => new Date());
   const [selectedDay, setSelectedDay] = useState(() => new Date());
 
@@ -67,6 +67,14 @@ function MiniCalendar({ events, isOpen }: { events: CadenceEvent[]; isOpen: bool
       setViewMonth(now);
     }
   }, [isOpen]);
+
+  // Jump to targetDate when commanded externally
+  useEffect(() => {
+    if (targetDate) {
+      setSelectedDay(targetDate);
+      setViewMonth(targetDate);
+    }
+  }, [targetDate]);
 
   const monthStart = startOfMonth(viewMonth);
   const gridStart  = startOfWeek(monthStart, { weekStartsOn: 1 });
@@ -332,10 +340,11 @@ function PendingDraftPanel({ isOpen, onClose }: { isOpen: boolean; onClose: () =
 type View = 'none' | 'calendar' | 'drafting';
 
 export function DateDisplay() {
-  const [now,       setNow]       = useState(() => new Date());
-  const [view,      setView]      = useState<View>('none');
-  const [hasDraft,  setHasDraft]  = useState(() => !!localStorage.getItem('cadence_active_draft'));
-  const [calEvents, setCalEvents] = useState<CadenceEvent[]>([]);
+  const [now,        setNow]        = useState(() => new Date());
+  const [view,       setView]       = useState<View>('none');
+  const [hasDraft,   setHasDraft]   = useState(() => !!localStorage.getItem('cadence_active_draft'));
+  const [calEvents,  setCalEvents]  = useState<CadenceEvent[]>([]);
+  const [targetDate, setTargetDate] = useState<Date | undefined>(undefined);
   const notchRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -364,6 +373,18 @@ export function DateDisplay() {
       window.removeEventListener('cadenceDraftReady', sync);
       window.removeEventListener('storage', sync);
     };
+  }, []);
+
+  // Jump to date when commanded from AgentWidget canvas command
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const date = (e as CustomEvent<{ date: Date }>).detail?.date;
+      if (!date) return;
+      setTargetDate(new Date(date)); // ensure it's a Date instance
+      setView('calendar');
+    };
+    window.addEventListener('cadenceCalendarDay', handler);
+    return () => window.removeEventListener('cadenceCalendarDay', handler);
   }, []);
 
   // Collapse drafting view if draft is cleared while open
@@ -426,7 +447,7 @@ export function DateDisplay() {
       {/* ── Calendar expand ──────────────────────────────────── */}
       <div className={`${styles.expandWrapper} ${view === 'calendar' ? styles.expandWrapperOpen : ''}`}>
         <div className={styles.expandInner}>
-          <MiniCalendar events={calEvents} isOpen={view === 'calendar'} />
+          <MiniCalendar events={calEvents} isOpen={view === 'calendar'} targetDate={targetDate} />
         </div>
       </div>
 

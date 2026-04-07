@@ -5,17 +5,55 @@ import { EventStrip } from './components/EventStrip';
 import { DateDisplay } from './components/DateDisplay';
 import { useSession } from './hooks/useSession';
 import { useAdaptiveTheme } from './hooks/useAdaptiveTheme';
+import type { CanvasCommand, CanvasFilterState } from './utils/canvasCommands';
+import { INITIAL_CANVAS_FILTER } from './utils/canvasCommands';
 import styles from './App.module.css';
 
 export default function App() {
   const { session, endSession } = useSession();
   const theme = useAdaptiveTheme();
 
-  const [bgPos,      setBgPos]      = useState({ x: 0, y: 0 });
-  const [isDragging, setIsDragging] = useState(false);
+  const [bgPos,        setBgPos]        = useState({ x: 0, y: 0 });
+  const [isDragging,   setIsDragging]   = useState(false);
+  const [canvasFilter, setCanvasFilter] = useState<CanvasFilterState>(INITIAL_CANVAS_FILTER);
   const dragRef = useRef<{ startX: number; startY: number; originX: number; originY: number } | null>(null);
 
   const handleEndSession = () => { endSession(); setBgPos({ x: 0, y: 0 }); };
+
+  const handleCanvasCommand = useCallback((cmd: CanvasCommand) => {
+    switch (cmd.kind) {
+      case 'filterType':
+        setCanvasFilter(prev => ({ ...prev, fileType: cmd.fileType }));
+        break;
+      case 'resetFilter':
+        setCanvasFilter(INITIAL_CANVAS_FILTER);
+        break;
+      case 'hideSource':
+        setCanvasFilter(prev => {
+          const s = new Set(prev.hiddenSources); s.add(cmd.source);
+          return { ...prev, hiddenSources: s };
+        });
+        break;
+      case 'showSource':
+        setCanvasFilter(prev => {
+          const s = new Set(prev.hiddenSources); s.delete(cmd.source);
+          return { ...prev, hiddenSources: s };
+        });
+        break;
+      case 'sortRecent':
+        setCanvasFilter(prev => ({ ...prev, sortByRecent: true }));
+        break;
+      case 'highlightTitle':
+        setCanvasFilter(prev => ({ ...prev, titleKeyword: cmd.keyword }));
+        break;
+      case 'calendarDay':
+        window.dispatchEvent(new CustomEvent('cadenceCalendarDay', { detail: { date: cmd.date } }));
+        break;
+      case 'nextEvent':
+        // Handled entirely in AgentWidget (fetches events, shows in bubble)
+        break;
+    }
+  }, []);
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.target !== e.currentTarget) return;
@@ -82,9 +120,10 @@ export default function App() {
           onEndSession={handleEndSession}
           theme={theme}
           bgPos={bgPos}
+          canvasFilter={canvasFilter}
         />
 
-        <AgentWidget onDraftGenerated={() => {}} />
+        <AgentWidget onDraftGenerated={() => {}} onCanvasCommand={handleCanvasCommand} />
       </div>
     </>
   );
