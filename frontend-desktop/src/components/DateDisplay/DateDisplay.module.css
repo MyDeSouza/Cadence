@@ -516,3 +516,64 @@
   gap: 8px;
   flex-wrap: wrap;
 }
+
+/* Meta row (To / Subject preview) */
+.draftingMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.draftingMetaRow {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.75);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.draftingMetaKey {
+  font-size: 9px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.35);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  flex-shrink: 0;
+}
+
+/* Send status */
+.draftingSendSuccess {
+  font-family: 'Outfit', sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  color: rgba(120, 255, 160, 0.9);
+}
+
+.draftingSendError {
+  font-family: 'Outfit', sans-serif;
+  font-size: 11px;
+  color: rgba(255, 100, 100, 0.9);
+}
+
+/* Discard button */
+.draftingDiscardBtn {
+  margin-left: auto;
+  background: none;
+  border: none;
+  padding: 6px 10px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.3);
+  cursor: pointer;
+  border-radius: 6px;
+  transition: color 0.12s ease, background 0.12s ease;
+}
+
+.draftingDiscardBtn:hover {
+  color: rgba(255, 100, 100, 0.8);
+  background: rgba(255, 60, 60, 0.08);
+}

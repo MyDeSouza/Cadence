@@ -219,6 +219,36 @@
 
 .sparkBtnDim { opacity: 0.35; pointer-events: none; }
 
+/* Email detail inputs (To + Subject) */
+.emailDetailsRow {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 4px;
+}
+
+.emailInput {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1.5px solid transparent;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  color: white;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.emailInput::placeholder { color: rgba(255, 255, 255, 0.35); }
+.emailInput:focus         { background: rgba(255, 255, 255, 0.12); }
+
+.emailInputError {
+  border-color: rgba(255, 80, 80, 0.65);
+}
+
 /* User avatar */
 .avatar {
   width: 42px;

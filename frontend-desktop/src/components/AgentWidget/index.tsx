@@ -4,7 +4,7 @@ import styles from './AgentWidget.module.css';
 
 type DraftType = 'email' | 'document';
 type DraftTone = 'formal' | 'casual' | 'direct';
-type Step = 'idle' | 'step1' | 'step2' | 'step3' | 'generating';
+type Step = 'idle' | 'step1' | 'emailDetails' | 'step2' | 'step3' | 'generating';
 type BubbleState = 'idle' | 'visible' | 'fading';
 
 interface Props {
@@ -43,14 +43,27 @@ function DocIcon() {
   );
 }
 
+function ChevronIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+      <path d="M5 8l4 4 4-4" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 // ── Main component ──────────────────────────────────────
 export function AgentWidget({ onDraftGenerated }: Props) {
   // Drafting flow
-  const [step,      setStep]      = useState<Step>('idle');
-  const [draftType, setDraftType] = useState<DraftType | null>(null);
-  const [tone,      setTone]      = useState<DraftTone>('casual');
-  const [context,   setContext]   = useState('');
-  const [intent,    setIntent]    = useState('');
+  const [step,         setStep]         = useState<Step>('idle');
+  const [draftType,    setDraftType]    = useState<DraftType | null>(null);
+  const [tone,         setTone]         = useState<DraftTone>('casual');
+  const [intent,       setIntent]       = useState('');
+
+  // Email-specific fields
+  const [to,           setTo]           = useState('');
+  const [subject,      setSubject]      = useState('');
+  const [toError,      setToError]      = useState(false);
+  const [subjectError, setSubjectError] = useState(false);
 
   // Ask (direct chat) state
   const [askInput,     setAskInput]     = useState('');
@@ -58,14 +71,12 @@ export function AgentWidget({ onDraftGenerated }: Props) {
   const [bubbleState,  setBubbleState]  = useState<BubbleState>('idle');
   const [askStreaming,  setAskStreaming]  = useState(false);
 
-  const abortRef    = useRef<AbortController | null>(null);
+  const abortRef     = useRef<AbortController | null>(null);
   const fadeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const subjectRef   = useRef<HTMLInputElement>(null);
 
-  // Clear fade timer on unmount
   useEffect(() => {
-    return () => {
-      if (fadeTimerRef.current) clearTimeout(fadeTimerRef.current);
-    };
+    return () => { if (fadeTimerRef.current) clearTimeout(fadeTimerRef.current); };
   }, []);
 
   // ── Ask / direct chat ────────────────────────────────
@@ -104,13 +115,9 @@ export function AgentWidget({ onDraftGenerated }: Props) {
     } finally {
       abortRef.current = null;
       setAskStreaming(false);
-      // Fade out after 8 seconds
       fadeTimerRef.current = setTimeout(() => {
         setBubbleState('fading');
-        setTimeout(() => {
-          setBubbleState('idle');
-          setResponseText('');
-        }, 500);
+        setTimeout(() => { setBubbleState('idle'); setResponseText(''); }, 500);
       }, 8_000);
     }
   };
@@ -120,26 +127,35 @@ export function AgentWidget({ onDraftGenerated }: Props) {
     setStep('idle');
     setDraftType(null);
     setTone('casual');
-    setContext('');
     setIntent('');
+    setTo('');
+    setSubject('');
+    setToError(false);
+    setSubjectError(false);
   };
 
   const startDraft = () => {
-    // Clear any visible ask bubble when entering drafting mode
     if (fadeTimerRef.current) clearTimeout(fadeTimerRef.current);
     setBubbleState('idle');
     setResponseText('');
     setStep('step1');
   };
 
+  const advanceFromEmailDetails = () => {
+    const toOk  = to.trim().length > 0;
+    const subOk = subject.trim().length > 0;
+    setToError(!toOk);
+    setSubjectError(!subOk);
+    if (toOk && subOk) setStep('step2');
+  };
+
   const generate = async (intentText: string) => {
     if (!intentText.trim()) return;
     setStep('generating');
 
-    const audienceClause = context.trim() ? ` for ${context.trim()}` : '';
     const prompt = draftType === 'email'
-      ? `Draft a ${tone} email${audienceClause} about: ${intentText.trim()}.\n\nFormat your response as:\nSubject: [subject line]\n\n[email body with appropriate greeting and sign-off]`
-      : `Draft a ${tone} document${audienceClause} about: ${intentText.trim()}.\n\nInclude a clear title and organized sections.`;
+      ? `Draft a ${tone} email to ${to} with subject "${subject}". Content request: ${intentText.trim()}.\n\nFormat:\nSubject: ${subject}\n\n[email body with appropriate greeting and sign-off]`
+      : `Draft a ${tone} document. Topic: ${intentText.trim()}.\n\nInclude a clear title and organized sections.`;
 
     const controller = new AbortController();
     abortRef.current = controller;
@@ -169,6 +185,15 @@ export function AgentWidget({ onDraftGenerated }: Props) {
     }
 
     if (accumulated) {
+      // Store in localStorage so notch pen icon appears
+      const draftData = {
+        type:    draftType ?? 'document',
+        to:      draftType === 'email' ? to      : '',
+        subject: draftType === 'email' ? subject : '',
+        content: accumulated,
+      };
+      localStorage.setItem('cadence_active_draft', JSON.stringify(draftData));
+      window.dispatchEvent(new CustomEvent('cadenceDraftReady'));
       onDraftGenerated({ type: draftType ?? 'document', content: accumulated });
     }
     resetDraft();
@@ -177,53 +202,74 @@ export function AgentWidget({ onDraftGenerated }: Props) {
   const isExpanded = step !== 'idle';
 
   const stepMessage =
-    step === 'step1'      ? 'What are we drafting?...' :
-    step === 'step2'      ? "Who's the audience and what's the tone?" :
-    step === 'step3'      ? 'What would you like to write...' :
-    step === 'generating' ? 'Generating...' : '';
+    step === 'step1'        ? 'What are we drafting?...'       :
+    step === 'emailDetails' ? 'Who is this going to?'          :
+    step === 'step2'        ? "What's the tone?"               :
+    step === 'step3'        ? 'What would you like to write...' :
+    step === 'generating'   ? 'Generating...'                  : '';
 
   return (
     <div className={styles.wrapper}>
-      {/* ── Response bubble (appears above bar) ───────────── */}
+      {/* ── Response bubble ────────────────────────────────── */}
       {bubbleState !== 'idle' && (
         <div className={`${styles.responseBubble} ${bubbleState === 'fading' ? styles.responseBubbleFading : ''}`}>
-          {responseText
-            ? responseText
-            : <span className={styles.streamDot} />
-          }
+          {responseText ? responseText : <span className={styles.streamDot} />}
         </div>
       )}
 
       {/* ── Expanded inner box ─────────────────────────────── */}
       {isExpanded && (
         <div className={styles.innerBox}>
-          {/* AI icon + message row */}
           <div className={styles.aiRow}>
             <div className={styles.aiIcon}><SparkIcon /></div>
             <span className={styles.aiMessage}>{stepMessage}</span>
           </div>
 
-          {/* Step 1 — doc type buttons */}
+          {/* Step 1 — doc type */}
           {step === 'step1' && (
             <div className={styles.docTypeRow}>
               <button
                 className={styles.docTypeBtn}
                 aria-label="Email"
-                onClick={() => { setDraftType('email'); setStep('step2'); }}
-              >
-                <EmailIcon />
-              </button>
+                onClick={() => { setDraftType('email'); setStep('emailDetails'); }}
+              ><EmailIcon /></button>
               <button
                 className={styles.docTypeBtn}
                 aria-label="Document"
                 onClick={() => { setDraftType('document'); setStep('step2'); }}
-              >
-                <DocIcon />
-              </button>
+              ><DocIcon /></button>
             </div>
           )}
 
-          {/* Step 2 — tone chips */}
+          {/* Email details — To + Subject */}
+          {step === 'emailDetails' && (
+            <div className={styles.emailDetailsRow}>
+              <input
+                className={`${styles.emailInput} ${toError ? styles.emailInputError : ''}`}
+                type="email"
+                placeholder="To"
+                value={to}
+                autoFocus
+                onChange={(e) => { setTo(e.target.value); if (toError) setToError(false); }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Tab') { e.preventDefault(); subjectRef.current?.focus(); }
+                  if (e.key === 'Enter') subjectRef.current?.focus();
+                }}
+              />
+              <input
+                ref={subjectRef}
+                className={`${styles.emailInput} ${subjectError ? styles.emailInputError : ''}`}
+                placeholder="Subject"
+                value={subject}
+                onChange={(e) => { setSubject(e.target.value); if (subjectError) setSubjectError(false); }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') advanceFromEmailDetails();
+                }}
+              />
+            </div>
+          )}
+
+          {/* Step 2 — tone */}
           {step === 'step2' && (
             <div className={styles.toneRow}>
               {(['formal', 'casual', 'direct'] as DraftTone[]).map((t) => (
@@ -240,9 +286,8 @@ export function AgentWidget({ onDraftGenerated }: Props) {
         </div>
       )}
 
-      {/* ── Bottom row — always visible ─────────────────────── */}
+      {/* ── Bottom row ─────────────────────────────────────── */}
       <div className={styles.bottomRow}>
-        {/* IDLE — real input wired to Ollama */}
         {step === 'idle' && (
           <>
             <input
@@ -252,23 +297,15 @@ export function AgentWidget({ onDraftGenerated }: Props) {
               disabled={askStreaming}
               onChange={(e) => setAskInput(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  sendAsk();
-                }
+                if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendAsk(); }
               }}
             />
-            <button
-              className={styles.sparkBtn}
-              aria-label="Start drafting"
-              onClick={startDraft}
-            >
+            <button className={styles.sparkBtn} aria-label="Start drafting" onClick={startDraft}>
               <SparkIcon />
             </button>
           </>
         )}
 
-        {/* STEP 1 — avatar + placeholder while choosing type */}
         {step === 'step1' && (
           <>
             <div className={styles.avatar} />
@@ -276,53 +313,56 @@ export function AgentWidget({ onDraftGenerated }: Props) {
           </>
         )}
 
-        {/* STEP 2 — audience/context input */}
-        {step === 'step2' && (
+        {step === 'emailDetails' && (
           <>
             <div className={styles.avatar} />
-            <input
-              className={styles.askInput}
-              placeholder="Audience or Context (Optional)..."
-              value={context}
-              autoFocus
-              onChange={(e) => setContext(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') { e.preventDefault(); setStep('step3'); }
-              }}
-            />
+            <span className={`${styles.askInput} ${styles.askInputPlaceholder}`}>Fill in details above...</span>
+            <button className={styles.sparkBtn} aria-label="Next" onClick={advanceFromEmailDetails}>
+              <ChevronIcon />
+            </button>
           </>
         )}
 
-        {/* STEP 3 — write intent */}
+        {step === 'step2' && (
+          <>
+            <div className={styles.avatar} />
+            <span className={`${styles.askInput} ${styles.askInputPlaceholder}`}>
+              {tone ? `${tone.charAt(0).toUpperCase() + tone.slice(1)} selected — press enter` : 'Pick a tone above...'}
+            </span>
+            <button
+              className={styles.sparkBtn}
+              disabled={!tone}
+              aria-label="Next"
+              onClick={() => { if (tone) setStep('step3'); }}
+            ><ChevronIcon /></button>
+          </>
+        )}
+
         {step === 'step3' && (
           <>
             <div className={styles.avatar} />
             <textarea
               className={`${styles.askInput} ${styles.intentArea}`}
-              placeholder="e.g. notes on the gate 6 presentation..."
+              placeholder={draftType === 'email'
+                ? 'e.g. ask Sarah if she wants coffee next week'
+                : 'e.g. notes on the Q3 review meeting...'}
               value={intent}
               autoFocus
               rows={2}
               onChange={(e) => setIntent(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  generate(intent);
-                }
+                if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); generate(intent); }
               }}
             />
           </>
         )}
 
-        {/* GENERATING */}
         {step === 'generating' && (
           <>
             <span className={`${styles.askInput} ${styles.askInputPlaceholder} ${styles.askInputDim}`}>
-              What are we drafting?...
+              Generating...
             </span>
-            <div className={`${styles.sparkBtn} ${styles.sparkBtnDim}`}>
-              <SparkIcon />
-            </div>
+            <div className={`${styles.sparkBtn} ${styles.sparkBtnDim}`}><SparkIcon /></div>
           </>
         )}
       </div>

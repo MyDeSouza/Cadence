@@ -7,13 +7,6 @@ import {
 import type { CadenceEvent } from '../../types';
 import styles from './DateDisplay.module.css';
 
-interface Props {
-  draft:        { type: 'email' | 'document'; content: string } | null;
-  onDraftClear: () => void;
-}
-
-type View = 'none' | 'calendar' | 'draft' | 'drafting';
-
 // ── Icons ─────────────────────────────────────────────────
 function PenIcon() {
   return (
@@ -28,6 +21,14 @@ function PenIcon() {
       />
     </svg>
   );
+}
+
+// ── Stored draft shape ─────────────────────────────────────
+interface StoredDraft {
+  type:    'email' | 'document';
+  to:      string;
+  subject: string;
+  content: string;
 }
 
 // ── Helpers ────────────────────────────────────────────────
@@ -54,7 +55,6 @@ function MiniCalendar({ events, isOpen }: { events: CadenceEvent[]; isOpen: bool
   const [viewMonth,   setViewMonth]   = useState(() => new Date());
   const [selectedDay, setSelectedDay] = useState(() => new Date());
 
-  // Reset to today whenever the panel is opened
   useEffect(() => {
     if (isOpen) {
       const now = new Date();
@@ -75,29 +75,18 @@ function MiniCalendar({ events, isOpen }: { events: CadenceEvent[]; isOpen: bool
 
   return (
     <div className={styles.calPanel}>
-      {/* Month navigation */}
       <div className={styles.calHeader}>
-        <button
-          className={styles.calNavBtn}
-          onClick={() => setViewMonth((m) => subMonths(m, 1))}
-          aria-label="Previous month"
-        >‹</button>
+        <button className={styles.calNavBtn} onClick={() => setViewMonth((m) => subMonths(m, 1))} aria-label="Previous month">‹</button>
         <span className={styles.calMonthTitle}>{format(viewMonth, 'MMMM yyyy')}</span>
-        <button
-          className={styles.calNavBtn}
-          onClick={() => setViewMonth((m) => addMonths(m, 1))}
-          aria-label="Next month"
-        >›</button>
+        <button className={styles.calNavBtn} onClick={() => setViewMonth((m) => addMonths(m, 1))} aria-label="Next month">›</button>
       </div>
 
-      {/* Day-of-week headers */}
       <div className={styles.calDayHeaders}>
         {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => (
           <span key={i} className={styles.calDayHeader}>{d}</span>
         ))}
       </div>
 
-      {/* Date grid */}
       <div className={styles.calDayGrid}>
         {days.map((day) => {
           const inMonth  = isSameMonth(day, viewMonth);
@@ -123,10 +112,8 @@ function MiniCalendar({ events, isOpen }: { events: CadenceEvent[]; isOpen: bool
         })}
       </div>
 
-      {/* Divider */}
       <div className={styles.calEventsDivider} />
 
-      {/* Selected day's events */}
       <div className={styles.calEvents}>
         {selectedEvents.length === 0 ? (
           <span className={styles.calNoEvents}>Nothing scheduled</span>
@@ -143,87 +130,57 @@ function MiniCalendar({ events, isOpen }: { events: CadenceEvent[]; isOpen: bool
   );
 }
 
-// ── Drafting Table ─────────────────────────────────────────
-type DraftStep = 'type' | 'context' | 'idea' | 'generating' | 'done';
-type DraftDocType = 'email' | 'document';
-type DraftTone = 'formal' | 'casual' | 'direct';
+// ── Pending Draft Panel (shows draft from localStorage) ────
+type SendState = 'idle' | 'sending' | 'success' | 'error' | 'missingFields';
 
-function DraftingPanel({ isOpen }: { isOpen: boolean }) {
-  const [step,      setStep]      = useState<DraftStep>('type');
-  const [docType,   setDocType]   = useState<DraftDocType | null>(null);
-  const [recipient, setRecipient] = useState('');
-  const [tone,      setTone]      = useState<DraftTone | null>(null);
-  const [idea,      setIdea]      = useState('');
-  const [generated, setGenerated] = useState('');
-  const [streaming, setStreaming] = useState(false);
+function PendingDraftPanel({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  const [draft,     setDraft]     = useState<StoredDraft | null>(null);
+  const [body,      setBody]      = useState('');
+  const [sendState, setSendState] = useState<SendState>('idle');
 
-  const abortRef = useRef<AbortController | null>(null);
-
-  // Reset all state when panel opens
   useEffect(() => {
     if (isOpen) {
-      abortRef.current?.abort();
-      setStep('type');
-      setDocType(null);
-      setRecipient('');
-      setTone(null);
-      setIdea('');
-      setGenerated('');
-      setStreaming(false);
+      const raw = localStorage.getItem('cadence_active_draft');
+      if (raw) {
+        try {
+          const stored = JSON.parse(raw) as StoredDraft;
+          setDraft(stored);
+          setBody(stored.content);
+        } catch {}
+      }
+      setSendState('idle');
     }
-    return () => { if (!isOpen) abortRef.current?.abort(); };
   }, [isOpen]);
 
-  const generate = async () => {
-    if (!docType || !tone || !idea.trim()) return;
-    setStep('generating');
-    setGenerated('');
-    setStreaming(true);
-
-    const recipientPart = recipient.trim() ? ` for ${recipient.trim()}` : '';
-    const prompt = docType === 'email'
-      ? `Draft a ${tone} email${recipientPart}. The idea: ${idea.trim()}.\n\nFormat:\nSubject: [subject line]\n\n[email body with greeting and sign-off]`
-      : `Draft a ${tone} document${recipientPart}. The idea: ${idea.trim()}.\n\nInclude a clear title and organized sections.`;
-
-    const controller = new AbortController();
-    abortRef.current = controller;
-
+  const sendEmail = async () => {
+    if (!draft) return;
+    if (!draft.to?.trim() || !draft.subject?.trim()) {
+      setSendState('missingFields');
+      setTimeout(() => setSendState('idle'), 3000);
+      return;
+    }
+    setSendState('sending');
     try {
-      const res = await fetch('http://localhost:3001/ask', {
+      const res = await fetch('http://localhost:3001/send-email', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ message: prompt }),
-        signal:  controller.signal,
+        body:    JSON.stringify({ to: draft.to, subject: draft.subject, body }),
       });
-      if (!res.ok || !res.body) throw new Error('bad response');
-      const reader  = res.body.getReader();
-      const decoder = new TextDecoder();
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        setGenerated((prev) => prev + decoder.decode(value, { stream: true }));
-      }
-    } catch (err) {
-      if (!(err instanceof Error && err.name === 'AbortError')) {
-        setGenerated('Unable to generate draft. Is Ollama running?');
-      }
-    } finally {
-      abortRef.current = null;
-      setStreaming(false);
-      setStep('done');
+      if (!res.ok) throw new Error('send failed');
+      setSendState('success');
+      setTimeout(() => {
+        localStorage.removeItem('cadence_active_draft');
+        window.dispatchEvent(new CustomEvent('cadenceDraftReady'));
+        onClose();
+      }, 2000);
+    } catch {
+      setSendState('error');
+      setTimeout(() => setSendState('idle'), 3000);
     }
-  };
-
-  const sendEmail = () => {
-    fetch('http://localhost:3001/send-email', {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ to: recipient, body: generated }),
-    }).catch(() => {});
   };
 
   const saveDraft = () => {
-    const blob = new Blob([generated], { type: 'text/plain' });
+    const blob = new Blob([body], { type: 'text/plain' });
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement('a');
     a.href = url; a.download = 'draft.txt'; a.click();
@@ -233,7 +190,7 @@ function DraftingPanel({ isOpen }: { isOpen: boolean }) {
   const exportPDF = () => {
     const win = window.open('', '_blank');
     if (!win) return;
-    const esc = generated
+    const esc = body
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     win.document.write(`<!DOCTYPE html><html><head><title>Document</title>
 <style>body{font-family:Georgia,serif;max-width:720px;margin:48px auto;line-height:1.7;color:#111;font-size:15px;}pre{white-space:pre-wrap;font-family:inherit;}</style>
@@ -241,117 +198,73 @@ function DraftingPanel({ isOpen }: { isOpen: boolean }) {
     win.document.close();
   };
 
+  const discard = () => {
+    localStorage.removeItem('cadence_active_draft');
+    window.dispatchEvent(new CustomEvent('cadenceDraftReady'));
+    onClose();
+  };
+
+  if (!draft) return null;
+
   return (
     <div className={styles.draftingPanel}>
-      {/* Step 1 — type */}
-      {step === 'type' && (
-        <>
-          <p className={styles.draftingPrompt}>What are you drafting?</p>
-          <div className={styles.draftingBtnRow}>
+      <div className={styles.draftingLabel}>
+        {draft.type === 'email' ? 'Email Draft' : 'Document'}
+      </div>
+
+      {draft.type === 'email' && (
+        <div className={styles.draftingMeta}>
+          <span className={styles.draftingMetaRow}><span className={styles.draftingMetaKey}>To</span>{draft.to || '—'}</span>
+          <span className={styles.draftingMetaRow}><span className={styles.draftingMetaKey}>Sub</span>{draft.subject || '—'}</span>
+        </div>
+      )}
+
+      <textarea
+        className={`${styles.draftingTextarea} ${styles.draftingTextareaResult}`}
+        value={body}
+        onChange={(e) => setBody(e.target.value)}
+        rows={9}
+      />
+
+      {sendState === 'success' && (
+        <span className={styles.draftingSendSuccess}>Sent ✓</span>
+      )}
+      {(sendState === 'error') && (
+        <span className={styles.draftingSendError}>Failed — check connection</span>
+      )}
+      {sendState === 'missingFields' && (
+        <span className={styles.draftingSendError}>Missing recipient or subject</span>
+      )}
+
+      <div className={styles.draftingActions}>
+        {draft.type === 'email' ? (
+          <>
             <button
-              className={styles.draftingChoiceBtn}
-              onClick={() => { setDocType('email'); setStep('context'); }}
-            >Email</button>
-            <button
-              className={styles.draftingChoiceBtn}
-              onClick={() => { setDocType('document'); setStep('context'); }}
-            >Document</button>
-          </div>
-        </>
-      )}
-
-      {/* Step 2 — context */}
-      {step === 'context' && (
-        <>
-          <p className={styles.draftingPrompt}>Who is it for, and what's the tone?</p>
-          <input
-            className={styles.draftingInput}
-            placeholder={docType === 'email' ? 'Recipient name or email' : 'Audience (optional)'}
-            value={recipient}
-            onChange={(e) => setRecipient(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') setTone(tone ?? 'casual'); }}
-            autoFocus
-          />
-          <div className={styles.draftingBtnRow}>
-            {(['formal', 'casual', 'direct'] as DraftTone[]).map((t) => (
-              <button
-                key={t}
-                className={`${styles.draftingChoiceBtn} ${tone === t ? styles.draftingChoiceBtnActive : ''}`}
-                onClick={() => setTone(t)}
-              >
-                {t.charAt(0).toUpperCase() + t.slice(1)}
-              </button>
-            ))}
-          </div>
-          <button
-            className={styles.draftingNextBtn}
-            disabled={!tone}
-            onClick={() => { if (tone) setStep('idea'); }}
-          >Next →</button>
-        </>
-      )}
-
-      {/* Step 3 — idea */}
-      {step === 'idea' && (
-        <>
-          <p className={styles.draftingPrompt}>What's the idea?</p>
-          <textarea
-            className={styles.draftingTextarea}
-            placeholder={
-              docType === 'email'
-                ? 'e.g. ask Sarah if she wants coffee next week'
-                : 'e.g. notes on the Q3 review meeting'
-            }
-            value={idea}
-            onChange={(e) => setIdea(e.target.value)}
-            rows={4}
-            autoFocus
-          />
-          <button
-            className={styles.draftingNextBtn}
-            disabled={!idea.trim()}
-            onClick={generate}
-          >Generate</button>
-        </>
-      )}
-
-      {/* Step 4 — generating / done */}
-      {(step === 'generating' || step === 'done') && (
-        <>
-          <div className={styles.draftingLabel}>
-            {docType === 'email' ? 'Email Draft' : 'Document'}
-            {streaming && <span className={styles.draftingCursor} />}
-          </div>
-          <textarea
-            className={`${styles.draftingTextarea} ${styles.draftingTextareaResult}`}
-            value={generated}
-            onChange={(e) => setGenerated(e.target.value)}
-            rows={9}
-            readOnly={streaming}
-          />
-          {step === 'done' && (
-            <div className={styles.draftingActions}>
-              {docType === 'email' ? (
-                <>
-                  <button className={styles.draftingNextBtn} onClick={sendEmail}>Send</button>
-                  <button className={styles.draftingChoiceBtn} onClick={saveDraft}>Save Draft</button>
-                </>
-              ) : (
-                <button className={styles.draftingNextBtn} onClick={exportPDF}>Export as PDF</button>
-              )}
-            </div>
-          )}
-        </>
-      )}
+              className={styles.draftingNextBtn}
+              onClick={sendEmail}
+              disabled={sendState === 'sending' || sendState === 'success'}
+            >
+              {sendState === 'sending' ? 'Sending…' : 'Send'}
+            </button>
+            <button className={styles.draftingChoiceBtn} onClick={saveDraft}>Save Draft</button>
+          </>
+        ) : (
+          <button className={styles.draftingNextBtn} onClick={exportPDF}>Export as PDF</button>
+        )}
+        <button className={styles.draftingDiscardBtn} onClick={discard}>Discard</button>
+      </div>
     </div>
   );
 }
 
 // ── Main notch component ───────────────────────────────────
-export function DateDisplay({ draft, onDraftClear }: Props) {
-  const [now,        setNow]        = useState(() => new Date());
-  const [view,       setView]       = useState<View>('none');
-  const [calEvents,  setCalEvents]  = useState<CadenceEvent[]>([]);
+type View = 'none' | 'calendar' | 'drafting';
+
+export function DateDisplay() {
+  const [now,       setNow]       = useState(() => new Date());
+  const [view,      setView]      = useState<View>('none');
+  const [hasDraft,  setHasDraft]  = useState(() => !!localStorage.getItem('cadence_active_draft'));
+  const [calEvents, setCalEvents] = useState<CadenceEvent[]>([]);
   const notchRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -359,7 +272,7 @@ export function DateDisplay({ draft, onDraftClear }: Props) {
     return () => clearInterval(t);
   }, []);
 
-  // Fetch calendar events directly from backend
+  // Fetch calendar events
   useEffect(() => {
     const load = () =>
       fetch('http://localhost:3001/events')
@@ -371,10 +284,21 @@ export function DateDisplay({ draft, onDraftClear }: Props) {
     return () => clearInterval(interval);
   }, []);
 
-  // Auto-switch to draft view when new draft arrives from AgentWidget
+  // Track localStorage draft key — listen to same-tab custom event + cross-tab storage event
   useEffect(() => {
-    if (draft) setView('draft');
-  }, [draft]);
+    const sync = () => setHasDraft(!!localStorage.getItem('cadence_active_draft'));
+    window.addEventListener('cadenceDraftReady', sync);
+    window.addEventListener('storage', sync);
+    return () => {
+      window.removeEventListener('cadenceDraftReady', sync);
+      window.removeEventListener('storage', sync);
+    };
+  }, []);
+
+  // Collapse drafting view if draft is cleared while open
+  useEffect(() => {
+    if (!hasDraft && view === 'drafting') setView('none');
+  }, [hasDraft, view]);
 
   // Close on outside click
   useEffect(() => {
@@ -392,37 +316,15 @@ export function DateDisplay({ draft, onDraftClear }: Props) {
   const dayText    = format(now, 'd');
   const isExpanded = view !== 'none';
 
-  const toggleCalendar = () => setView((v) => (v === 'calendar' ? 'none' : 'calendar'));
-  const toggleDrafting = () => setView((v) => (v === 'drafting' ? 'none' : 'drafting'));
-
-  const closeDraft = () => {
-    onDraftClear();
-    setView('none');
-  };
-
-  const exportDoc = () => {
-    if (!draft) return;
-    const win = window.open('', '_blank');
-    if (!win) return;
-    const esc = draft.content
-      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    win.document.write(`<!DOCTYPE html><html><head><title>Draft</title>
-<style>body{font-family:Georgia,serif;max-width:720px;margin:48px auto;line-height:1.7;color:#111;font-size:15px;}pre{white-space:pre-wrap;font-family:inherit;}</style>
-</head><body><pre>${esc}</pre><script>window.onload=function(){window.print();}<\/script></body></html>`);
-    win.document.close();
-  };
-
-  const copyDraft = async () => {
-    if (!draft) return;
-    await navigator.clipboard.writeText(draft.content);
-  };
+  const toggleCalendar = () => setView((v) => (v === 'calendar'  ? 'none' : 'calendar'));
+  const toggleDrafting = () => setView((v) => (v === 'drafting'  ? 'none' : 'drafting'));
 
   return (
     <div
       ref={notchRef}
       className={`${styles.notch} ${isExpanded ? styles.notchExpanded : ''}`}
     >
-      {/* ── Header strip — always visible at 52px ──────────── */}
+      {/* ── Header strip ───────────────────────────────────── */}
       <div className={styles.header}>
         <span className={styles.month}>{monthText}</span>
 
@@ -437,14 +339,17 @@ export function DateDisplay({ draft, onDraftClear }: Props) {
 
         <div className={styles.divider} />
 
-        <button
-          className={`${styles.iconBtn} ${view === 'drafting' ? styles.iconBtnActive : ''}`}
-          onClick={toggleDrafting}
-          aria-label="Toggle drafting table"
-          aria-expanded={view === 'drafting'}
-        >
-          <PenIcon />
-        </button>
+        {/* Pen icon — only visible when a draft is pending */}
+        {hasDraft && (
+          <button
+            className={`${styles.iconBtn} ${view === 'drafting' ? styles.iconBtnActive : ''}`}
+            onClick={toggleDrafting}
+            aria-label="View pending draft"
+            aria-expanded={view === 'drafting'}
+          >
+            <PenIcon />
+          </button>
+        )}
       </div>
 
       {/* ── Calendar expand ──────────────────────────────────── */}
@@ -454,38 +359,13 @@ export function DateDisplay({ draft, onDraftClear }: Props) {
         </div>
       </div>
 
-      {/* ── Drafting table expand ────────────────────────────── */}
+      {/* ── Pending draft expand ─────────────────────────────── */}
       <div className={`${styles.expandWrapper} ${view === 'drafting' ? styles.expandWrapperOpen : ''}`}>
         <div className={styles.expandInner}>
-          <DraftingPanel isOpen={view === 'drafting'} />
-        </div>
-      </div>
-
-      {/* ── External draft expand (from AgentWidget) ─────────── */}
-      <div className={`${styles.expandWrapper} ${view === 'draft' && draft ? styles.expandWrapperOpen : ''}`}>
-        <div className={styles.expandInner}>
-          {draft && (
-            <div className={styles.draftPanel}>
-              <div className={styles.draftPanelHeader}>
-                <span className={styles.draftPanelLabel}>
-                  {draft.type === 'email' ? 'Email Draft' : 'Document'}
-                </span>
-                <button
-                  className={styles.draftPanelClose}
-                  onClick={closeDraft}
-                  aria-label="Close draft"
-                >×</button>
-              </div>
-              <div className={styles.draftPanelContent}>{draft.content}</div>
-              <div className={styles.draftPanelActions}>
-                {draft.type === 'email' ? (
-                  <button className={styles.draftPanelBtn} onClick={copyDraft}>Send</button>
-                ) : (
-                  <button className={styles.draftPanelBtn} onClick={exportDoc}>Export</button>
-                )}
-              </div>
-            </div>
-          )}
+          <PendingDraftPanel
+            isOpen={view === 'drafting'}
+            onClose={() => setView('none')}
+          />
         </div>
       </div>
     </div>
