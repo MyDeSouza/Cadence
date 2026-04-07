@@ -12,7 +12,23 @@ interface Props {
   onDraftClear: () => void;
 }
 
-type View = 'none' | 'calendar' | 'draft';
+type View = 'none' | 'calendar' | 'draft' | 'drafting';
+
+// ── Icons ─────────────────────────────────────────────────
+function PenIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path
+        d="M11.5 1.5l3 3-9.5 9.5H1.5v-3l9.5-9.5z"
+        stroke="white"
+        strokeWidth="1.4"
+        strokeOpacity="0.6"
+        strokeLinejoin="round"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
 
 // ── Helpers ────────────────────────────────────────────────
 function fmtEventTime(event: CadenceEvent): string {
@@ -94,9 +110,9 @@ function MiniCalendar({ events, isOpen }: { events: CadenceEvent[]; isOpen: bool
               key={day.toISOString()}
               className={[
                 styles.calDayCell,
-                today    ? styles.calDayCellToday    : '',
+                today              ? styles.calDayCellToday    : '',
                 selected && !today ? styles.calDayCellSelected : '',
-                !inMonth ? styles.calDayCellOther    : '',
+                !inMonth           ? styles.calDayCellOther    : '',
               ].filter(Boolean).join(' ')}
               onClick={() => setSelectedDay(day)}
             >
@@ -127,6 +143,210 @@ function MiniCalendar({ events, isOpen }: { events: CadenceEvent[]; isOpen: bool
   );
 }
 
+// ── Drafting Table ─────────────────────────────────────────
+type DraftStep = 'type' | 'context' | 'idea' | 'generating' | 'done';
+type DraftDocType = 'email' | 'document';
+type DraftTone = 'formal' | 'casual' | 'direct';
+
+function DraftingPanel({ isOpen }: { isOpen: boolean }) {
+  const [step,      setStep]      = useState<DraftStep>('type');
+  const [docType,   setDocType]   = useState<DraftDocType | null>(null);
+  const [recipient, setRecipient] = useState('');
+  const [tone,      setTone]      = useState<DraftTone | null>(null);
+  const [idea,      setIdea]      = useState('');
+  const [generated, setGenerated] = useState('');
+  const [streaming, setStreaming] = useState(false);
+
+  const abortRef = useRef<AbortController | null>(null);
+
+  // Reset all state when panel opens
+  useEffect(() => {
+    if (isOpen) {
+      abortRef.current?.abort();
+      setStep('type');
+      setDocType(null);
+      setRecipient('');
+      setTone(null);
+      setIdea('');
+      setGenerated('');
+      setStreaming(false);
+    }
+    return () => { if (!isOpen) abortRef.current?.abort(); };
+  }, [isOpen]);
+
+  const generate = async () => {
+    if (!docType || !tone || !idea.trim()) return;
+    setStep('generating');
+    setGenerated('');
+    setStreaming(true);
+
+    const recipientPart = recipient.trim() ? ` for ${recipient.trim()}` : '';
+    const prompt = docType === 'email'
+      ? `Draft a ${tone} email${recipientPart}. The idea: ${idea.trim()}.\n\nFormat:\nSubject: [subject line]\n\n[email body with greeting and sign-off]`
+      : `Draft a ${tone} document${recipientPart}. The idea: ${idea.trim()}.\n\nInclude a clear title and organized sections.`;
+
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    try {
+      const res = await fetch('http://localhost:3001/ask', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ message: prompt }),
+        signal:  controller.signal,
+      });
+      if (!res.ok || !res.body) throw new Error('bad response');
+      const reader  = res.body.getReader();
+      const decoder = new TextDecoder();
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        setGenerated((prev) => prev + decoder.decode(value, { stream: true }));
+      }
+    } catch (err) {
+      if (!(err instanceof Error && err.name === 'AbortError')) {
+        setGenerated('Unable to generate draft. Is Ollama running?');
+      }
+    } finally {
+      abortRef.current = null;
+      setStreaming(false);
+      setStep('done');
+    }
+  };
+
+  const sendEmail = () => {
+    fetch('http://localhost:3001/send-email', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ to: recipient, body: generated }),
+    }).catch(() => {});
+  };
+
+  const saveDraft = () => {
+    const blob = new Blob([generated], { type: 'text/plain' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url; a.download = 'draft.txt'; a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const exportPDF = () => {
+    const win = window.open('', '_blank');
+    if (!win) return;
+    const esc = generated
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    win.document.write(`<!DOCTYPE html><html><head><title>Document</title>
+<style>body{font-family:Georgia,serif;max-width:720px;margin:48px auto;line-height:1.7;color:#111;font-size:15px;}pre{white-space:pre-wrap;font-family:inherit;}</style>
+</head><body><pre>${esc}</pre><script>window.onload=function(){window.print();}<\/script></body></html>`);
+    win.document.close();
+  };
+
+  return (
+    <div className={styles.draftingPanel}>
+      {/* Step 1 — type */}
+      {step === 'type' && (
+        <>
+          <p className={styles.draftingPrompt}>What are you drafting?</p>
+          <div className={styles.draftingBtnRow}>
+            <button
+              className={styles.draftingChoiceBtn}
+              onClick={() => { setDocType('email'); setStep('context'); }}
+            >Email</button>
+            <button
+              className={styles.draftingChoiceBtn}
+              onClick={() => { setDocType('document'); setStep('context'); }}
+            >Document</button>
+          </div>
+        </>
+      )}
+
+      {/* Step 2 — context */}
+      {step === 'context' && (
+        <>
+          <p className={styles.draftingPrompt}>Who is it for, and what's the tone?</p>
+          <input
+            className={styles.draftingInput}
+            placeholder={docType === 'email' ? 'Recipient name or email' : 'Audience (optional)'}
+            value={recipient}
+            onChange={(e) => setRecipient(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') setTone(tone ?? 'casual'); }}
+            autoFocus
+          />
+          <div className={styles.draftingBtnRow}>
+            {(['formal', 'casual', 'direct'] as DraftTone[]).map((t) => (
+              <button
+                key={t}
+                className={`${styles.draftingChoiceBtn} ${tone === t ? styles.draftingChoiceBtnActive : ''}`}
+                onClick={() => setTone(t)}
+              >
+                {t.charAt(0).toUpperCase() + t.slice(1)}
+              </button>
+            ))}
+          </div>
+          <button
+            className={styles.draftingNextBtn}
+            disabled={!tone}
+            onClick={() => { if (tone) setStep('idea'); }}
+          >Next →</button>
+        </>
+      )}
+
+      {/* Step 3 — idea */}
+      {step === 'idea' && (
+        <>
+          <p className={styles.draftingPrompt}>What's the idea?</p>
+          <textarea
+            className={styles.draftingTextarea}
+            placeholder={
+              docType === 'email'
+                ? 'e.g. ask Sarah if she wants coffee next week'
+                : 'e.g. notes on the Q3 review meeting'
+            }
+            value={idea}
+            onChange={(e) => setIdea(e.target.value)}
+            rows={4}
+            autoFocus
+          />
+          <button
+            className={styles.draftingNextBtn}
+            disabled={!idea.trim()}
+            onClick={generate}
+          >Generate</button>
+        </>
+      )}
+
+      {/* Step 4 — generating / done */}
+      {(step === 'generating' || step === 'done') && (
+        <>
+          <div className={styles.draftingLabel}>
+            {docType === 'email' ? 'Email Draft' : 'Document'}
+            {streaming && <span className={styles.draftingCursor} />}
+          </div>
+          <textarea
+            className={`${styles.draftingTextarea} ${styles.draftingTextareaResult}`}
+            value={generated}
+            onChange={(e) => setGenerated(e.target.value)}
+            rows={9}
+            readOnly={streaming}
+          />
+          {step === 'done' && (
+            <div className={styles.draftingActions}>
+              {docType === 'email' ? (
+                <>
+                  <button className={styles.draftingNextBtn} onClick={sendEmail}>Send</button>
+                  <button className={styles.draftingChoiceBtn} onClick={saveDraft}>Save Draft</button>
+                </>
+              ) : (
+                <button className={styles.draftingNextBtn} onClick={exportPDF}>Export as PDF</button>
+              )}
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
 // ── Main notch component ───────────────────────────────────
 export function DateDisplay({ draft, onDraftClear }: Props) {
   const [now,        setNow]        = useState(() => new Date());
@@ -151,7 +371,7 @@ export function DateDisplay({ draft, onDraftClear }: Props) {
     return () => clearInterval(interval);
   }, []);
 
-  // Auto-switch to draft view when new draft arrives
+  // Auto-switch to draft view when new draft arrives from AgentWidget
   useEffect(() => {
     if (draft) setView('draft');
   }, [draft]);
@@ -168,11 +388,12 @@ export function DateDisplay({ draft, onDraftClear }: Props) {
     return () => document.removeEventListener('mousedown', handler);
   }, [view]);
 
-  const monthText = format(now, 'MMM') + '.';
-  const dayText   = format(now, 'd');
+  const monthText  = format(now, 'MMM') + '.';
+  const dayText    = format(now, 'd');
   const isExpanded = view !== 'none';
 
   const toggleCalendar = () => setView((v) => (v === 'calendar' ? 'none' : 'calendar'));
+  const toggleDrafting = () => setView((v) => (v === 'drafting' ? 'none' : 'drafting'));
 
   const closeDraft = () => {
     onDraftClear();
@@ -215,16 +436,32 @@ export function DateDisplay({ draft, onDraftClear }: Props) {
         </button>
 
         <div className={styles.divider} />
+
+        <button
+          className={`${styles.iconBtn} ${view === 'drafting' ? styles.iconBtnActive : ''}`}
+          onClick={toggleDrafting}
+          aria-label="Toggle drafting table"
+          aria-expanded={view === 'drafting'}
+        >
+          <PenIcon />
+        </button>
       </div>
 
-      {/* ── Calendar expand (grid trick for smooth height) ──── */}
+      {/* ── Calendar expand ──────────────────────────────────── */}
       <div className={`${styles.expandWrapper} ${view === 'calendar' ? styles.expandWrapperOpen : ''}`}>
         <div className={styles.expandInner}>
           <MiniCalendar events={calEvents} isOpen={view === 'calendar'} />
         </div>
       </div>
 
-      {/* ── Draft expand ────────────────────────────────────── */}
+      {/* ── Drafting table expand ────────────────────────────── */}
+      <div className={`${styles.expandWrapper} ${view === 'drafting' ? styles.expandWrapperOpen : ''}`}>
+        <div className={styles.expandInner}>
+          <DraftingPanel isOpen={view === 'drafting'} />
+        </div>
+      </div>
+
+      {/* ── External draft expand (from AgentWidget) ─────────── */}
       <div className={`${styles.expandWrapper} ${view === 'draft' && draft ? styles.expandWrapperOpen : ''}`}>
         <div className={styles.expandInner}>
           {draft && (
