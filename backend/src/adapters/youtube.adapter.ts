@@ -99,7 +99,7 @@ async function fetchByQuery(query: string, apiKey: string): Promise<YouTubeVideo
   const params = new URLSearchParams({
     part:       'snippet',
     q:          query,
-    maxResults: '4',
+    maxResults: '3',
     type:       'video',
     key:        apiKey,
   });
@@ -138,7 +138,10 @@ export async function fetchYouTubeVideos(query?: string): Promise<YouTubeVideo[]
       const results = await Promise.all(
         channelIds.map((id) => fetchLatestFromChannel(id, apiKey)),
       );
-      return results.filter((v): v is YouTubeVideo => v !== null);
+      const videos = results.filter((v): v is YouTubeVideo => v !== null);
+      // Return only the single most recent video across all preferred channels
+      videos.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
+      return videos.slice(0, 1);
     }
 
     return await fetchTrending(apiKey);

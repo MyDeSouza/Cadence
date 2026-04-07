@@ -529,7 +529,8 @@ export function FovealCanvas({ theme, resetLayoutKey, bgPos, isRecentering, canv
   let displayDrive  = matchedFiles;
   let displayFigma  = figmaFiles;
   let displayNotion = notionPages;
-  let displayYT     = ytVideos;
+  // Topic search shows up to 3; default mode shows only the single most recent
+  let displayYT     = youtubeQuery ? ytVideos.slice(0, 3) : ytVideos.slice(0, 1);
 
   if (canvasFilter) {
     const { fileType, hiddenSources, sortByRecent, titleKeyword } = canvasFilter;
