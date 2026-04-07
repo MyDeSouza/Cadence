@@ -564,6 +564,14 @@
   color: rgba(255, 160, 160, 0.9);
 }
 
+.draftingToWarning {
+  font-family: 'Outfit', sans-serif;
+  font-size: 11px;
+  font-weight: 400;
+  color: #F7C05B;
+  padding-left: 28px;
+}
+
 .draftingToErrorMsg {
   font-family: 'Outfit', sans-serif;
   font-size: 10px;

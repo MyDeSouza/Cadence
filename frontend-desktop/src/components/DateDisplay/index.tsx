@@ -234,7 +234,12 @@ function PendingDraftPanel({ isOpen, onClose }: { isOpen: boolean; onClose: () =
               }}
             />
           </div>
-          {toError && (
+          {!toValid && (
+            <span className={styles.draftingToWarning}>
+              ⚠ Add an email address to send (e.g. max@gmail.com)
+            </span>
+          )}
+          {toError && toValid && (
             <span className={styles.draftingToErrorMsg}>
               Please enter a valid email address (e.g. mabel@email.com)
             </span>
@@ -272,6 +277,7 @@ function PendingDraftPanel({ isOpen, onClose }: { isOpen: boolean; onClose: () =
               className={styles.draftingNextBtn}
               onClick={sendEmail}
               disabled={!toValid || sendState === 'sending' || sendState === 'success'}
+              style={!toValid ? { opacity: 0.5, pointerEvents: 'none' } : undefined}
             >
               {sendState === 'sending' ? 'Sending…' : 'Send'}
             </button>
