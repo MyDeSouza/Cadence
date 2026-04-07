@@ -483,7 +483,7 @@
 }
 
 .draftingNextBtn:hover    { background: rgba(255, 255, 255, 0.22); }
-.draftingNextBtn:disabled { opacity: 0.35; cursor: default; }
+.draftingNextBtn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .draftingLabel {
   display: flex;
@@ -517,32 +517,59 @@
   flex-wrap: wrap;
 }
 
-/* Meta row (To / Subject preview) */
+/* Meta row (To / Subject editable fields) */
 .draftingMeta {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
 }
 
 .draftingMetaRow {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 6px;
-  font-family: 'Outfit', sans-serif;
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.75);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .draftingMetaKey {
+  font-family: 'Outfit', sans-serif;
   font-size: 9px;
   font-weight: 600;
   color: rgba(255, 255, 255, 0.35);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   flex-shrink: 0;
+  width: 22px;
+}
+
+.draftingMetaInput {
+  flex: 1;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 2px 4px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 11px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.8);
+  outline: none;
+  min-width: 0;
+  transition: border-color 0.15s ease;
+}
+
+.draftingMetaInput::placeholder { color: rgba(255, 255, 255, 0.28); }
+.draftingMetaInput:focus         { border-bottom-color: rgba(255, 255, 255, 0.35); }
+
+.draftingMetaInputError {
+  border-bottom-color: rgba(255, 80, 80, 0.75) !important;
+  color: rgba(255, 160, 160, 0.9);
+}
+
+.draftingToErrorMsg {
+  font-family: 'Outfit', sans-serif;
+  font-size: 10px;
+  color: rgba(255, 100, 100, 0.85);
+  padding-left: 28px;
+  margin-top: -2px;
 }
 
 /* Send status */

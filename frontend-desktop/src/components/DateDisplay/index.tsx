@@ -135,8 +135,13 @@ type SendState = 'idle' | 'sending' | 'success' | 'error' | 'missingFields';
 
 function PendingDraftPanel({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const [draft,     setDraft]     = useState<StoredDraft | null>(null);
+  const [to,        setTo]        = useState('');
+  const [subject,   setSubject]   = useState('');
   const [body,      setBody]      = useState('');
+  const [toError,   setToError]   = useState(false);
   const [sendState, setSendState] = useState<SendState>('idle');
+
+  const toValid = to.includes('@');
 
   useEffect(() => {
     if (isOpen) {
@@ -145,26 +150,29 @@ function PendingDraftPanel({ isOpen, onClose }: { isOpen: boolean; onClose: () =
         try {
           const stored = JSON.parse(raw) as StoredDraft;
           setDraft(stored);
+          setTo(stored.to ?? '');
+          setSubject(stored.subject ?? '');
           setBody(stored.content);
         } catch {}
       }
+      setToError(false);
       setSendState('idle');
     }
   }, [isOpen]);
 
   const sendEmail = async () => {
     if (!draft) return;
-    if (!draft.to?.trim() || !draft.subject?.trim()) {
-      setSendState('missingFields');
-      setTimeout(() => setSendState('idle'), 3000);
+    if (!toValid) {
+      setToError(true);
       return;
     }
+    setToError(false);
     setSendState('sending');
     try {
       const res = await fetch('http://localhost:3001/send-email', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ to: draft.to, subject: draft.subject, body }),
+        body:    JSON.stringify({ to, subject, body }),
       });
       if (!res.ok) throw new Error('send failed');
       setSendState('success');
@@ -214,8 +222,32 @@ function PendingDraftPanel({ isOpen, onClose }: { isOpen: boolean; onClose: () =
 
       {draft.type === 'email' && (
         <div className={styles.draftingMeta}>
-          <span className={styles.draftingMetaRow}><span className={styles.draftingMetaKey}>To</span>{draft.to || '—'}</span>
-          <span className={styles.draftingMetaRow}><span className={styles.draftingMetaKey}>Sub</span>{draft.subject || '—'}</span>
+          <div className={styles.draftingMetaRow}>
+            <span className={styles.draftingMetaKey}>To</span>
+            <input
+              className={`${styles.draftingMetaInput} ${toError ? styles.draftingMetaInputError : ''}`}
+              value={to}
+              placeholder="recipient@example.com"
+              onChange={(e) => {
+                setTo(e.target.value);
+                if (toError && e.target.value.includes('@')) setToError(false);
+              }}
+            />
+          </div>
+          {toError && (
+            <span className={styles.draftingToErrorMsg}>
+              Please enter a valid email address (e.g. mabel@email.com)
+            </span>
+          )}
+          <div className={styles.draftingMetaRow}>
+            <span className={styles.draftingMetaKey}>Sub</span>
+            <input
+              className={styles.draftingMetaInput}
+              value={subject}
+              placeholder="Subject"
+              onChange={(e) => setSubject(e.target.value)}
+            />
+          </div>
         </div>
       )}
 
@@ -229,11 +261,8 @@ function PendingDraftPanel({ isOpen, onClose }: { isOpen: boolean; onClose: () =
       {sendState === 'success' && (
         <span className={styles.draftingSendSuccess}>Sent ✓</span>
       )}
-      {(sendState === 'error') && (
+      {sendState === 'error' && (
         <span className={styles.draftingSendError}>Failed — check connection</span>
-      )}
-      {sendState === 'missingFields' && (
-        <span className={styles.draftingSendError}>Missing recipient or subject</span>
       )}
 
       <div className={styles.draftingActions}>
@@ -242,7 +271,7 @@ function PendingDraftPanel({ isOpen, onClose }: { isOpen: boolean; onClose: () =
             <button
               className={styles.draftingNextBtn}
               onClick={sendEmail}
-              disabled={sendState === 'sending' || sendState === 'success'}
+              disabled={!toValid || sendState === 'sending' || sendState === 'success'}
             >
               {sendState === 'sending' ? 'Sending…' : 'Send'}
             </button>

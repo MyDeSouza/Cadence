@@ -15,6 +15,8 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
     body?: string;
   };
 
+  console.log('[send-email] hit — to:', to, '| subject:', subject);
+
   if (!to || !subject || !body) {
     res.status(400).json({ error: 'Missing required fields: to, subject, body' });
     return;
